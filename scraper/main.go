@@ -23,6 +23,11 @@ import (
 	"github.com/multiformats/go-multiaddr"
 )
 
+const (
+	SCRAPE_WORKERS  = 96
+	SCRAPE_INTERVAL = time.Minute * 5
+)
+
 type PeerData struct {
 	ID        peer.ID               `json:"id"`
 	Addrs     []multiaddr.Multiaddr `json:"addresses"`
@@ -61,8 +66,6 @@ func main() {
 	go runCrawler(h, c, s)
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("Serving request to: ", r.RemoteAddr)
-
 		d := s.GetData()
 		if serialized, err := json.Marshal(d); err == nil {
 			w.Write(serialized)
@@ -99,7 +102,7 @@ type evHandler struct {
 func (e *evHandler) ScrapeBegin(p peer.ID) {
 	ident, err := runIdentify(e.h, p)
 	if err != nil {
-		fmt.Println(err)
+		return
 	}
 
 	addrsb := ident.GetListenAddrs()
@@ -123,20 +126,20 @@ func (e *evHandler) ScrapeBegin(p peer.ID) {
 		Protocols: protocols,
 	})
 }
-func (e *evHandler) ScrapeFailed(p peer.ID, err error)               { fmt.Println(err) }
+func (e *evHandler) ScrapeFailed(p peer.ID, err error)               {}
 func (e *evHandler) ScrapeFinished(p peer.ID, addrs []peer.AddrInfo) {}
 
 func runCrawler(h host.Host, c *scraper.Scraper, s *CrawlState) {
-	const WORKERS = 96
-
+	seeds := getRandomSeeds(h)
 	for {
 		handler := &evHandler{h: h, data: []PeerData{}}
-		seeds := getRandomSeeds(h)
 		start_time := time.Now()
-		c.Run(context.Background(), seeds, handler, WORKERS)
+		c.Run(context.Background(), seeds, handler, SCRAPE_WORKERS)
 		elapsed := time.Since(start_time)
-		s.SetData(handler.data)
 		fmt.Printf("Finished scrape with %v data in %v", len(handler.data), elapsed)
+		s.SetData(handler.data)
+		seeds = getRandomSeeds(h)
+		time.Sleep(SCRAPE_INTERVAL)
 	}
 }
 
