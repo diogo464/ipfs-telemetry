@@ -8,7 +8,7 @@ import (
 	"io/ioutil"
 	"log"
 
-	"d464.sh/telemetry/rle"
+	"git.d464.sh/adc/telemetry/telemetry/rle"
 )
 
 type message struct {

@@ -6,8 +6,8 @@ import (
 	"io"
 	"time"
 
-	"d464.sh/telemetry/utils"
-	"d464.sh/telemetry/wire"
+	"git.d464.sh/adc/telemetry/telemetry/utils"
+	"git.d464.sh/adc/telemetry/telemetry/wire"
 	"github.com/libp2p/go-libp2p-core/host"
 	"github.com/libp2p/go-libp2p-core/peer"
 )

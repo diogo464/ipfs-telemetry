@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"time"
 
-	"d464.sh/telemetry"
+	"git.d464.sh/adc/telemetry/telemetry"
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p-core/peer"
 )

@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"d464.sh/telemetry"
+	"git.d464.sh/adc/telemetry/telemetry"
 	"github.com/ipfs/go-ipfs/core"
 	"github.com/ipfs/go-ipfs/plugin"
 )

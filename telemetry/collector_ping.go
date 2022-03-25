@@ -6,7 +6,7 @@ import (
 	"math/rand"
 	"time"
 
-	"d464.sh/telemetry/snapshot"
+	"git.d464.sh/adc/telemetry/telemetry/snapshot"
 	"github.com/libp2p/go-libp2p-core/host"
 	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/libp2p/go-libp2p-core/peer"

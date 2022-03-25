@@ -6,7 +6,7 @@ import (
 	"io"
 	"runtime"
 
-	"d464.sh/telemetry/snapshot"
+	"git.d464.sh/adc/telemetry/telemetry/snapshot"
 )
 
 type ResponseType uint32

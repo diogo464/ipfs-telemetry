@@ -3,7 +3,7 @@ package telemetry
 import (
 	"time"
 
-	"d464.sh/telemetry/snapshot"
+	"git.d464.sh/adc/telemetry/telemetry/snapshot"
 )
 
 func (t *TelemetryService) collectorNetwork() {

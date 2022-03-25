@@ -6,9 +6,9 @@ import (
 	"math/rand"
 	"sync"
 
-	"d464.sh/telemetry/snapshot"
-	"d464.sh/telemetry/utils"
-	"d464.sh/telemetry/wire"
+	"git.d464.sh/adc/telemetry/telemetry/snapshot"
+	"git.d464.sh/adc/telemetry/telemetry/utils"
+	"git.d464.sh/adc/telemetry/telemetry/wire"
 	"github.com/ipfs/go-ipfs/core"
 	"github.com/libp2p/go-libp2p-core/host"
 	"github.com/libp2p/go-libp2p-core/network"
