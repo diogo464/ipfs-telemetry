@@ -14,8 +14,8 @@ func init() {
 type Snapshot struct {
 	Tag string
 	// utc unix nano timestamp
-	Time    uint64
-	Uptime  uint64
+	Time    time.Time
+	Uptime  time.Duration
 	typed   interface{}
 	untyped json.RawMessage
 }
@@ -23,8 +23,8 @@ type Snapshot struct {
 func NewSnapshot(tag string, value interface{}) *Snapshot {
 	return &Snapshot{
 		Tag:     tag,
-		Time:    uint64(time.Now().UTC().UnixNano()),
-		Uptime:  uint64(time.Since(gSTARTUP_TIME).Nanoseconds()),
+		Time:    time.Now().UTC(),
+		Uptime:  time.Since(gSTARTUP_TIME),
 		typed:   value,
 		untyped: nil,
 	}
@@ -40,9 +40,9 @@ func (s *Snapshot) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&struct {
 		Tag string `json:"name"`
 		// utc unix nano timestamp
-		Time   uint64      `json:"stamp"`
-		Uptime uint64      `json:"uptime"`
-		Value  interface{} `json:"value"`
+		Time   time.Time     `json:"stamp"`
+		Uptime time.Duration `json:"uptime"`
+		Value  interface{}   `json:"value"`
 	}{
 		Tag:    s.Tag,
 		Time:   s.Time,
@@ -55,8 +55,8 @@ func (s *Snapshot) UnmarshalJSON(data []byte) error {
 	type WireSnapshot struct {
 		Tag string `json:"name"`
 		// utc unix nano timestamp
-		Time   uint64          `json:"stamp"`
-		Uptime uint64          `json:"uptime"`
+		Time   time.Time       `json:"stamp"`
+		Uptime time.Duration   `json:"uptime"`
 		Value  json.RawMessage `json:"value"`
 	}
 

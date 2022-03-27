@@ -1,6 +1,6 @@
 create table snapshots_rt (
     snapshot_rt_id      INT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    snapshot_time       TIMESTAMP NOT NULL,
+    snapshot_time       TIMESTAMPTZ NOT NULL,
     session_id          INT NOT NULL,
     buckets             INT[] NOT NULL,
 

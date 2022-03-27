@@ -29,15 +29,16 @@ func Session(ctx context.Context, exec boil.ContextExecutor, p peer.ID, s uuid.U
 	return sess.SessionID, nil
 }
 
-func RoutingTable(ctx context.Context, exec boil.ContextExecutor, sessionID int, snapshot *snapshot.RoutingTable) error {
-	buckets := make([]int64, 0, len(snapshot.Buckets))
-	for _, b := range snapshot.Buckets {
+func RoutingTable(ctx context.Context, exec boil.ContextExecutor, sessionID int, snapshot *snapshot.Snapshot) error {
+	ssrt := snapshot.GetRoutingTable()
+	buckets := make([]int64, 0, len(ssrt.Buckets))
+	for _, b := range ssrt.Buckets {
 		buckets = append(buckets, int64(b))
 	}
 
 	rt := models.SnapshotsRT{
 		SessionID:    sessionID,
-		SnapshotTime: time.Now(),
+		SnapshotTime: snapshot.Time,
 		Buckets:      buckets,
 	}
 	return rt.Insert(ctx, exec, boil.Infer())

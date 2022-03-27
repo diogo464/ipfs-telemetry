@@ -117,23 +117,23 @@ func (s *Server) processSnapshots(p peer.ID, sessionID int, snapshots []*snapsho
 	for _, ss := range snapshots {
 		switch ss.Tag {
 		case snapshot.TAG_ROUTING_TABLE:
-			s.processSnapshotRoutingTable(p, sessionID, ss.GetRoutingTable())
+			s.processSnapshotRoutingTable(p, sessionID, ss)
 		case snapshot.TAG_NETWORK:
-			s.processSnapshotNetwork(p, sessionID, ss.GetNetwork())
+			s.processSnapshotNetwork(p, sessionID, ss)
 		case snapshot.TAG_PING:
-			s.processSnapshotPing(p, sessionID, ss.GetPing())
+			s.processSnapshotPing(p, sessionID, ss)
 		}
 	}
 }
 
-func (s *Server) processSnapshotRoutingTable(p peer.ID, sessionID int, snapshot *snapshot.RoutingTable) {
+func (s *Server) processSnapshotRoutingTable(p peer.ID, sessionID int, snapshot *snapshot.Snapshot) {
 	if err := dal.RoutingTable(context.TODO(), s.db, sessionID, snapshot); err != nil {
 		fmt.Println(err)
 	}
 }
 
-func (s *Server) processSnapshotNetwork(p peer.ID, sessionID int, snapshot *snapshot.Network) {
+func (s *Server) processSnapshotNetwork(p peer.ID, sessionID int, snapshot *snapshot.Snapshot) {
 }
 
-func (s *Server) processSnapshotPing(p peer.ID, sessionID int, snapshot *snapshot.Ping) {
+func (s *Server) processSnapshotPing(p peer.ID, sessionID int, snapshot *snapshot.Snapshot) {
 }

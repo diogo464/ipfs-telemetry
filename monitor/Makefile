@@ -2,6 +2,7 @@ DATABASE_MIGRATIONS := migrations/
 DATABASE_PASSWORD := password
 DATABASE_URL := postgres://postgres@localhost/postgres?sslmode=disable
 DATABASE_CONTAINER := monitor-db
+DATABASE_IMAGE := docker.io/library/postgres:14
 
 setup: tools database-up migrate-up generate
 
@@ -18,7 +19,7 @@ database-up:
 		@ if podman container exists $(DATABASE_CONTAINER) ; then \
 			podman start $(DATABASE_CONTAINER) && sleep 3 ; \
 		else \
-			podman run --name=$(DATABASE_CONTAINER) --tty --interactive --detach --network=host -e POSTGRES_PASSWORD=$(DATABASE_PASSWORD) postgres:14 && sleep 3 ; \
+			podman run --name=$(DATABASE_CONTAINER) --tty --interactive --detach --network=host -e POSTGRES_PASSWORD=$(DATABASE_PASSWORD) $(DATABASE_IMAGE) && sleep 3 ; \
 		fi ;
 
 database-down:
