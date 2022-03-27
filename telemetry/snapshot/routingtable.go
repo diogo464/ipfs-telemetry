@@ -1,18 +1,27 @@
 package snapshot
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/ipfs/go-ipfs/core"
 )
+
+const TAG_ROUTING_TABLE = "routingtable"
 
 type RoutingTable struct {
 	// Number of peers in each dht bucket
 	Buckets []int `json:"buckets"`
 }
 
+func (s *Snapshot) GetRoutingTable() *RoutingTable {
+	rt := new(RoutingTable)
+	s.decodeUnwrap(rt)
+	return rt
+}
+
 func NewRoutingTable(buckets []int) *Snapshot {
-	return NewSnapshot("routingtable", &RoutingTable{
+	return NewSnapshot(TAG_ROUTING_TABLE, &RoutingTable{
 		Buckets: buckets,
 	})
 }
@@ -49,6 +58,7 @@ func NewRoutingTableCollector(n *core.IpfsNode, sink Sink, opts RoutingTableOpti
 func (c *RoutingTableCollector) Run() {
 	for {
 		snapshot := NewRoutingTableFromNode(c.node)
+		fmt.Println("Pushing routing table snapshot")
 		c.sink.Push(snapshot)
 		time.Sleep(c.opts.Interval)
 	}

@@ -54,6 +54,7 @@ func write(ctx context.Context, w io.Writer, msg message) error {
 			cerr <- err
 			return
 		}
+		cerr <- nil
 	}()
 
 	select {
@@ -93,6 +94,7 @@ func read(ctx context.Context, r io.Reader) (message, error) {
 			cerr <- err
 			return
 		}
+		log.Println("Returning message")
 		cmsg <- message{Type: ty, Body: data}
 	}()
 

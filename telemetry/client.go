@@ -16,19 +16,41 @@ import (
 type TelemetryClient struct {
 	h host.Host
 	p peer.ID
+	// session uuid
+	s uuid.NullUUID
+	// sequence number for snapshots
+	n uint64
 }
 
 func NewTelemetryClient(h host.Host, p peer.ID) *TelemetryClient {
-	return &TelemetryClient{h: h, p: p}
+	return &TelemetryClient{h: h, p: p, s: uuid.NullUUID{}, n: 0}
 }
 
-func (c *TelemetryClient) Snapshots(ctx context.Context, session uuid.UUID, since uint64) (*wire.ResponseSnapshot, error) {
-	request := wire.NewRequestSnapshot(session, since)
+func (c *TelemetryClient) Session() uuid.NullUUID {
+	return c.s
+}
+
+func (c *TelemetryClient) Snapshots(ctx context.Context) (*wire.ResponseSnapshot, error) {
+	return c.SnapshotsWithTags(ctx, []string{})
+}
+
+func (c *TelemetryClient) SnapshotsWithTags(ctx context.Context, tags []string) (*wire.ResponseSnapshot, error) {
+	request := wire.NewRequestSnapshotWithTags(c.s.UUID, c.n, tags)
 	response, err := c.makeRequest(ctx, request, wire.RESPONSE_SNAPSHOT)
 	if err != nil {
 		return nil, err
 	}
-	return response.GetSnapshot()
+
+	snapshots, err := response.GetSnapshot()
+	if err != nil {
+		return nil, err
+	}
+
+	c.s.UUID = snapshots.Session
+	c.s.Valid = true
+	c.n = snapshots.NextSeqN
+
+	return snapshots, nil
 }
 
 func (c *TelemetryClient) SystemInfo(ctx context.Context) (*wire.ResponseSystemInfo, error) {

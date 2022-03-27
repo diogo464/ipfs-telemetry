@@ -28,15 +28,37 @@ func newRequest(t RequestType, b interface{}) *Request {
 }
 
 type RequestSnapshot struct {
+	// the session for which to request the snapshots, if the session
+	// does not match the one on the server(reboot, crash, ...) then
+	// the `Since` parameter is ignored and all snapshots are returned
 	Session uuid.UUID `json:"session"`
 	Since   uint64    `json:"since"`
+	// tags to request, if empty then all are requested
+	Tags []string `json:"tags"`
 }
 
 func NewRequestSnapshot(session uuid.UUID, since uint64) *Request {
+	return NewRequestSnapshotWithTags(session, since, []string{})
+}
+
+func NewRequestSnapshotWithTags(session uuid.UUID, since uint64, tags []string) *Request {
 	return newRequest(REQUEST_SNAPSHOT, &RequestSnapshot{
 		Session: session,
 		Since:   since,
+		Tags:    tags,
 	})
+}
+
+func (r *RequestSnapshot) MatchTag(tag string) bool {
+	if len(r.Tags) == 0 {
+		return true
+	}
+	for _, t := range r.Tags {
+		if t == tag {
+			return true
+		}
+	}
+	return false
 }
 
 func NewRequestBandwdithDownload() *Request {

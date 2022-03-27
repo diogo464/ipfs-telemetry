@@ -10,4 +10,4 @@ require (
 	github.com/libp2p/go-libp2p-core v0.11.0
 )
 
-replace github.com/ipfs/go-ipfs => /var/home/diogo464/uni/adc/telemetry/ipfs/
+replace github.com/ipfs/go-ipfs => /var/home/diogo464/uni/adc/telemetry/telemetry/../ipfs/

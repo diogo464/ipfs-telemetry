@@ -30,10 +30,11 @@ func newResponse(t ResponseType, b interface{}) *Response {
 type ResponseSnapshot struct {
 	Session   uuid.UUID            `json:"session"`
 	Snapshots []*snapshot.Snapshot `json:"snapshots"`
+	NextSeqN  uint64               `json:"nextseqn"`
 }
 
-func NewResponseSnapshot(session uuid.UUID, snapshots []*snapshot.Snapshot) *Response {
-	return newResponse(RESPONSE_SNAPSHOT, &ResponseSnapshot{Session: session, Snapshots: snapshots})
+func NewResponseSnapshot(session uuid.UUID, snapshots []*snapshot.Snapshot, nextseqn uint64) *Response {
+	return newResponse(RESPONSE_SNAPSHOT, &ResponseSnapshot{Session: session, Snapshots: snapshots, NextSeqN: nextseqn})
 }
 
 func (r *Response) GetSnapshot() (*ResponseSnapshot, error) {

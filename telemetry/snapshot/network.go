@@ -7,6 +7,8 @@ import (
 	connmgr "github.com/libp2p/go-libp2p-connmgr"
 )
 
+const TAG_NETWORK = "network"
+
 type Network struct {
 	TotalIn   uint64 `json:"totalin"`
 	TotalOut  uint64 `json:"totalout"`
@@ -17,8 +19,14 @@ type Network struct {
 	HighWater uint32 `json:"highwater"`
 }
 
+func (s *Snapshot) GetNetwork() *Network {
+	network := new(Network)
+	s.decodeUnwrap(network)
+	return network
+}
+
 func NewNetwork(ti uint64, to uint64, ri uint64, ro uint64, nc uint32, lw uint32, hw uint32) *Snapshot {
-	return NewSnapshot("network", &Network{
+	return NewSnapshot(TAG_NETWORK, &Network{
 		TotalIn:   ti,
 		TotalOut:  to,
 		RateIn:    ri,

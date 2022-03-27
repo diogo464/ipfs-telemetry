@@ -2,7 +2,6 @@ package snapshot
 
 import (
 	"context"
-	"fmt"
 	"math/rand"
 	"time"
 
@@ -12,14 +11,22 @@ import (
 	"github.com/libp2p/go-libp2p/p2p/protocol/ping"
 )
 
+const TAG_PING = "ping"
+
 type Ping struct {
 	Source      peer.AddrInfo   `json:"source"`
 	Destination peer.AddrInfo   `json:"destination"`
 	Durations   []time.Duration `json:"durations"`
 }
 
+func (s *Snapshot) GetPing() *Ping {
+	ping := new(Ping)
+	s.decodeUnwrap(ping)
+	return ping
+}
+
 func NewPing(src peer.AddrInfo, dest peer.AddrInfo, durs []time.Duration) *Snapshot {
-	return NewSnapshot("ping", &Ping{
+	return NewSnapshot(TAG_PING, &Ping{
 		Source:      src,
 		Destination: dest,
 		Durations:   durs,
@@ -50,10 +57,7 @@ func (c *PingCollector) Run() {
 		} else {
 			snapshot, err := c.ping(peerid)
 			if err == nil {
-				fmt.Println(snapshot)
 				c.sink.Push(snapshot)
-			} else {
-				fmt.Println(err)
 			}
 			time.Sleep(c.opts.Interval)
 		}

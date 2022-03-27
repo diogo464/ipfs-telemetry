@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"sync"
 	"time"
 
@@ -59,12 +60,12 @@ func NewTelemetryService(n *core.IpfsNode, opts ...Option) (*TelemetryService, e
 	}).Run()
 
 	go snapshot.NewRoutingTableCollector(t.n, t, snapshot.RoutingTableOptions{
-		Interval: time.Second * 30,
-	})
+		Interval: time.Second * 10,
+	}).Run()
 
 	go snapshot.NewNetworkCollector(t.n, t, snapshot.NetworkOptions{
-		Interval: time.Second * 20,
-	})
+		Interval: time.Second * 15,
+	}).Run()
 
 	return t, nil
 }
@@ -105,6 +106,8 @@ func (t *TelemetryService) TelemetryHandler(s network.Stream) {
 }
 
 func (t *TelemetryService) handleRequestSnapshot(s network.Stream, r *wire.RequestSnapshot) {
+	log.Println("Handle Request Snapshot")
+
 	var since uint64 = 0
 	if r.Session == t.s {
 		since = r.Since
@@ -112,15 +115,32 @@ func (t *TelemetryService) handleRequestSnapshot(s network.Stream, r *wire.Reque
 
 	t.l.Lock()
 	snapshots := t.w.Since(since)
+	nextseqn := t.w.NextSeqN()
 	t.l.Unlock()
 
-	response := wire.NewResponseSnapshot(t.s, snapshots)
+	fmt.Println("Request")
+	fmt.Println("  Since =", since)
+	fmt.Println("  Next =", nextseqn)
+
+	index := 0
+	for index < len(snapshots) {
+		if !r.MatchTag(snapshots[index].Tag) {
+			fmt.Println("Ignoring snapshot", snapshots[index].Tag)
+			snapshots[index] = snapshots[len(snapshots)-1]
+			snapshots = snapshots[:len(snapshots)-1]
+		} else {
+			index += 1
+		}
+	}
+
+	response := wire.NewResponseSnapshot(t.s, snapshots, nextseqn)
 	if err := wire.WriteResponse(context.TODO(), s, response); err != nil {
 		fmt.Println(err)
 	}
 }
 
 func (t *TelemetryService) handleRequestSystemInfo(s network.Stream) {
+	log.Println("Handle Request SystemInfo")
 	response := wire.NewResponseSystemInfo()
 	if err := wire.WriteResponse(context.TODO(), s, response); err != nil {
 		fmt.Println(err)
@@ -128,10 +148,12 @@ func (t *TelemetryService) handleRequestSystemInfo(s network.Stream) {
 }
 
 func (t *TelemetryService) handleBandwidthDownload(s network.Stream) {
+	log.Println("Handle BandwidthDownload")
 	io.Copy(io.Discard, io.LimitReader(s, BANDWIDTH_PAYLOAD_SIZE))
 }
 
 func (t *TelemetryService) handleBandwidthUpload(s network.Stream) {
+	log.Println("Handle BandwidthUpload")
 	io.Copy(s, io.LimitReader(utils.NullReader{}, BANDWIDTH_PAYLOAD_SIZE))
 }
 
