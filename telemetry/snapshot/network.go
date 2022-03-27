@@ -1,11 +1,13 @@
 package snapshot
 
 import (
+	"time"
+
 	"github.com/ipfs/go-ipfs/core"
-	"github.com/libp2p/go-libp2p/p2p/net/connmgr"
+	connmgr "github.com/libp2p/go-libp2p-connmgr"
 )
 
-type NetworkSnapshot struct {
+type Network struct {
 	TotalIn   uint64 `json:"totalin"`
 	TotalOut  uint64 `json:"totalout"`
 	RateIn    uint64 `json:"ratein"`
@@ -15,8 +17,8 @@ type NetworkSnapshot struct {
 	HighWater uint32 `json:"highwater"`
 }
 
-func NewNetworkSnapshot(ti uint64, to uint64, ri uint64, ro uint64, nc uint32, lw uint32, hw uint32) *Snapshot {
-	return NewSnapshot("network", &NetworkSnapshot{
+func NewNetwork(ti uint64, to uint64, ri uint64, ro uint64, nc uint32, lw uint32, hw uint32) *Snapshot {
+	return NewSnapshot("network", &Network{
 		TotalIn:   ti,
 		TotalOut:  to,
 		RateIn:    ri,
@@ -27,10 +29,32 @@ func NewNetworkSnapshot(ti uint64, to uint64, ri uint64, ro uint64, nc uint32, l
 	})
 }
 
-func NewNetworkSnapshotFromNode(n *core.IpfsNode) *Snapshot {
+func NewNetworkFromNode(n *core.IpfsNode) *Snapshot {
 	reporter := n.Reporter
 	totals := reporter.GetBandwidthTotals()
 	cmgr := n.PeerHost.ConnManager().(*connmgr.BasicConnMgr)
 	info := cmgr.GetInfo()
-	return NewNetworkSnapshot(uint64(totals.TotalIn), uint64(totals.TotalOut), uint64(totals.RateIn), uint64(totals.RateOut), uint32(info.ConnCount), uint32(info.LowWater), uint32(info.HighWater))
+	return NewNetwork(uint64(totals.TotalIn), uint64(totals.TotalOut), uint64(totals.RateIn), uint64(totals.RateOut), uint32(info.ConnCount), uint32(info.LowWater), uint32(info.HighWater))
+}
+
+type NetworkOptions struct {
+	Interval time.Duration
+}
+
+type NetworkCollector struct {
+	opts NetworkOptions
+	sink Sink
+	node *core.IpfsNode
+}
+
+func NewNetworkCollector(n *core.IpfsNode, sink Sink, opts NetworkOptions) *NetworkCollector {
+	return &NetworkCollector{opts: opts, sink: sink, node: n}
+}
+
+func (c *NetworkCollector) Run() {
+	for {
+		snapshot := NewNetworkFromNode(c.node)
+		c.sink.Push(snapshot)
+		time.Sleep(c.opts.Interval)
+	}
 }

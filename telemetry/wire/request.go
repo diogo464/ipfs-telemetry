@@ -1,9 +1,12 @@
 package wire
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
+
+	"github.com/google/uuid"
 )
 
 type RequestType uint32
@@ -25,13 +28,14 @@ func newRequest(t RequestType, b interface{}) *Request {
 }
 
 type RequestSnapshot struct {
-	Session uint64 `json:"session"`
-	Since   uint64 `json:"since"`
+	Session uuid.UUID `json:"session"`
+	Since   uint64    `json:"since"`
 }
 
-func NewRequestSnapshot(since uint64) *Request {
+func NewRequestSnapshot(session uuid.UUID, since uint64) *Request {
 	return newRequest(REQUEST_SNAPSHOT, &RequestSnapshot{
-		Since: since,
+		Session: session,
+		Since:   since,
 	})
 }
 
@@ -51,8 +55,8 @@ func (r *Request) GetSince() *RequestSnapshot {
 	return r.Body.(*RequestSnapshot)
 }
 
-func ReadRequest(r io.Reader) (*Request, error) {
-	msg, err := read(r)
+func ReadRequest(ctx context.Context, r io.Reader) (*Request, error) {
+	msg, err := read(ctx, r)
 	if err != nil {
 		return nil, err
 	}
@@ -80,9 +84,9 @@ func ReadRequest(r io.Reader) (*Request, error) {
 	return request, nil
 }
 
-func WriteRequest(w io.Writer, req *Request) error {
+func WriteRequest(ctx context.Context, w io.Writer, req *Request) error {
 	if data, err := json.Marshal(req.Body); err == nil {
-		return write(w, message{
+		return write(ctx, w, message{
 			Type: uint32(req.Type),
 			Body: data,
 		})

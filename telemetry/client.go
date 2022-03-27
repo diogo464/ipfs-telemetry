@@ -8,6 +8,7 @@ import (
 
 	"git.d464.sh/adc/telemetry/telemetry/utils"
 	"git.d464.sh/adc/telemetry/telemetry/wire"
+	"github.com/google/uuid"
 	"github.com/libp2p/go-libp2p-core/host"
 	"github.com/libp2p/go-libp2p-core/peer"
 )
@@ -21,8 +22,8 @@ func NewTelemetryClient(h host.Host, p peer.ID) *TelemetryClient {
 	return &TelemetryClient{h: h, p: p}
 }
 
-func (c *TelemetryClient) Snapshots(ctx context.Context, since uint64) (*wire.ResponseSnapshot, error) {
-	request := wire.NewRequestSnapshot(since)
+func (c *TelemetryClient) Snapshots(ctx context.Context, session uuid.UUID, since uint64) (*wire.ResponseSnapshot, error) {
+	request := wire.NewRequestSnapshot(session, since)
 	response, err := c.makeRequest(ctx, request, wire.RESPONSE_SNAPSHOT)
 	if err != nil {
 		return nil, err
@@ -47,7 +48,7 @@ func (c *TelemetryClient) Download(ctx context.Context) (uint64, error) {
 	defer s.Close()
 
 	request := wire.NewRequestBandwdithDownload()
-	if err := wire.WriteRequest(s, request); err != nil {
+	if err := wire.WriteRequest(ctx, s, request); err != nil {
 		return 0, err
 	}
 
@@ -73,7 +74,7 @@ func (c *TelemetryClient) Upload(ctx context.Context) (uint64, error) {
 	defer s.Close()
 
 	request := wire.NewRequestBandwdithUpload()
-	if err := wire.WriteRequest(s, request); err != nil {
+	if err := wire.WriteRequest(ctx, s, request); err != nil {
 		return 0, err
 	}
 
@@ -111,12 +112,12 @@ func (c *TelemetryClient) makeRequest(ctx context.Context, req *wire.Request, re
 	}
 	defer s.Close()
 
-	err = wire.WriteRequest(s, req)
+	err = wire.WriteRequest(ctx, s, req)
 	if err != nil {
 		return nil, err
 	}
 
-	response, err := wire.ReadResponse(s)
+	response, err := wire.ReadResponse(ctx, s)
 	if err != nil {
 		return nil, err
 	}

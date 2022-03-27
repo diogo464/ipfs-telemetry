@@ -2,17 +2,25 @@ package snapshot
 
 import "time"
 
+var gSTARTUP_TIME time.Time
+
 type Snapshot struct {
-	Name string `json:"name"`
+	Tag string `json:"name"`
 	// utc unix nano timestamp
-	Time  uint64      `json:"stamp"`
-	Value interface{} `json:"value"`
+	Time   uint64      `json:"stamp"`
+	Uptime uint64      `json:"uptime"`
+	Value  interface{} `json:"value"`
 }
 
-func NewSnapshot(name string, value interface{}) *Snapshot {
+func NewSnapshot(tag string, value interface{}) *Snapshot {
 	return &Snapshot{
-		Name:  name,
-		Time:  uint64(time.Now().UTC().UnixNano()),
-		Value: value,
+		Tag:    tag,
+		Time:   uint64(time.Now().UTC().UnixNano()),
+		Uptime: uint64(time.Since(gSTARTUP_TIME).Nanoseconds()),
+		Value:  value,
 	}
+}
+
+func init() {
+	gSTARTUP_TIME = time.Now().UTC()
 }

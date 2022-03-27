@@ -1,12 +1,14 @@
 package wire
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"runtime"
 
 	"git.d464.sh/adc/telemetry/telemetry/snapshot"
+	"github.com/google/uuid"
 )
 
 type ResponseType uint32
@@ -26,11 +28,11 @@ func newResponse(t ResponseType, b interface{}) *Response {
 }
 
 type ResponseSnapshot struct {
-	Session   uint64               `json:"session"`
+	Session   uuid.UUID            `json:"session"`
 	Snapshots []*snapshot.Snapshot `json:"snapshots"`
 }
 
-func NewResponseSnapshot(session uint64, snapshots []*snapshot.Snapshot) *Response {
+func NewResponseSnapshot(session uuid.UUID, snapshots []*snapshot.Snapshot) *Response {
 	return newResponse(RESPONSE_SNAPSHOT, &ResponseSnapshot{Session: session, Snapshots: snapshots})
 }
 
@@ -64,8 +66,8 @@ func (r *Response) GetSystemInfo() (*ResponseSystemInfo, error) {
 	}
 }
 
-func ReadResponse(r io.Reader) (*Response, error) {
-	msg, err := read(r)
+func ReadResponse(ctx context.Context, r io.Reader) (*Response, error) {
+	msg, err := read(ctx, r)
 	if err != nil {
 		return nil, err
 	}
@@ -87,9 +89,9 @@ func ReadResponse(r io.Reader) (*Response, error) {
 	return response, nil
 }
 
-func WriteResponse(w io.Writer, resp *Response) error {
+func WriteResponse(ctx context.Context, w io.Writer, resp *Response) error {
 	if data, err := json.Marshal(resp.Body); err == nil {
-		return write(w, message{Type: uint32(resp.Type), Body: data})
+		return write(ctx, w, message{Type: uint32(resp.Type), Body: data})
 	} else {
 		return err
 	}

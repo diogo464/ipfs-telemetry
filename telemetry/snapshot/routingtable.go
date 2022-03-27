@@ -1,19 +1,23 @@
 package snapshot
 
-import "github.com/ipfs/go-ipfs/core"
+import (
+	"time"
 
-type RoutingTableSnapshot struct {
+	"github.com/ipfs/go-ipfs/core"
+)
+
+type RoutingTable struct {
 	// Number of peers in each dht bucket
 	Buckets []int `json:"buckets"`
 }
 
-func NewRoutingTableSnapshot(buckets []int) *Snapshot {
-	return NewSnapshot("routingtable", &RoutingTableSnapshot{
+func NewRoutingTable(buckets []int) *Snapshot {
+	return NewSnapshot("routingtable", &RoutingTable{
 		Buckets: buckets,
 	})
 }
 
-func NewRoutingTableSnapshotFromNode(n *core.IpfsNode) *Snapshot {
+func NewRoutingTableFromNode(n *core.IpfsNode) *Snapshot {
 	rt := n.DHT.WAN.RoutingTable()
 	buckets := make([]int, 0, 16)
 	var index uint = 0
@@ -25,5 +29,27 @@ func NewRoutingTableSnapshotFromNode(n *core.IpfsNode) *Snapshot {
 		index += 1
 		buckets = append(buckets, n)
 	}
-	return NewRoutingTableSnapshot(buckets)
+	return NewRoutingTable(buckets)
+}
+
+type RoutingTableOptions struct {
+	Interval time.Duration
+}
+
+type RoutingTableCollector struct {
+	opts RoutingTableOptions
+	sink Sink
+	node *core.IpfsNode
+}
+
+func NewRoutingTableCollector(n *core.IpfsNode, sink Sink, opts RoutingTableOptions) *RoutingTableCollector {
+	return &RoutingTableCollector{opts: opts, sink: sink, node: n}
+}
+
+func (c *RoutingTableCollector) Run() {
+	for {
+		snapshot := NewRoutingTableFromNode(c.node)
+		c.sink.Push(snapshot)
+		time.Sleep(c.opts.Interval)
+	}
 }

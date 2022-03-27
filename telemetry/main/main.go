@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"git.d464.sh/adc/telemetry/telemetry"
+	"github.com/google/uuid"
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p-core/peer"
 )
@@ -53,13 +54,13 @@ func command_since(client *telemetry.TelemetryClient, args []string) {
 		panic(err)
 	}
 
-	resp, err := client.Snapshots(context.Background(), since)
+	resp, err := client.Snapshots(context.Background(), uuid.New(), since)
 	if err != nil {
 		panic(err)
 	}
 
 	for _, s := range resp.Snapshots {
-		fmt.Println("Name = ", s.Name)
+		fmt.Println("Name = ", s.Tag)
 		fmt.Println("Value = ", s.Value)
 	}
 
