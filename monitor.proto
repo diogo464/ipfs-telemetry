@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+
+option go_package = "./pb";
+
+service Monitor {
+    rpc Discover (DiscoverRequest) returns (google.protobuf.Empty) {}
+}
+
+message DiscoverRequest {
+    // PeerID of the discovered peer supporting the telemetry protocol
+    string peer = 1;
+}

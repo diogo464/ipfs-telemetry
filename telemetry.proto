@@ -1,0 +1,75 @@
+syntax = "proto3";
+package telemetry;
+
+import "google/protobuf/duration.proto";
+
+option go_package = "./pb";
+
+message Request {
+    message Snapshots {
+        string session = 1; 
+        uint64 since = 2;
+        repeated string tags = 3;
+    }
+
+    message SystemInfo {}
+    message BandwidthDownload {}
+    message BandwidthUpload {}
+
+    oneof body {
+        Snapshots snapshots = 1;
+        SystemInfo system_info = 2;
+        BandwidthDownload bandwidth_download = 3;
+        BandwidthUpload bandwidth_upload = 4;
+    }
+}
+
+message Response {
+    message Snapshots {
+        uint64 next = 1;
+        repeated Snapshot snapshots = 2;
+    }
+
+    message SystemInfo {
+        string os = 1; 
+        string arch = 2;
+        uint32 numcpu = 3;
+    }
+
+    string session = 1;
+
+    oneof body {
+        Snapshots snapshots = 2;
+        SystemInfo system_info = 3;
+    }
+}
+
+message Snapshot {
+    message Ping {
+        string source_pid = 1;
+        repeated string source_addrs = 2;
+        string destination_pid = 3;
+        repeated string destination_addrs = 4;
+        repeated google.protobuf.Duration durations = 5;
+    }
+
+    message RoutingTable {
+        repeated uint32 buckets = 1;
+    }
+
+    message Network {
+        uint64 total_in      = 1;
+	    uint64 total_out     = 2;
+	    uint64 rate_in       = 3;
+	    uint64 rate_out      = 4;
+	    uint32 num_conns     = 5;
+	    uint32 low_water     = 6;
+	    uint32 high_water    = 7;
+    }
+
+    oneof body {
+        Ping ping = 1;
+        RoutingTable routing_table = 2;
+        Network network = 3;
+    }
+}
