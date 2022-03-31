@@ -43,14 +43,26 @@ func PingFromPB(in *pb.Snapshot_Ping) (*PingSnapshot, error) {
 }
 
 type RoutingTableSnapshot struct {
-	Timestamp time.Time `json:"time"`
-	Buckets   []uint32  `json:"buckets"`
+	Timestamp time.Time   `json:"time"`
+	Buckets   [][]peer.ID `json:"buckets"`
 }
 
 func RoutingTableFromPB(in *pb.Snapshot_RoutingTable) (*RoutingTableSnapshot, error) {
+	buckets := make([][]peer.ID, 0, len(in.GetBuckets()))
+	for _, b := range in.GetBuckets() {
+		bucket := make([]peer.ID, 0, len(b.GetPeers()))
+		for _, p := range b.GetPeers() {
+			pid, err := peer.Decode(p)
+			if err != nil {
+				return nil, err
+			}
+			bucket = append(bucket, pid)
+		}
+		buckets = append(buckets, bucket)
+	}
 	return &RoutingTableSnapshot{
 		Timestamp: in.GetTimestamp().AsTime(),
-		Buckets:   []uint32{},
+		Buckets:   buckets,
 	}, nil
 }
 
@@ -66,12 +78,13 @@ type NetworkSnapshot struct {
 }
 
 func NetworkFromPB(in *pb.Snapshot_Network) (*NetworkSnapshot, error) {
+	// TODO: Fix this
 	return &NetworkSnapshot{
 		Timestamp: in.GetTimestamp().AsTime(),
-		TotalIn:   in.GetTotalIn(),
-		TotalOut:  in.GetTotalOut(),
-		RateIn:    in.GetRateIn(),
-		RateOut:   in.GetRateOut(),
+		TotalIn:   0,
+		TotalOut:  0,
+		RateIn:    0,
+		RateOut:   0,
 		NumConns:  in.GetNumConns(),
 		LowWater:  in.GetLowWater(),
 		HighWater: in.GetHighWater(),

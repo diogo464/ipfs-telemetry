@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"git.d464.sh/adc/telemetry/plugin/pb"
+	"github.com/libp2p/go-libp2p-core/metrics"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"google.golang.org/protobuf/types/known/durationpb"
 )
@@ -25,4 +26,13 @@ func durationsToPbDurations(in []time.Duration) []*durationpb.Duration {
 		out = append(out, durationpb.New(dur))
 	}
 	return out
+}
+
+func metricStatsToPB(in *metrics.Stats) *pb.Snapshot_Network_Stats {
+	return &pb.Snapshot_Network_Stats{
+		TotalIn:  uint64(in.TotalIn),
+		TotalOut: uint64(in.TotalOut),
+		RateIn:   uint64(in.RateIn),
+		RateOut:  uint64(in.RateOut),
+	}
 }

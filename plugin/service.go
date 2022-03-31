@@ -69,7 +69,7 @@ func NewTelemetryService(n *core.IpfsNode, opts ...Option) (*TelemetryService, e
 	}).Run()
 
 	go snapshot.NewRoutingTableCollector(t.n, t.w, snapshot.RoutingTableOptions{
-		Interval: time.Second * 10,
+		Interval: time.Second * 3,
 	}).Run()
 
 	go snapshot.NewNetworkCollector(t.n, t.w, snapshot.NetworkOptions{

@@ -1,3 +1,5 @@
+GOCC ?= go
+
 DATABASE_MIGRATIONS := migrations/
 DATABASE_PASSWORD := password
 DATABASE_URL := postgres://postgres@localhost/postgres?sslmode=disable
@@ -21,16 +23,16 @@ ipfs-install: ipfs
 	cp bin/ipfs ~/.go/bin/
 
 monitor:
-	go build -o bin/monitor cmd/monitor/*
+	$(GOCC) build -o bin/monitor cmd/monitor/*
 
 watch:
-	go build -o bin/watch cmd/watch/*
+	$(GOCC) build -o bin/watch cmd/watch/*
 
 crawler:
-	go build -o bin/crawler cmd/crawler/*
+	$(GOCC) build -o bin/crawler cmd/crawler/*
 
 test:
-	go build -o bin/test cmd/test/*
+	$(GOCC) build -o bin/test cmd/test/*
 
 build: monitor watch crawler test plugin ipfs
 
@@ -46,10 +48,10 @@ generate:
 setup: tools generate proto
 
 tools:
-	go install github.com/volatiletech/sqlboiler/v4@latest
-	go install github.com/volatiletech/sqlboiler/v4/drivers/sqlboiler-psql@latest
-	go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
-	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+	$(GOCC) install github.com/volatiletech/sqlboiler/v4@latest
+	$(GOCC) install github.com/volatiletech/sqlboiler/v4/drivers/sqlboiler-psql@latest
+	$(GOCC) install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+	$(GOCC) install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 
 database-up:
 		@ if podman container exists $(DATABASE_CONTAINER) ; then \

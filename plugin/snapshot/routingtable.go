@@ -10,14 +10,24 @@ import (
 )
 
 type RoutingTable struct {
-	Timestamp time.Time        `json:"timestamp"`
-	Buckets   []*peer.AddrInfo `json:"buckets"`
+	Timestamp time.Time   `json:"timestamp"`
+	Buckets   [][]peer.ID `json:"buckets"`
 }
 
 func (r *RoutingTable) ToPB() *pb.Snapshot_RoutingTable {
+	buckets := make([]*pb.Snapshot_RoutingTable_Bucket, 0, len(r.Buckets))
+	for _, b := range r.Buckets {
+		peers := make([]string, 0, len(b))
+		for _, p := range b {
+			peers = append(peers, p.Pretty())
+		}
+		buckets = append(buckets, &pb.Snapshot_RoutingTable_Bucket{
+			Peers: peers,
+		})
+	}
 	return &pb.Snapshot_RoutingTable{
 		Timestamp: timestamppb.New(r.Timestamp),
-		Buckets:   []*pb.Snapshot_RoutingTable_Bucket{},
+		Buckets:   buckets,
 	}
 }
 
@@ -31,18 +41,8 @@ func ArrayRoutingTableToPB(in []*RoutingTable) []*pb.Snapshot_RoutingTable {
 
 func newRoutingTableFromNode(n *core.IpfsNode) *RoutingTable {
 	rt := n.DHT.WAN.RoutingTable()
-	buckets := make([]uint32, 0, 16)
-	var index uint = 0
-	rt.GetPeerInfos()
-	for {
-		n := rt.NPeersForCpl(index)
-		if n == 0 {
-			break
-		}
-		index += 1
-		buckets = append(buckets, uint32(n))
-	}
-	return &RoutingTable{Buckets: nil}
+	buckets := rt.DumpBuckets()
+	return &RoutingTable{Buckets: buckets}
 }
 
 type RoutingTableOptions struct {
