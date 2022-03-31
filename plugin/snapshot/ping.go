@@ -5,16 +5,39 @@ import (
 	"math/rand"
 	"time"
 
+	"git.d464.sh/adc/telemetry/plugin/pb"
 	"github.com/libp2p/go-libp2p-core/host"
 	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/libp2p/go-libp2p-core/peer"
 	p2pping "github.com/libp2p/go-libp2p/p2p/protocol/ping"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type Ping struct {
+	Timestamp   time.Time       `json:"timestamp"`
 	Source      peer.AddrInfo   `json:"source"`
 	Destination peer.AddrInfo   `json:"destination"`
 	Durations   []time.Duration `json:"durations"`
+}
+
+func (p *Ping) ToPB() *pb.Snapshot_Ping {
+	source := addrInfoToPB(&p.Source)
+	destination := addrInfoToPB(&p.Destination)
+
+	return &pb.Snapshot_Ping{
+		Timestamp:   timestamppb.New(p.Timestamp),
+		Source:      source,
+		Destination: destination,
+		Durations:   durationsToPbDurations(p.Durations),
+	}
+}
+
+func ArrayPingToPB(in []*Ping) []*pb.Snapshot_Ping {
+	out := make([]*pb.Snapshot_Ping, 0, len(in))
+	for _, p := range in {
+		out = append(out, p.ToPB())
+	}
+	return out
 }
 
 type PingOptions struct {

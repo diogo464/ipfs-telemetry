@@ -14,88 +14,78 @@ var ERR_INVALIDS_SNAPSHOT_TYPE = fmt.Errorf("invalid snapshot type")
 type Snapshot interface {
 }
 
-type SnapshotHeader struct {
-	time.Time `json:"time"`
-}
-
 type PingSnapshot struct {
-	Header      SnapshotHeader  `json:"header"`
+	Timestamp   time.Time       `json:"time"`
 	Source      peer.AddrInfo   `json:"source"`
 	Destination peer.AddrInfo   `json:"destination"`
 	Durations   []time.Duration `json:"durations"`
 }
 
+func PingFromPB(in *pb.Snapshot_Ping) (*PingSnapshot, error) {
+	source, err := addrInfoFromPB(in.Source)
+	if err != nil {
+		return nil, err
+	}
+	dest, err := addrInfoFromPB(in.Destination)
+	if err != nil {
+		return nil, err
+	}
+	durations := make([]time.Duration, 0, len(in.Durations))
+	for _, dur := range in.Durations {
+		durations = append(durations, dur.AsDuration())
+	}
+	return &PingSnapshot{
+		Timestamp:   in.GetTimestamp().AsTime(),
+		Source:      source,
+		Destination: dest,
+		Durations:   durations,
+	}, nil
+}
+
 type RoutingTableSnapshot struct {
-	Header  SnapshotHeader `json:"header"`
-	Buckets []uint32       `json:"buckets"`
+	Timestamp time.Time `json:"time"`
+	Buckets   []uint32  `json:"buckets"`
+}
+
+func RoutingTableFromPB(in *pb.Snapshot_RoutingTable) (*RoutingTableSnapshot, error) {
+	return &RoutingTableSnapshot{
+		Timestamp: in.GetTimestamp().AsTime(),
+		Buckets:   []uint32{},
+	}, nil
 }
 
 type NetworkSnapshot struct {
-	Header    SnapshotHeader `json:"header"`
-	TotalIn   uint64         `json:"total_in"`
-	TotalOut  uint64         `json:"total_out"`
-	RateIn    uint64         `json:"rate_in"`
-	RateOut   uint64         `json:"rate_out"`
-	NumConns  uint32         `json:"num_conns"`
-	LowWater  uint32         `json:"low_water"`
-	HighWater uint32         `json:"high_water"`
+	Timestamp time.Time `json:"time"`
+	TotalIn   uint64    `json:"total_in"`
+	TotalOut  uint64    `json:"total_out"`
+	RateIn    uint64    `json:"rate_in"`
+	RateOut   uint64    `json:"rate_out"`
+	NumConns  uint32    `json:"num_conns"`
+	LowWater  uint32    `json:"low_water"`
+	HighWater uint32    `json:"high_water"`
 }
 
-func snapshotFromPB(snapshot *pb.Snapshot) (Snapshot, error) {
-	// TODO: snapshot data
-
-	switch snapshot.GetBody().(type) {
-	case *pb.Snapshot_Ping_:
-		s := snapshot.GetPing()
-		source, err := parsePeerAddrInfo(s.SourcePid, s.SourceAddrs)
-		if err != nil {
-			return nil, err
-		}
-		destination, err := parsePeerAddrInfo(s.DestinationPid, s.DestinationAddrs)
-		if err != nil {
-			return nil, err
-		}
-		durations := make([]time.Duration, 0, len(s.Durations))
-		for _, d := range s.Durations {
-			durations = append(durations, d.AsDuration())
-		}
-		return &PingSnapshot{
-			// SnapshotData: SnapshotData{},
-			Source:      source,
-			Destination: destination,
-			Durations:   durations,
-		}, nil
-	case *pb.Snapshot_RoutingTable_:
-		s := snapshot.GetRoutingTable()
-		return &RoutingTableSnapshot{
-			//SnapshotData: SnapshotData{},
-			Buckets: s.Buckets,
-		}, nil
-	case *pb.Snapshot_Network_:
-		s := snapshot.GetNetwork()
-		return &NetworkSnapshot{
-			// SnapshotData: SnapshotData{},
-			TotalIn:   s.TotalIn,
-			TotalOut:  s.TotalOut,
-			RateIn:    s.RateIn,
-			RateOut:   s.RateOut,
-			NumConns:  s.NumConns,
-			LowWater:  s.LowWater,
-			HighWater: s.HighWater,
-		}, nil
-	default:
-		return nil, ERR_INVALIDS_SNAPSHOT_TYPE
-	}
+func NetworkFromPB(in *pb.Snapshot_Network) (*NetworkSnapshot, error) {
+	return &NetworkSnapshot{
+		Timestamp: in.GetTimestamp().AsTime(),
+		TotalIn:   in.GetTotalIn(),
+		TotalOut:  in.GetTotalOut(),
+		RateIn:    in.GetRateIn(),
+		RateOut:   in.GetRateOut(),
+		NumConns:  in.GetNumConns(),
+		LowWater:  in.GetLowWater(),
+		HighWater: in.GetHighWater(),
+	}, nil
 }
 
-func parsePeerAddrInfo(pid string, addrs []string) (peer.AddrInfo, error) {
-	i, err := peer.Decode(pid)
+func addrInfoFromPB(in *pb.AddrInfo) (peer.AddrInfo, error) {
+	i, err := peer.Decode(in.Id)
 	if err != nil {
 		return peer.AddrInfo{}, err
 	}
 
-	a := make([]multiaddr.Multiaddr, 0, len(addrs))
-	for _, addr := range addrs {
+	a := make([]multiaddr.Multiaddr, 0, len(in.Addrs))
+	for _, addr := range in.Addrs {
 		x, err := multiaddr.NewMultiaddr(addr)
 		if err != nil {
 			return peer.AddrInfo{}, err

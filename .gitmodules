@@ -1,3 +1,15 @@
 [submodule "go-ipfs"]
 	path = go-ipfs
 	url = ssh://git@git.d464.sh:2222/adc/go-ipfs.git
+[submodule "third_party/go-ipfs"]
+	path = third_party/go-ipfs
+	url = https://git.d464.sh/adc/go-ipfs
+[submodule "third_party/go-libp2p-kad-dht"]
+	path = third_party/go-libp2p-kad-dht
+	url = https://git.d464.sh/adc/go-libp2p-kad-dht
+[submodule "third_party/go-bitswap"]
+	path = third_party/go-bitswap
+	url = https://git.d464.sh/adc/go-bitswap
+[submodule "third_party/go-libp2p-kbucket"]
+	path = third_party/go-libp2p-kbucket
+	url = https://git.d464.sh/adc/go-libp2p-kbucket

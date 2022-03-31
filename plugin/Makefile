@@ -9,7 +9,7 @@ IPFS_PATH ?= $(HOME)/.ipfs
 
 # If set, override the IPFS version to build against. This _modifies_ the local
 # go.mod/go.sum files and permanently sets this version.
-IPFS_VERSION ?= $(PWD)/../../ipfs/
+IPFS_VERSION ?= $(PWD)/../third_party/go-ipfs/
 
 # make reproducible
 ifneq ($(findstring /,$(IPFS_VERSION)),)
@@ -23,7 +23,7 @@ endif
 .PHONY: install build
 
 go.mod: FORCE
-	./set-target.sh $(IPFS_VERSION)
+	./set-target.sh
 
 FORCE:
 

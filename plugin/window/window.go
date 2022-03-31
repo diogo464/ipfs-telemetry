@@ -1,4 +1,4 @@
-package wire
+package window
 
 import (
 	"sync"
@@ -7,18 +7,17 @@ import (
 	"git.d464.sh/adc/telemetry/plugin/pb"
 	"git.d464.sh/adc/telemetry/plugin/snapshot"
 	"github.com/libp2p/go-libp2p-core/peer"
-	"google.golang.org/protobuf/types/known/durationpb"
 )
 
 type Window interface {
 	snapshot.Sink
-	Since(seqn uint64) *pb.Response_Snapshots
+	Since(seqn uint64) *pb.Snapshot_Set
 	NextSeqN() uint64
 }
 
 type windowItem struct {
 	seqn      uint64
-	snapshot  *pb.Snapshot
+	snapshot  interface{}
 	timestamp time.Time
 }
 
@@ -41,63 +40,30 @@ func newWindowImpl(duration time.Duration) *windowImpl {
 	}
 }
 
-func (w *windowImpl) push(snapshot *pb.Snapshot) {
+func (w *windowImpl) push(t time.Time, v interface{}) {
 	w.clean()
 	seqn := w.seqn
 	w.seqn += 1
 	w.items = append(w.items, windowItem{
 		seqn:      seqn,
-		snapshot:  snapshot,
-		timestamp: time.Now(),
+		snapshot:  v,
+		timestamp: t,
 	})
 }
 
 func (w *windowImpl) PushPing(ping *snapshot.Ping) {
-	source_pid, source_addrs := unpackPeerAddrInfo(&ping.Source)
-	dest_pid, dest_addrs := unpackPeerAddrInfo(&ping.Destination)
-	durations := make([]*durationpb.Duration, 0, len(ping.Durations))
-	for _, dur := range ping.Durations {
-		durations = append(durations, durationpb.New(dur))
-	}
-
-	w.push(&pb.Snapshot{
-		Body: &pb.Snapshot_Ping_{Ping: &pb.Snapshot_Ping{
-			SourcePid:        source_pid,
-			SourceAddrs:      source_addrs,
-			DestinationPid:   dest_pid,
-			DestinationAddrs: dest_addrs,
-			Durations:        []*durationpb.Duration{},
-		}},
-	})
+	w.push(ping.Timestamp, ping.ToPB())
 }
 
 func (w *windowImpl) PushRoutingTable(rt *snapshot.RoutingTable) {
-	w.push(&pb.Snapshot{
-		Body: &pb.Snapshot_RoutingTable_{
-			RoutingTable: &pb.Snapshot_RoutingTable{
-				Buckets: rt.Buckets,
-			},
-		},
-	})
+	w.push(rt.Timestamp, rt.ToPB())
 }
 
 func (w *windowImpl) PushNetwork(n *snapshot.Network) {
-	w.push(&pb.Snapshot{
-		Body: &pb.Snapshot_Network_{
-			Network: &pb.Snapshot_Network{
-				TotalIn:   n.TotalIn,
-				TotalOut:  n.TotalOut,
-				RateIn:    n.RateIn,
-				RateOut:   n.RateOut,
-				NumConns:  n.NumConns,
-				LowWater:  n.LowWater,
-				HighWater: n.HighWater,
-			},
-		},
-	})
+	w.push(n.Timestamp, n.ToPB())
 }
 
-func (w *windowImpl) Since(seqn uint64) *pb.Response_Snapshots {
+func (w *windowImpl) Since(seqn uint64) *pb.Snapshot_Set {
 	w.Lock()
 	defer w.Unlock()
 
@@ -116,14 +82,25 @@ func (w *windowImpl) Since(seqn uint64) *pb.Response_Snapshots {
 		return nil
 	}
 
-	snapshots := make([]*pb.Snapshot, 0)
+	pings := make([]*pb.Snapshot_Ping, 0)
+	routingtables := make([]*pb.Snapshot_RoutingTable, 0)
+	networks := make([]*pb.Snapshot_Network, 0)
 	for i := start; i < len(w.items); i++ {
-		snapshots = append(snapshots, w.items[i].snapshot)
+		switch v := w.items[i].snapshot.(type) {
+		case *pb.Snapshot_Ping:
+			pings = append(pings, v)
+		case *pb.Snapshot_RoutingTable:
+			routingtables = append(routingtables, v)
+		case *pb.Snapshot_Network:
+			networks = append(networks, v)
+		default:
+		}
 	}
 
-	return &pb.Response_Snapshots{
-		Next:      w.seqn,
-		Snapshots: snapshots,
+	return &pb.Snapshot_Set{
+		Pings:         pings,
+		RoutingTables: routingtables,
+		Networks:      networks,
 	}
 }
 

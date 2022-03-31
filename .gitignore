@@ -3,5 +3,7 @@
 /*.json
 
 # generated files
+/plugin/pb
+/pkg/telemetry/pb
 /pkg/monitor/pb
 /pkg/models

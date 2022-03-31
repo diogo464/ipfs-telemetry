@@ -1,24 +1,18 @@
 #!/bin/bash
+set -eo pipefail
 
 GOCC="${GOCC:-go}"
 
-set -eo pipefail
-
-GOPATH="$($GOCC env GOPATH)"
-IPFS_PATH="$(pwd)/../../ipfs"
-
-MODFILE="$IPFS_PATH/go.mod"
-$GOCC mod edit -replace "github.com/ipfs/go-ipfs=$IPFS_PATH"
-$GOCC mod edit -replace "git.d464.sh/adc/rle=$(pwd)/../../rle"
+IPFS_PATH="../third_party/go-ipfs/"
+IPFS_MODFILE="$IPFS_PATH/go.mod"
 
 TMP="$(mktemp -d)"
 trap "$(printf 'rm -rf "%q"' "$TMP")" EXIT
 
-(
-    cd "$TMP"
-    cp "$MODFILE" "go.mod"
-    go list -mod=mod -f '-require={{.Path}}@{{.Version}}{{if .Replace}} -replace={{.Path}}@{{.Version}}={{.Replace}}{{end}}' -m all | tail -n+2  > args
-)
+cp "$IPFS_MODFILE" "$TMP/go.mod"
+pushd $IPFS_PATH
+    ARGS="$($GOCC list -mod=mod -f '-require={{.Path}}@{{.Version}}' -m all | tail -n+2)"
+popd
 
-$GOCC mod edit $(cat "$TMP/args")
+$GOCC mod edit $(echo "$ARGS")
 $GOCC mod tidy

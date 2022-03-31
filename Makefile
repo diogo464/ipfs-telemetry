@@ -13,6 +13,13 @@ plugin-install: plugin
 	mkdir -p ~/.ipfs/plugins
 	cp bin/telemetry.so ~/.ipfs/plugins
 
+ipfs:
+	GOCC=go1.16 $(MAKE) -B -C third_party/go-ipfs/ build
+	mkdir -p bin/ && mv third_party/go-ipfs/cmd/ipfs/ipfs bin/
+
+ipfs-install: ipfs
+	cp bin/ipfs ~/.go/bin/
+
 monitor:
 	go build -o bin/monitor cmd/monitor/*
 
@@ -22,12 +29,15 @@ watch:
 crawler:
 	go build -o bin/crawler cmd/crawler/*
 
-build: monitor watch crawler plugin
+test:
+	go build -o bin/test cmd/test/*
+
+build: monitor watch crawler test plugin ipfs
 
 .PHONY: proto
 proto:
-	protoc --go_out=./pkg/telemetry/ telemetry.proto
-	protoc --go_out=./plugin/ telemetry.proto
+	protoc --go_out=./pkg/telemetry/ --go-grpc_out=./pkg/telemetry/ telemetry.proto
+	protoc --go_out=./plugin/ --go-grpc_out=./plugin/ telemetry.proto
 	protoc --go_out=./pkg/monitor/ --go-grpc_out=./pkg/monitor/ monitor.proto
 
 generate:

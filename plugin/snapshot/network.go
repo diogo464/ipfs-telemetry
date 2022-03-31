@@ -3,26 +3,42 @@ package snapshot
 import (
 	"time"
 
+	"git.d464.sh/adc/telemetry/plugin/pb"
 	"github.com/ipfs/go-ipfs/core"
 	connmgr "github.com/libp2p/go-libp2p-connmgr"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-const TAG_NETWORK = "network"
-
 type Network struct {
-	TotalIn   uint64 `json:"totalin"`
-	TotalOut  uint64 `json:"totalout"`
-	RateIn    uint64 `json:"ratein"`
-	RateOut   uint64 `json:"rateout"`
-	NumConns  uint32 `json:"numconns"`
-	LowWater  uint32 `json:"lowwater"`
-	HighWater uint32 `json:"highwater"`
+	Timestamp time.Time `json:"timestamp"`
+	TotalIn   uint64    `json:"totalin"`
+	TotalOut  uint64    `json:"totalout"`
+	RateIn    uint64    `json:"ratein"`
+	RateOut   uint64    `json:"rateout"`
+	NumConns  uint32    `json:"numconns"`
+	LowWater  uint32    `json:"lowwater"`
+	HighWater uint32    `json:"highwater"`
 }
 
-func (s *Snapshot) GetNetwork() *Network {
-	network := new(Network)
-	s.decodeUnwrap(network)
-	return network
+func (n *Network) ToPB() *pb.Snapshot_Network {
+	return &pb.Snapshot_Network{
+		Timestamp: timestamppb.New(n.Timestamp),
+		TotalIn:   n.TotalIn,
+		TotalOut:  n.TotalOut,
+		RateIn:    n.RateIn,
+		RateOut:   n.RateOut,
+		NumConns:  n.NumConns,
+		LowWater:  n.LowWater,
+		HighWater: n.HighWater,
+	}
+}
+
+func ArrayNetworkToPB(in []*Network) []*pb.Snapshot_Network {
+	out := make([]*pb.Snapshot_Network, 0, len(in))
+	for _, p := range in {
+		out = append(out, p.ToPB())
+	}
+	return out
 }
 
 func NewNetwork(ti uint64, to uint64, ri uint64, ro uint64, nc uint32, lw uint32, hw uint32) *Network {

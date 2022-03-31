@@ -2,72 +2,39 @@ package telemetry
 
 import (
 	"context"
-	"fmt"
-	"io"
-	"log"
+	"runtime"
 
 	"git.d464.sh/adc/telemetry/plugin/pb"
-	"git.d464.sh/adc/telemetry/plugin/utils"
-	"git.d464.sh/adc/telemetry/plugin/wire"
 	"github.com/google/uuid"
-	"github.com/libp2p/go-libp2p-core/network"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
-func (t *TelemetryService) TelemetryHandler(s network.Stream) {
-	defer s.Close()
-
-	request, err := wire.ReadRequest(context.TODO(), s)
-	if err != nil {
-		return
+func (s *TelemetryService) GetSystemInfo(context.Context, *emptypb.Empty) (*pb.SystemInfo, error) {
+	response := &pb.SystemInfo{
+		Os:     runtime.GOOS,
+		Arch:   runtime.GOARCH,
+		Numcpu: uint32(runtime.NumCPU()),
 	}
-
-	switch request.GetBody().(type) {
-	case *pb.Request_Snapshots_:
-		err = t.handleRequestSnapshots(s, request)
-	case *pb.Request_SystemInfo_:
-		err = t.handleRequestSystemInfo(s, request)
-	case *pb.Request_BandwidthDownload_:
-		err = t.handleRequestBandwidthDownload(s, request)
-	case *pb.Request_BandwidthUpload_:
-		err = t.handleRequestBandwidthUpload(s, request)
-	default:
-	}
-
-	fmt.Println("done handling request")
-
-	if err != nil {
-		fmt.Println(err)
-	}
+	return response, nil
 }
 
-func (t *TelemetryService) handleRequestSnapshots(s network.Stream, request *pb.Request) error {
-	fmt.Println("handlign request snapshots")
+func (s *TelemetryService) GetSnapshots(ctx context.Context, req *pb.GetSnapshotsRequest) (*pb.GetSnapshotsResponse, error) {
+	remote_sesssion, err := uuid.Parse(req.Session)
+	if err != nil {
+		return nil, err
+	}
+
 	var since uint64 = 0
-	requests_snapshots := request.GetSnapshots()
-	fmt.Println("snapshots obtained")
-	remote_session, err := uuid.Parse(requests_snapshots.Session)
-	if err != nil {
-		return err
+	if remote_sesssion == s.s {
+		since = req.GetSince()
 	}
-	if remote_session == t.s {
-		since = requests_snapshots.Since
-	}
-	fmt.Println("writting response")
-	return wire.WriteResponse(context.TODO(), s, wire.NewSnapshots(t.s, t.w.Since(since)))
-}
 
-func (t *TelemetryService) handleRequestSystemInfo(s network.Stream, request *pb.Request) error {
-	return wire.WriteResponse(context.TODO(), s, wire.NewSystemInfo(t.s))
-}
+	session := s.s.String()
+	set := s.w.Since(since)
 
-func (t *TelemetryService) handleRequestBandwidthDownload(s network.Stream, request *pb.Request) error {
-	log.Println("Handle BandwidthDownload")
-	io.Copy(io.Discard, io.LimitReader(s, BANDWIDTH_PAYLOAD_SIZE))
-	return nil
-}
-
-func (t *TelemetryService) handleRequestBandwidthUpload(s network.Stream, request *pb.Request) error {
-	log.Println("Handle BandwidthUpload")
-	io.Copy(s, io.LimitReader(utils.NullReader{}, BANDWIDTH_PAYLOAD_SIZE))
-	return nil
+	return &pb.GetSnapshotsResponse{
+		Session: session,
+		Next:    s.w.NextSeqN(),
+		Set:     set,
+	}, nil
 }

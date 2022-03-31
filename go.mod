@@ -11,6 +11,7 @@ require (
 	github.com/lib/pq v1.10.4
 	github.com/libp2p/go-libp2p v0.18.0
 	github.com/libp2p/go-libp2p-core v0.14.0
+	github.com/libp2p/go-libp2p-gostream v0.3.1
 	github.com/libp2p/go-libp2p-kad-dht v0.15.0
 	github.com/multiformats/go-multiaddr v0.5.0
 	github.com/prometheus/client_golang v1.12.1

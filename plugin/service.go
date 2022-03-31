@@ -1,12 +1,16 @@
 package telemetry
 
 import (
+	"fmt"
 	"time"
 
+	"git.d464.sh/adc/telemetry/plugin/pb"
 	"git.d464.sh/adc/telemetry/plugin/snapshot"
-	"git.d464.sh/adc/telemetry/plugin/wire"
+	"git.d464.sh/adc/telemetry/plugin/window"
 	"github.com/google/uuid"
 	"github.com/ipfs/go-ipfs/core"
+	gostream "github.com/libp2p/go-libp2p-gostream"
+	"google.golang.org/grpc"
 )
 
 const (
@@ -15,13 +19,14 @@ const (
 )
 
 type TelemetryService struct {
+	pb.UnimplementedClientServer
 	// current session, randomly generated number
 	s uuid.UUID
 	// the node we are collecting telemetry from
 	n *core.IpfsNode
 	// read-only options
 	o *options
-	w wire.Window
+	w window.Window
 }
 
 func NewTelemetryService(n *core.IpfsNode, opts ...Option) (*TelemetryService, error) {
@@ -38,11 +43,24 @@ func NewTelemetryService(n *core.IpfsNode, opts ...Option) (*TelemetryService, e
 		s: uuid.New(),
 		n: n,
 		o: o,
-		w: wire.NewWindow(o.windowDuration),
+		w: window.NewWindow(o.windowDuration),
 	}
 
 	h := n.PeerHost
-	h.SetStreamHandler(ID, t.TelemetryHandler)
+	listener, err := gostream.Listen(h, ID)
+	if err != nil {
+		return nil, err
+	}
+
+	grpc_server := grpc.NewServer()
+	pb.RegisterClientServer(grpc_server, t)
+
+	go func() {
+		err = grpc_server.Serve(listener)
+		if err != nil {
+			fmt.Println(err)
+		}
+	}()
 
 	go snapshot.NewPingCollector(t.n.PeerHost, t.w, snapshot.PingOptions{
 		PingCount: 5,
