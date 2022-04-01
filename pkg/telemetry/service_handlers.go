@@ -25,16 +25,16 @@ func (s *TelemetryService) GetSnapshots(ctx context.Context, req *pb.GetSnapshot
 	}
 
 	var since uint64 = 0
-	if remote_sesssion == s.s {
+	if remote_sesssion == s.session {
 		since = req.GetSince()
 	}
 
-	session := s.s.String()
-	set := s.w.Since(since)
+	session := s.session.String()
+	set := s.wnd.Since(since)
 
 	return &pb.GetSnapshotsResponse{
 		Session: session,
-		Next:    s.w.NextSeqN(),
+		Next:    s.wnd.NextSeqN(),
 		Set:     set,
 	}, nil
 }

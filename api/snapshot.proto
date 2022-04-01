@@ -62,6 +62,8 @@ message Kademlia {
 
 message Bitswap {
     google.protobuf.Timestamp timestamp     = 1;
+    uint32 discovery_succeeded              = 2;
+    uint32 discovery_failed                 = 3;
 }
 
 message Ipns {
@@ -74,4 +76,5 @@ message Set {
     repeated Network networks               = 3;
     repeated Resources resources            = 4;
     repeated TraceRoute traceroutes         = 5;
+    repeated Bitswap bitswaps               = 6;
 }

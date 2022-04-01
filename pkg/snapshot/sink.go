@@ -5,4 +5,5 @@ type Sink interface {
 	PushRoutingTable(*RoutingTable)
 	PushNetwork(*Network)
 	PushResources(*Resources)
+	PushBitswap(*Bitswap)
 }

@@ -69,6 +69,10 @@ func (w *windowImpl) PushResources(r *snapshot.Resources) {
 	w.push(r.Timestamp, r.ToPB())
 }
 
+func (w *windowImpl) PushBitswap(b *snapshot.Bitswap) {
+	w.push(b.Timestamp, b.ToPB())
+}
+
 func (w *windowImpl) Since(seqn uint64) *pb.Set {
 	w.Lock()
 	defer w.Unlock()
@@ -92,6 +96,7 @@ func (w *windowImpl) Since(seqn uint64) *pb.Set {
 	routingtables := make([]*pb.RoutingTable, 0)
 	networks := make([]*pb.Network, 0)
 	resources := make([]*pb.Resources, 0)
+	bitswap := make([]*pb.Bitswap, 0)
 	for i := start; i < len(w.items); i++ {
 		switch v := w.items[i].snapshot.(type) {
 		case *pb.Ping:
@@ -102,6 +107,8 @@ func (w *windowImpl) Since(seqn uint64) *pb.Set {
 			networks = append(networks, v)
 		case *pb.Resources:
 			resources = append(resources, v)
+		case *pb.Bitswap:
+			bitswap = append(bitswap, v)
 		default:
 			// TODO: remove this
 			panic("unimplemented")
@@ -113,6 +120,7 @@ func (w *windowImpl) Since(seqn uint64) *pb.Set {
 		RoutingTables: routingtables,
 		Networks:      networks,
 		Resources:     resources,
+		Bitswaps:      bitswap,
 	}
 }
 

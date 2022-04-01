@@ -18,6 +18,8 @@ func (s *Monitor) handleSnapshot(p peer.ID, ss snapshot.Snapshot) error {
 		return s.handleRoutingTableSnapshot(p, v)
 	case *snapshot.Resources:
 		return s.handleResourcesSnapshot(p, v)
+	case *snapshot.Bitswap:
+		return s.handleBitswapSnapshot(p, v)
 	default:
 		fmt.Printf("Unknown snapshot type: %T\n", ss)
 		return nil
@@ -37,6 +39,10 @@ func (s *Monitor) handleRoutingTableSnapshot(p peer.ID, ss *snapshot.RoutingTabl
 }
 
 func (s *Monitor) handleResourcesSnapshot(p peer.ID, ss *snapshot.Resources) error {
+	return nil
+}
+
+func (s *Monitor) handleBitswapSnapshot(p peer.ID, ss *snapshot.Bitswap) error {
 	marshaled, err := json.MarshalIndent(ss, "", "  ")
 	if err != nil {
 		return err

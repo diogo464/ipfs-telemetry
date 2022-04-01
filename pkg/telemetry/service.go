@@ -16,12 +16,12 @@ import (
 type TelemetryService struct {
 	pb.UnimplementedClientServer
 	// current session, randomly generated number
-	s uuid.UUID
+	session uuid.UUID
 	// the node we are collecting telemetry from
-	n *core.IpfsNode
+	node *core.IpfsNode
 	// read-only options
-	o *options
-	w window.Window
+	opts *options
+	wnd  window.Window
 }
 
 func NewTelemetryService(n *core.IpfsNode, opts ...Option) (*TelemetryService, error) {
@@ -35,10 +35,10 @@ func NewTelemetryService(n *core.IpfsNode, opts ...Option) (*TelemetryService, e
 	}
 
 	t := &TelemetryService{
-		s: uuid.New(),
-		n: n,
-		o: o,
-		w: window.NewWindow(o.windowDuration),
+		session: uuid.New(),
+		node:    n,
+		opts:    o,
+		wnd:     window.NewWindow(o.windowDuration),
 	}
 
 	h := n.PeerHost
@@ -57,26 +57,30 @@ func NewTelemetryService(n *core.IpfsNode, opts ...Option) (*TelemetryService, e
 		}
 	}()
 
-	go collector.RunPingCollector(t.n.PeerHost, t.w, collector.PingOptions{
+	go collector.RunPingCollector(t.node.PeerHost, t.wnd, collector.PingOptions{
 		PingCount: 5,
 		Interval:  time.Second * 5,
 		Timeout:   time.Second * 10,
 	})
 
-	go collector.RunNetworkCollector(t.n, t.w, collector.NetworkOptions{
+	go collector.RunNetworkCollector(t.node, t.wnd, collector.NetworkOptions{
 		Interval: time.Second * 3,
 	})
 
-	go collector.RunNetworkCollector(t.n, t.w, collector.NetworkOptions{
+	go collector.RunNetworkCollector(t.node, t.wnd, collector.NetworkOptions{
 		Interval: time.Second * 15,
 	})
 
-	go collector.RunRoutintTableCollector(t.n, t.w, collector.RoutingTableOptions{
+	go collector.RunRoutintTableCollector(t.node, t.wnd, collector.RoutingTableOptions{
 		Interval: time.Second * 10,
 	})
 
-	go collector.RunResourcesCollector(t.w, collector.ResourcesOptions{
+	go collector.RunResourcesCollector(t.wnd, collector.ResourcesOptions{
 		Interval: time.Second * 2,
+	})
+
+	go collector.RunBitswapCollector(t.node, t.wnd, collector.BitswapOptions{
+		Interval: time.Second * 5,
 	})
 
 	return t, nil

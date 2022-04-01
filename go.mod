@@ -5,6 +5,7 @@ go 1.16
 require (
 	github.com/friendsofgo/errors v0.9.2
 	github.com/google/uuid v1.3.0
+	github.com/ipfs/go-bitswap v0.6.0
 	github.com/ipfs/go-datastore v0.5.1
 	github.com/ipfs/go-ipfs v0.12.1
 	github.com/kat-co/vala v0.0.0-20170210184112-42e1d8b61f12
@@ -24,11 +25,14 @@ require (
 	github.com/volatiletech/sqlboiler/v4 v4.8.6
 	github.com/volatiletech/strmangle v0.0.2
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
+	go.uber.org/atomic v1.9.0
 	google.golang.org/grpc v1.40.0
 	google.golang.org/protobuf v1.27.1
 )
 
 replace github.com/ipfs/go-ipfs => ./third_party/go-ipfs/
+
+replace github.com/ipfs/go-bitswap => ./third_party/go-bitswap/
 
 replace github.com/libp2p/go-libp2p-kad-dht => ./third_party/go-libp2p-kad-dht/
 
