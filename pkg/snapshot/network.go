@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"git.d464.sh/adc/telemetry/pkg/pbutils"
-	"git.d464.sh/adc/telemetry/pkg/telemetry/pb"
+	pb "git.d464.sh/adc/telemetry/pkg/proto/snapshot"
 	"github.com/libp2p/go-libp2p-core/metrics"
 	"github.com/libp2p/go-libp2p-core/protocol"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -19,7 +19,7 @@ type Network struct {
 	HighWater   uint32                        `json:"highwater"`
 }
 
-func NetworkFromPB(in *pb.Snapshot_Network) (*Network, error) {
+func NetworkFromPB(in *pb.Network) (*Network, error) {
 	// TODO: Fix this
 	return &Network{
 		Timestamp: in.GetTimestamp().AsTime(),
@@ -29,13 +29,13 @@ func NetworkFromPB(in *pb.Snapshot_Network) (*Network, error) {
 	}, nil
 }
 
-func (n *Network) ToPB() *pb.Snapshot_Network {
-	byprotocol := make(map[string]*pb.Snapshot_Network_Stats)
+func (n *Network) ToPB() *pb.Network {
+	byprotocol := make(map[string]*pb.Network_Stats)
 	for k, v := range n.PerProtocol {
 		byprotocol[string(k)] = pbutils.MetricsStatsToPB(&v)
 	}
 
-	return &pb.Snapshot_Network{
+	return &pb.Network{
 		Timestamp:       timestamppb.New(n.Timestamp),
 		StatsOverall:    pbutils.MetricsStatsToPB(&n.Overall),
 		StatsByProtocol: byprotocol,
@@ -45,8 +45,8 @@ func (n *Network) ToPB() *pb.Snapshot_Network {
 	}
 }
 
-func NetworkArrayToPB(in []*Network) []*pb.Snapshot_Network {
-	out := make([]*pb.Snapshot_Network, 0, len(in))
+func NetworkArrayToPB(in []*Network) []*pb.Network {
+	out := make([]*pb.Network, 0, len(in))
 	for _, p := range in {
 		out = append(out, p.ToPB())
 	}

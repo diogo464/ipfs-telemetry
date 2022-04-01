@@ -4,7 +4,7 @@ import (
 	"context"
 	"runtime"
 
-	"git.d464.sh/adc/telemetry/pkg/telemetry/pb"
+	pb "git.d464.sh/adc/telemetry/pkg/proto/telemetry"
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/emptypb"
 )

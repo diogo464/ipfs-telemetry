@@ -1,6 +1,6 @@
 package snapshot
 
-import "git.d464.sh/adc/telemetry/pkg/telemetry/pb"
+import pb "git.d464.sh/adc/telemetry/pkg/proto/snapshot"
 
 type Snapshot interface{}
 
@@ -18,8 +18,8 @@ func (s *Set) PushPing(p *Ping)                 { s.Ping = append(s.Ping, p) }
 func (s *Set) PushRoutingTable(r *RoutingTable) { s.RoutingTable = append(s.RoutingTable, r) }
 func (s *Set) PushNetwork(n *Network)           { s.Network = append(s.Network, n) }
 
-func (s *Set) ToPB() *pb.Snapshot_Set {
-	return &pb.Snapshot_Set{
+func (s *Set) ToPB() *pb.Set {
+	return &pb.Set{
 		Pings:         PingArrayToPB(s.Ping),
 		RoutingTables: RoutingTableArrayToPB(s.RoutingTable),
 		Networks:      NetworkArrayToPB(s.Network),

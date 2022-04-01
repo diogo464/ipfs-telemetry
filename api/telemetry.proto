@@ -1,0 +1,29 @@
+syntax = "proto3";
+package telemetry;
+
+import "snapshot.proto";
+import "google/protobuf/empty.proto";
+
+option go_package = "git.d464.sh/adc/telemetry/pkg/proto/telemetry";
+
+service Client {
+    rpc GetSystemInfo(google.protobuf.Empty) returns (SystemInfo);
+    rpc GetSnapshots(GetSnapshotsRequest) returns (GetSnapshotsResponse);
+}
+
+message GetSnapshotsRequest {
+    string session  = 1;
+    uint64 since    = 2;
+}
+
+message GetSnapshotsResponse {
+    string session      = 1; 
+    uint64 next         = 2;
+    snapshot.Set set    = 3;
+}
+
+message SystemInfo {
+    string os       = 1; 
+    string arch     = 2;
+    uint32 numcpu   = 3;
+}

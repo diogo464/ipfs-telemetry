@@ -6,8 +6,8 @@ import (
 	"net"
 	"time"
 
+	pb "git.d464.sh/adc/telemetry/pkg/proto/telemetry"
 	"git.d464.sh/adc/telemetry/pkg/snapshot"
-	"git.d464.sh/adc/telemetry/pkg/telemetry/pb"
 	"github.com/google/uuid"
 	"github.com/libp2p/go-libp2p-core/host"
 	"github.com/libp2p/go-libp2p-core/network"

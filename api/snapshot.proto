@@ -1,0 +1,77 @@
+syntax = "proto3";
+package telemetry.snapshot;
+
+import "common.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+
+option go_package = "git.d464.sh/adc/telemetry/pkg/proto/snapshot";
+
+message Ping {
+    google.protobuf.Timestamp timestamp         = 1;
+    telemetry.AddrInfo source                   = 2;
+    telemetry.AddrInfo destination              = 3;
+    repeated google.protobuf.Duration durations = 4;
+}
+
+message RoutingTable {
+    message Bucket {
+        repeated string peers = 1;
+    }
+
+    google.protobuf.Timestamp timestamp = 1;
+    repeated Bucket buckets             = 2;
+}
+
+message Network {
+    message Stats {
+        uint64 total_in     = 1;
+        uint64 total_out    = 2;
+        uint64 rate_in      = 3;
+        uint64 rate_out     = 4;
+    }
+
+    google.protobuf.Timestamp timestamp     = 1;
+    Stats stats_overall                     = 2;
+    map<string, Stats> stats_by_protocol    = 3;
+    uint32 num_conns                        = 4;
+    uint32 low_water                        = 5;
+    uint32 high_water                       = 6;
+}
+
+message Resources {
+    google.protobuf.Timestamp timestamp     = 1;
+    float cpu_usage     = 2; 
+    uint64 memory_used  = 3;
+    uint64 memory_free  = 4;
+    uint64 memory_total = 5;
+    uint32 goroutines   = 6;
+}
+
+message TraceRoute {
+    google.protobuf.Timestamp timestamp     = 1;
+    telemetry.AddrInfo origin               = 2;
+    telemetry.AddrInfo destination          = 3;
+    string provider                         = 4;
+    string output                           = 5;
+}
+
+message Kademlia {
+    google.protobuf.Timestamp timestamp     = 1;
+}
+
+message Bitswap {
+    google.protobuf.Timestamp timestamp     = 1;
+}
+
+message Ipns {
+    google.protobuf.Timestamp timestamp     = 1;
+}
+
+message Set {
+    repeated Ping pings                     = 1;
+    repeated RoutingTable routing_tables    = 2;
+    repeated Network networks               = 3;
+    repeated Resources resources            = 4;
+    repeated TraceRoute traceroutes         = 5;
+}

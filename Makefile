@@ -7,6 +7,8 @@ DATABASE_URL := postgres://postgres@localhost/postgres?sslmode=disable
 DATABASE_CONTAINER := monitor-db
 DATABASE_IMAGE := docker.io/library/postgres:14
 
+PROTO_FLAGS := --proto_path=api/ --go_out=./ --go-grpc_out=./ --go-grpc_opt=module=git.d464.sh/adc/telemetry --go_opt=module=git.d464.sh/adc/telemetry
+
 ipfs:
 	GOCC=$(GOCC) $(MAKE) -B -C third_party/go-ipfs/ build
 	mkdir -p bin/ && mv third_party/go-ipfs/cmd/ipfs/ipfs bin/
@@ -32,8 +34,10 @@ install: ipfs-install
 
 .PHONY: proto
 proto:
-	protoc --go_out=./pkg/telemetry/ --go-grpc_out=./pkg/telemetry/ telemetry.proto
-	protoc --go_out=./pkg/monitor/ --go-grpc_out=./pkg/monitor/ monitor.proto
+	protoc $(PROTO_FLAGS) api/common.proto
+	protoc $(PROTO_FLAGS) api/snapshot.proto
+	protoc $(PROTO_FLAGS) api/telemetry.proto
+	protoc $(PROTO_FLAGS) api/monitor.proto
 
 generate:
 	sqlboiler --wipe psql

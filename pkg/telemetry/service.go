@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"git.d464.sh/adc/telemetry/pkg/collector"
-	"git.d464.sh/adc/telemetry/pkg/telemetry/pb"
+	pb "git.d464.sh/adc/telemetry/pkg/proto/telemetry"
 	"git.d464.sh/adc/telemetry/pkg/window"
 	"github.com/google/uuid"
 	"github.com/ipfs/go-ipfs/core"

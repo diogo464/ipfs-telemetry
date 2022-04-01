@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"git.d464.sh/adc/telemetry/pkg/pbutils"
-	"git.d464.sh/adc/telemetry/pkg/telemetry/pb"
+	pb "git.d464.sh/adc/telemetry/pkg/proto/snapshot"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -16,7 +16,7 @@ type Ping struct {
 	Durations   []time.Duration `json:"durations"`
 }
 
-func PingFromPB(in *pb.Snapshot_Ping) (*Ping, error) {
+func PingFromPB(in *pb.Ping) (*Ping, error) {
 	source, err := pbutils.AddrInfoFromPB(in.Source)
 	if err != nil {
 		return nil, err
@@ -37,11 +37,11 @@ func PingFromPB(in *pb.Snapshot_Ping) (*Ping, error) {
 	}, nil
 }
 
-func (p *Ping) ToPB() *pb.Snapshot_Ping {
+func (p *Ping) ToPB() *pb.Ping {
 	source := pbutils.AddrInfoToPB(&p.Source)
 	destination := pbutils.AddrInfoToPB(&p.Destination)
 
-	return &pb.Snapshot_Ping{
+	return &pb.Ping{
 		Timestamp:   timestamppb.New(p.Timestamp),
 		Source:      source,
 		Destination: destination,
@@ -49,8 +49,8 @@ func (p *Ping) ToPB() *pb.Snapshot_Ping {
 	}
 }
 
-func PingArrayToPB(in []*Ping) []*pb.Snapshot_Ping {
-	out := make([]*pb.Snapshot_Ping, 0, len(in))
+func PingArrayToPB(in []*Ping) []*pb.Ping {
+	out := make([]*pb.Ping, 0, len(in))
 	for _, p := range in {
 		out = append(out, p.ToPB())
 	}

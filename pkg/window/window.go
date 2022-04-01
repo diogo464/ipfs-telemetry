@@ -4,14 +4,14 @@ import (
 	"sync"
 	"time"
 
+	pb "git.d464.sh/adc/telemetry/pkg/proto/snapshot"
 	"git.d464.sh/adc/telemetry/pkg/snapshot"
-	"git.d464.sh/adc/telemetry/pkg/telemetry/pb"
 	"github.com/libp2p/go-libp2p-core/peer"
 )
 
 type Window interface {
 	snapshot.Sink
-	Since(seqn uint64) *pb.Snapshot_Set
+	Since(seqn uint64) *pb.Set
 	NextSeqN() uint64
 }
 
@@ -63,7 +63,7 @@ func (w *windowImpl) PushNetwork(n *snapshot.Network) {
 	w.push(n.Timestamp, n.ToPB())
 }
 
-func (w *windowImpl) Since(seqn uint64) *pb.Snapshot_Set {
+func (w *windowImpl) Since(seqn uint64) *pb.Set {
 	w.Lock()
 	defer w.Unlock()
 
@@ -82,22 +82,22 @@ func (w *windowImpl) Since(seqn uint64) *pb.Snapshot_Set {
 		return nil
 	}
 
-	pings := make([]*pb.Snapshot_Ping, 0)
-	routingtables := make([]*pb.Snapshot_RoutingTable, 0)
-	networks := make([]*pb.Snapshot_Network, 0)
+	pings := make([]*pb.Ping, 0)
+	routingtables := make([]*pb.RoutingTable, 0)
+	networks := make([]*pb.Network, 0)
 	for i := start; i < len(w.items); i++ {
 		switch v := w.items[i].snapshot.(type) {
-		case *pb.Snapshot_Ping:
+		case *pb.Ping:
 			pings = append(pings, v)
-		case *pb.Snapshot_RoutingTable:
+		case *pb.RoutingTable:
 			routingtables = append(routingtables, v)
-		case *pb.Snapshot_Network:
+		case *pb.Network:
 			networks = append(networks, v)
 		default:
 		}
 	}
 
-	return &pb.Snapshot_Set{
+	return &pb.Set{
 		Pings:         pings,
 		RoutingTables: routingtables,
 		Networks:      networks,
