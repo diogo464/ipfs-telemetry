@@ -3,17 +3,17 @@ package main
 import (
 	"context"
 
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
-var CommandSystemInfo = cli.Command{
+var CommandSystemInfo = &cli.Command{
 	Name:    "system-info",
 	Aliases: []string{"info"},
 	Action:  actionSystemInfo,
 }
 
 func actionSystemInfo(c *cli.Context) error {
-	client, err := clientFromAddr(c.Args()[0])
+	client, err := clientFromAddr(c.Args().Slice()[0])
 	if err != nil {
 		return err
 	}

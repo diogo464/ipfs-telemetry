@@ -5,16 +5,16 @@ import (
 	"fmt"
 
 	"git.d464.sh/adc/telemetry/pkg/telemetry"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
-var CommandUpload = cli.Command{
+var CommandUpload = &cli.Command{
 	Name:   "upload",
 	Action: actionUpload,
 }
 
 func actionUpload(c *cli.Context) error {
-	client, err := clientFromAddr(c.Args()[0])
+	client, err := clientFromAddr(c.Args().Slice()[0])
 	if err != nil {
 		return err
 	}

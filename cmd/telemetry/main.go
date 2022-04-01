@@ -9,13 +9,13 @@ import (
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/libp2p/go-libp2p-core/peerstore"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 func main() {
 	app := &cli.App{
 		Name: "telemetry",
-		Commands: []cli.Command{
+		Commands: []*cli.Command{
 			CommandSystemInfo,
 			CommandUpload,
 			CommandDownload,
