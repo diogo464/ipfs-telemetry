@@ -16,11 +16,14 @@ require (
 	github.com/libp2p/go-libp2p-kad-dht v0.15.0
 	github.com/multiformats/go-multiaddr v0.4.1
 	github.com/prometheus/client_golang v1.11.0
+	github.com/shirou/gopsutil v2.21.11+incompatible
 	github.com/spf13/viper v1.9.0
+	github.com/tklauser/go-sysconf v0.3.10 // indirect
 	github.com/urfave/cli/v2 v2.0.0
 	github.com/volatiletech/randomize v0.0.1
 	github.com/volatiletech/sqlboiler/v4 v4.8.6
 	github.com/volatiletech/strmangle v0.0.2
+	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	google.golang.org/grpc v1.40.0
 	google.golang.org/protobuf v1.27.1
 )

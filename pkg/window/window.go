@@ -9,6 +9,8 @@ import (
 	"github.com/libp2p/go-libp2p-core/peer"
 )
 
+var _ Window = (*windowImpl)(nil)
+
 type Window interface {
 	snapshot.Sink
 	Since(seqn uint64) *pb.Set
@@ -63,6 +65,10 @@ func (w *windowImpl) PushNetwork(n *snapshot.Network) {
 	w.push(n.Timestamp, n.ToPB())
 }
 
+func (w *windowImpl) PushResources(r *snapshot.Resources) {
+	w.push(r.Timestamp, r.ToPB())
+}
+
 func (w *windowImpl) Since(seqn uint64) *pb.Set {
 	w.Lock()
 	defer w.Unlock()
@@ -85,6 +91,7 @@ func (w *windowImpl) Since(seqn uint64) *pb.Set {
 	pings := make([]*pb.Ping, 0)
 	routingtables := make([]*pb.RoutingTable, 0)
 	networks := make([]*pb.Network, 0)
+	resources := make([]*pb.Resources, 0)
 	for i := start; i < len(w.items); i++ {
 		switch v := w.items[i].snapshot.(type) {
 		case *pb.Ping:
@@ -93,7 +100,11 @@ func (w *windowImpl) Since(seqn uint64) *pb.Set {
 			routingtables = append(routingtables, v)
 		case *pb.Network:
 			networks = append(networks, v)
+		case *pb.Resources:
+			resources = append(resources, v)
 		default:
+			// TODO: remove this
+			panic("unimplemented")
 		}
 	}
 
@@ -101,6 +112,7 @@ func (w *windowImpl) Since(seqn uint64) *pb.Set {
 		Pings:         pings,
 		RoutingTables: routingtables,
 		Networks:      networks,
+		Resources:     resources,
 	}
 }
 

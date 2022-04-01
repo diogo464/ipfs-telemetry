@@ -80,6 +80,14 @@ func (c *Client) Snapshots(ctx context.Context) ([]snapshot.Snapshot, error) {
 		snapshots = append(snapshots, s)
 	}
 
+	for _, v := range response.GetSet().GetResources() {
+		s, err := snapshot.ResourcesFromPB(v)
+		if err != nil {
+			return nil, err
+		}
+		snapshots = append(snapshots, s)
+	}
+
 	c.s.UUID = session
 	c.s.Valid = true
 	c.n = response.Next

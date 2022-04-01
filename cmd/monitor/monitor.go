@@ -15,7 +15,7 @@ import (
 
 const (
 	MAX_FAILED_ATTEMPTS = 3
-	COLLECT_PERIOD      = time.Second * 5
+	COLLECT_PERIOD      = time.Second * 1
 )
 
 type PeerState struct {
@@ -61,6 +61,7 @@ func (s *Monitor) PeerDiscovered(p peer.ID) {
 }
 
 func (s *Monitor) StartMonitoring(ctx context.Context) {
+LOOP:
 	for {
 		select {
 		case discovered := <-s.cdiscovered:
@@ -71,7 +72,7 @@ func (s *Monitor) StartMonitoring(ctx context.Context) {
 			fmt.Println("Collect:", collect)
 			s.collectTelemetry(collect)
 		case <-ctx.Done():
-			break
+			break LOOP
 		}
 	}
 }

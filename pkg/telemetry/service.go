@@ -71,6 +71,14 @@ func NewTelemetryService(n *core.IpfsNode, opts ...Option) (*TelemetryService, e
 		Interval: time.Second * 15,
 	})
 
+	go collector.RunRoutintTableCollector(t.n, t.w, collector.RoutingTableOptions{
+		Interval: time.Second * 10,
+	})
+
+	go collector.RunResourcesCollector(t.w, collector.ResourcesOptions{
+		Interval: time.Second * 2,
+	})
+
 	return t, nil
 }
 

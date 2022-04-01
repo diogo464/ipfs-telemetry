@@ -1,6 +1,9 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
+
 	"git.d464.sh/adc/telemetry/pkg/snapshot"
 	"github.com/libp2p/go-libp2p-core/peer"
 )
@@ -13,19 +16,31 @@ func (s *Monitor) handleSnapshot(p peer.ID, ss snapshot.Snapshot) error {
 		return s.handleNetworkSnapshot(p, v)
 	case *snapshot.RoutingTable:
 		return s.handleRoutingTableSnapshot(p, v)
+	case *snapshot.Resources:
+		return s.handleResourcesSnapshot(p, v)
 	default:
+		fmt.Printf("Unknown snapshot type: %T\n", ss)
 		return nil
 	}
 }
 
-func (s *Monitor) handlePingSnapshot(p peer.ID, snapshot *snapshot.Ping) error {
+func (s *Monitor) handlePingSnapshot(p peer.ID, ss *snapshot.Ping) error {
 	return nil
 }
 
-func (s *Monitor) handleNetworkSnapshot(p peer.ID, snapshot *snapshot.Network) error {
+func (s *Monitor) handleNetworkSnapshot(p peer.ID, ss *snapshot.Network) error {
 	return nil
 }
 
-func (s *Monitor) handleRoutingTableSnapshot(p peer.ID, snapshot *snapshot.RoutingTable) error {
+func (s *Monitor) handleRoutingTableSnapshot(p peer.ID, ss *snapshot.RoutingTable) error {
+	return nil
+}
+
+func (s *Monitor) handleResourcesSnapshot(p peer.ID, ss *snapshot.Resources) error {
+	marshaled, err := json.MarshalIndent(ss, "", "  ")
+	if err != nil {
+		return err
+	}
+	fmt.Println(string(marshaled))
 	return nil
 }

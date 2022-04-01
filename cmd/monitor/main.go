@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"net"
-	"net/http"
 	"os"
 	"time"
 
@@ -17,7 +16,6 @@ import (
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/libp2p/go-libp2p-core/routing"
 	dht "github.com/libp2p/go-libp2p-kad-dht"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/urfave/cli/v2"
 	"google.golang.org/grpc"
 )
@@ -79,16 +77,14 @@ func mainAction(c *cli.Context) error {
 		}
 	}()
 
-	go func() {
-		for {
-			TELEMETRY_REQUESTS_TOTAL.Add(1)
-			time.Sleep(time.Second)
-		}
-	}()
+	//go func() {
+	//	http.Handle("/metrics", promhttp.Handler())
+	//	http.ListenAndServe(":2112", nil)
+	//}()
 
 	go func() {
-		http.Handle("/metrics", promhttp.Handler())
-		http.ListenAndServe(":2112", nil)
+		<-c.Context.Done()
+		fmt.Println("CLI CONTEXT TERMINATED")
 	}()
 
 	pb.RegisterMonitorServer(grpc_server, server)
@@ -100,6 +96,9 @@ func mainAction(c *cli.Context) error {
 	}()
 
 	server.StartMonitoring(c.Context)
+	fmt.Println("Staring GRPC graceful stop")
+	grpc_server.GracefulStop()
+	fmt.Println("GRPC stopped")
 
 	return nil
 }

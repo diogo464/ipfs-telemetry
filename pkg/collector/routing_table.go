@@ -11,17 +11,18 @@ type RoutingTableOptions struct {
 	Interval time.Duration
 }
 
-type RoutingTableCollector struct {
+type routingTableCollector struct {
 	opts RoutingTableOptions
 	sink snapshot.Sink
 	node *core.IpfsNode
 }
 
-func NewRoutingTableCollector(n *core.IpfsNode, sink snapshot.Sink, opts RoutingTableOptions) *RoutingTableCollector {
-	return &RoutingTableCollector{opts: opts, sink: sink, node: n}
+func RunRoutintTableCollector(n *core.IpfsNode, sink snapshot.Sink, opts RoutingTableOptions) {
+	c := &routingTableCollector{opts: opts, sink: sink, node: n}
+	c.Run()
 }
 
-func (c *RoutingTableCollector) Run() {
+func (c *routingTableCollector) Run() {
 	for {
 		routing_table := newRoutingTableFromNode(c.node)
 		c.sink.PushRoutingTable(routing_table)
