@@ -19,19 +19,13 @@ ipfs-install: ipfs
 monitor:
 	$(GOCC) build -o bin/monitor cmd/monitor/*
 
-watch:
-	$(GOCC) build -o bin/watch cmd/watch/*
-
 crawler:
 	$(GOCC) build -o bin/crawler cmd/crawler/*
-
-test:
-	$(GOCC) build -o bin/test cmd/test/*
 
 telemetry:
 	$(GOCC) build -o bin/telemetry cmd/telemetry/*
 
-build: monitor watch crawler test ipfs
+build: monitor crawler ipfs
 
 install: ipfs-install
 
