@@ -28,6 +28,9 @@ crawler:
 test:
 	$(GOCC) build -o bin/test cmd/test/*
 
+telemetry:
+	$(GOCC) build -o bin/telemetry cmd/telemetry/*
+
 build: monitor watch crawler test ipfs
 
 install: ipfs-install

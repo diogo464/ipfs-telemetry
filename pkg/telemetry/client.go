@@ -3,10 +3,12 @@ package telemetry
 import (
 	"context"
 	"fmt"
+	"io"
 	"net"
 
 	pb "git.d464.sh/adc/telemetry/pkg/proto/telemetry"
 	"git.d464.sh/adc/telemetry/pkg/snapshot"
+	"git.d464.sh/adc/telemetry/pkg/utils"
 	"github.com/google/uuid"
 	"github.com/libp2p/go-libp2p-core/host"
 	"github.com/libp2p/go-libp2p-core/peer"
@@ -83,79 +85,48 @@ func (c *Client) SystemInfo(ctx context.Context) (*SystemInfo, error) {
 	}, nil
 }
 
-func (c *Client) Download(ctx context.Context) (uint64, error) {
-	panic("todo")
-	//stream, err := c.newStream(ctx)
-	//if err != nil {
-	//	return 0, err
-	//}
-	//defer stream.Close()
+func (c *Client) Download(ctx context.Context, payload uint32) (uint32, error) {
+	stream, err := c.h.NewStream(ctx, c.p, ID_DOWNLOAD)
+	if err != nil {
+		return 0, err
+	}
 
-	//request := pb.Request{
-	//	Body: &pb.Request_BandwidthDownload_{
-	//		BandwidthDownload: &pb.Request_BandwidthDownload{},
-	//	},
-	//}
-	//if err := writeRequest(ctx, stream, &request); err != nil {
-	//	return 0, err
-	//}
+	if err := utils.WriteU32(stream, payload); err != nil {
+		return 0, err
+	}
 
-	//write_start := time.Now()
-	//n, err := io.Copy(stream, io.LimitReader(utils.NullReader{}, BANDWIDTH_PAYLOAD_SIZE))
-	//if err != nil {
-	//	return 0, err
-	//}
+	if _, err := io.Copy(stream, io.LimitReader(utils.NullReader{}, int64(payload))); err != nil {
+		return 0, err
+	}
 
-	//buf := make([]byte, 1)
-	//stream.Read(buf)
-	//elapsed := time.Since(write_start)
+	rate, err := utils.ReadU32(stream)
+	if err != nil {
+		return 0, err
+	}
 
-	//rate := uint64(float64(n) / elapsed.Seconds())
-	//return rate, nil
+	return rate, nil
 }
 
-func (c *Client) Upload(ctx context.Context) (uint64, error) {
-	panic("todo")
-	//stream, err := c.newStream(ctx)
-	//if err != nil {
-	//	return 0, err
-	//}
-	//defer stream.Close()
+func (c *Client) Upload(ctx context.Context, payload uint32) (uint32, error) {
+	stream, err := c.h.NewStream(ctx, c.p, ID_UPLOAD)
+	if err != nil {
+		return 0, err
+	}
 
-	//request := pb.Request{
-	//	Body: &pb.Request_BandwidthUpload_{
-	//		BandwidthUpload: &pb.Request_BandwidthUpload{},
-	//	},
-	//}
-	//if err := writeRequest(ctx, stream, &request); err != nil {
-	//	return 0, err
-	//}
+	if err := utils.WriteU32(stream, payload); err != nil {
+		return 0, err
+	}
 
-	//buf := make([]byte, 32*1024)
-	//n := 0
-	//var read_start *time.Time = nil
-	//for {
-	//	x, err := stream.Read(buf)
-	//	n += x
-	//	if read_start == nil {
-	//		tm := time.Now()
-	//		read_start = &tm
-	//	}
-	//	if err != nil && err != io.EOF {
-	//		return 0, err
-	//	}
-	//	if err == io.EOF {
-	//		break
-	//	}
-	//}
-	////n, err := io.Copy(io.Discard, io.LimitReader(s, BANDWIDTH_PAYLOAD_SIZE))
-	//if err != nil {
-	//	return 0, err
-	//}
-	//elapsed := time.Since(*read_start)
+	if _, err := io.Copy(io.Discard, io.LimitReader(stream, int64(payload))); err != nil {
+		return 0, err
+	}
 
-	//rate := uint64(float64(n) / elapsed.Seconds())
-	//return rate, nil
+	rate, err := utils.ReadU32(stream)
+	if err != nil {
+		return 0, err
+	}
+
+	return rate, nil
 }
 
 func (c *Client) newGrpcClient() (pb.ClientClient, error) {
@@ -163,7 +134,7 @@ func (c *Client) newGrpcClient() (pb.ClientClient, error) {
 		"",
 		grpc.WithInsecure(),
 		grpc.WithContextDialer(func(ctx context.Context, s string) (net.Conn, error) {
-			return gostream.Dial(ctx, c.h, c.p, ID)
+			return gostream.Dial(ctx, c.h, c.p, ID_TELEMETRY)
 		}))
 	if err != nil {
 		return nil, err

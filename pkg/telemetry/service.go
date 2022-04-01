@@ -42,10 +42,13 @@ func NewTelemetryService(n *core.IpfsNode, opts ...Option) (*TelemetryService, e
 	}
 
 	h := n.PeerHost
-	listener, err := gostream.Listen(h, ID)
+	listener, err := gostream.Listen(h, ID_TELEMETRY)
 	if err != nil {
 		return nil, err
 	}
+
+	h.SetStreamHandler(ID_UPLOAD, t.uploadHandler)
+	h.SetStreamHandler(ID_DOWNLOAD, t.downloadHandler)
 
 	grpc_server := grpc.NewServer()
 	pb.RegisterClientServer(grpc_server, t)
