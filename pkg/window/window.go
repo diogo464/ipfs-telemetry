@@ -4,8 +4,8 @@ import (
 	"sync"
 	"time"
 
-	"git.d464.sh/adc/telemetry/plugin/pb"
-	"git.d464.sh/adc/telemetry/plugin/snapshot"
+	"git.d464.sh/adc/telemetry/pkg/snapshot"
+	"git.d464.sh/adc/telemetry/pkg/telemetry/pb"
 	"github.com/libp2p/go-libp2p-core/peer"
 )
 

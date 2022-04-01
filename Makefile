@@ -1,4 +1,5 @@
 GOCC ?= go
+GOFLAGS ?=
 
 DATABASE_MIGRATIONS := migrations/
 DATABASE_PASSWORD := password
@@ -6,17 +7,8 @@ DATABASE_URL := postgres://postgres@localhost/postgres?sslmode=disable
 DATABASE_CONTAINER := monitor-db
 DATABASE_IMAGE := docker.io/library/postgres:14
 
-.PHONY: plugin
-plugin:
-	GOCC=go1.16 $(MAKE) -B -C plugin/ build
-	mkdir -p bin/ && mv plugin/telemetry.so bin/
-
-plugin-install: plugin
-	mkdir -p ~/.ipfs/plugins
-	cp bin/telemetry.so ~/.ipfs/plugins
-
 ipfs:
-	GOCC=go1.16 $(MAKE) -B -C third_party/go-ipfs/ build
+	GOCC=$(GOCC) $(MAKE) -B -C third_party/go-ipfs/ build
 	mkdir -p bin/ && mv third_party/go-ipfs/cmd/ipfs/ipfs bin/
 
 ipfs-install: ipfs
@@ -34,12 +26,13 @@ crawler:
 test:
 	$(GOCC) build -o bin/test cmd/test/*
 
-build: monitor watch crawler test plugin ipfs
+build: monitor watch crawler test ipfs
+
+install: ipfs-install
 
 .PHONY: proto
 proto:
 	protoc --go_out=./pkg/telemetry/ --go-grpc_out=./pkg/telemetry/ telemetry.proto
-	protoc --go_out=./plugin/ --go-grpc_out=./plugin/ telemetry.proto
 	protoc --go_out=./pkg/monitor/ --go-grpc_out=./pkg/monitor/ monitor.proto
 
 generate:

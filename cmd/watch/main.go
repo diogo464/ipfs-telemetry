@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 
+	"git.d464.sh/adc/telemetry/pkg/snapshot"
 	"git.d464.sh/adc/telemetry/pkg/telemetry"
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p-core/peer"
@@ -58,7 +59,7 @@ func mainAction(c *cli.Context) error {
 	return nil
 }
 
-func printInterface(v telemetry.Snapshot) error {
+func printInterface(v snapshot.Snapshot) error {
 	fmt.Printf("%T\n", v)
 	marshaled, err := json.MarshalIndent(v, "", "  ")
 	if err != nil {

@@ -6,6 +6,7 @@ import (
 	"net"
 	"time"
 
+	"git.d464.sh/adc/telemetry/pkg/snapshot"
 	"git.d464.sh/adc/telemetry/pkg/telemetry/pb"
 	"github.com/google/uuid"
 	"github.com/libp2p/go-libp2p-core/host"
@@ -14,11 +15,6 @@ import (
 	gostream "github.com/libp2p/go-libp2p-gostream"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/emptypb"
-)
-
-const (
-	ID                     = "/telemetry/telemetry/0.0.0"
-	BANDWIDTH_PAYLOAD_SIZE = 32 * 1024 * 1024
 )
 
 var ERR_INVALID_RESPONSE = fmt.Errorf("invalid response")
@@ -40,7 +36,7 @@ func (c *Client) Session() uuid.NullUUID {
 	return c.s
 }
 
-func (c *Client) Snapshots(ctx context.Context) ([]Snapshot, error) {
+func (c *Client) Snapshots(ctx context.Context) ([]snapshot.Snapshot, error) {
 	client, err := c.newGrpcClient()
 	if err != nil {
 		return nil, err
@@ -59,9 +55,9 @@ func (c *Client) Snapshots(ctx context.Context) ([]Snapshot, error) {
 		return nil, err
 	}
 
-	snapshots := make([]Snapshot, 0)
+	snapshots := make([]snapshot.Snapshot, 0)
 	for _, v := range response.GetSet().GetPings() {
-		s, err := PingFromPB(v)
+		s, err := snapshot.PingFromPB(v)
 		if err != nil {
 			return nil, err
 		}
@@ -69,7 +65,7 @@ func (c *Client) Snapshots(ctx context.Context) ([]Snapshot, error) {
 	}
 
 	for _, v := range response.GetSet().GetNetworks() {
-		s, err := NetworkFromPB(v)
+		s, err := snapshot.NetworkFromPB(v)
 		if err != nil {
 			return nil, err
 		}
@@ -77,7 +73,7 @@ func (c *Client) Snapshots(ctx context.Context) ([]Snapshot, error) {
 	}
 
 	for _, v := range response.GetSet().GetRoutingTables() {
-		s, err := RoutingTableFromPB(v)
+		s, err := snapshot.RoutingTableFromPB(v)
 		if err != nil {
 			return nil, err
 		}

@@ -1,8 +1,9 @@
 /bin/
 /*.sh
 /*.json
+!/set-target.sh
 
-#/third_party
+/third_party
 
 # generated files
 /plugin/pb

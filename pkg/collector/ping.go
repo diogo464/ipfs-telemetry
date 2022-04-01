@@ -1,44 +1,16 @@
-package snapshot
+package collector
 
 import (
 	"context"
 	"math/rand"
 	"time"
 
-	"git.d464.sh/adc/telemetry/plugin/pb"
+	"git.d464.sh/adc/telemetry/pkg/snapshot"
 	"github.com/libp2p/go-libp2p-core/host"
 	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/libp2p/go-libp2p-core/peer"
-	p2pping "github.com/libp2p/go-libp2p/p2p/protocol/ping"
-	"google.golang.org/protobuf/types/known/timestamppb"
+	"github.com/libp2p/go-libp2p/p2p/protocol/ping"
 )
-
-type Ping struct {
-	Timestamp   time.Time       `json:"timestamp"`
-	Source      peer.AddrInfo   `json:"source"`
-	Destination peer.AddrInfo   `json:"destination"`
-	Durations   []time.Duration `json:"durations"`
-}
-
-func (p *Ping) ToPB() *pb.Snapshot_Ping {
-	source := addrInfoToPB(&p.Source)
-	destination := addrInfoToPB(&p.Destination)
-
-	return &pb.Snapshot_Ping{
-		Timestamp:   timestamppb.New(p.Timestamp),
-		Source:      source,
-		Destination: destination,
-		Durations:   durationsToPbDurations(p.Durations),
-	}
-}
-
-func ArrayPingToPB(in []*Ping) []*pb.Snapshot_Ping {
-	out := make([]*pb.Snapshot_Ping, 0, len(in))
-	for _, p := range in {
-		out = append(out, p.ToPB())
-	}
-	return out
-}
 
 type PingOptions struct {
 	PingCount int
@@ -46,17 +18,18 @@ type PingOptions struct {
 	Timeout   time.Duration
 }
 
-type PingCollector struct {
+type pingCollector struct {
 	opts PingOptions
 	h    host.Host
-	sink Sink
+	sink snapshot.Sink
 }
 
-func NewPingCollector(h host.Host, sink Sink, opts PingOptions) *PingCollector {
-	return &PingCollector{opts: opts, h: h, sink: sink}
+func RunPingCollector(h host.Host, sink snapshot.Sink, opts PingOptions) {
+	c := &pingCollector{opts: opts, h: h, sink: sink}
+	c.Run()
 }
 
-func (c *PingCollector) Run() {
+func (c *pingCollector) Run() {
 	for {
 		if peerid, ok := c.pickRandomPeer(); !ok {
 			time.Sleep(time.Second)
@@ -70,7 +43,7 @@ func (c *PingCollector) Run() {
 	}
 }
 
-func (c *PingCollector) pickRandomPeer() (peer.ID, bool) {
+func (c *pingCollector) pickRandomPeer() (peer.ID, bool) {
 	peers := c.h.Peerstore().PeersWithAddrs()
 	lpeers := len(peers)
 	if lpeers == 0 {
@@ -81,7 +54,7 @@ func (c *PingCollector) pickRandomPeer() (peer.ID, bool) {
 	return peerid, true
 }
 
-func (c *PingCollector) ping(p peer.ID) (*Ping, error) {
+func (c *pingCollector) ping(p peer.ID) (*snapshot.Ping, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), c.opts.Timeout)
 	defer cancel()
 
@@ -93,7 +66,7 @@ func (c *PingCollector) ping(p peer.ID) (*Ping, error) {
 
 	durations := make([]time.Duration, c.opts.PingCount)
 	counter := 0
-	cresult := p2pping.Ping(network.WithNoDial(ctx, "ping"), c.h, p)
+	cresult := ping.Ping(network.WithNoDial(ctx, "ping"), c.h, p)
 	for result := range cresult {
 		if result.Error != nil {
 			return nil, result.Error
@@ -111,7 +84,7 @@ func (c *PingCollector) ping(p peer.ID) (*Ping, error) {
 	}
 	destination := c.h.Peerstore().PeerInfo(p)
 
-	return &Ping{
+	return &snapshot.Ping{
 		Source:      source,
 		Destination: destination,
 		Durations:   durations,

@@ -1,31 +1,31 @@
 package main
 
 import (
-	"git.d464.sh/adc/telemetry/pkg/telemetry"
+	"git.d464.sh/adc/telemetry/pkg/snapshot"
 	"github.com/libp2p/go-libp2p-core/peer"
 )
 
-func (s *Monitor) handleSnapshot(p peer.ID, snapshot telemetry.Snapshot) error {
-	switch v := snapshot.(type) {
-	case *telemetry.PingSnapshot:
+func (s *Monitor) handleSnapshot(p peer.ID, ss snapshot.Snapshot) error {
+	switch v := ss.(type) {
+	case *snapshot.Ping:
 		return s.handlePingSnapshot(p, v)
-	case *telemetry.NetworkSnapshot:
+	case *snapshot.Network:
 		return s.handleNetworkSnapshot(p, v)
-	case *telemetry.RoutingTableSnapshot:
+	case *snapshot.RoutingTable:
 		return s.handleRoutingTableSnapshot(p, v)
 	default:
 		return nil
 	}
 }
 
-func (s *Monitor) handlePingSnapshot(p peer.ID, snapshot *telemetry.PingSnapshot) error {
+func (s *Monitor) handlePingSnapshot(p peer.ID, snapshot *snapshot.Ping) error {
 	return nil
 }
 
-func (s *Monitor) handleNetworkSnapshot(p peer.ID, snapshot *telemetry.NetworkSnapshot) error {
+func (s *Monitor) handleNetworkSnapshot(p peer.ID, snapshot *snapshot.Network) error {
 	return nil
 }
 
-func (s *Monitor) handleRoutingTableSnapshot(p peer.ID, snapshot *telemetry.RoutingTableSnapshot) error {
+func (s *Monitor) handleRoutingTableSnapshot(p peer.ID, snapshot *snapshot.RoutingTable) error {
 	return nil
 }
