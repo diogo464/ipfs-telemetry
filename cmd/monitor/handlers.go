@@ -21,8 +21,7 @@ func (s *Monitor) handleSnapshot(p peer.ID, ss snapshot.Snapshot) error {
 	case *snapshot.Bitswap:
 		return s.handleBitswapSnapshot(p, v)
 	default:
-		fmt.Printf("Unknown snapshot type: %T\n", ss)
-		return nil
+		panic("unimplemented")
 	}
 }
 

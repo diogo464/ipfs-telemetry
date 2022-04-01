@@ -16,6 +16,8 @@ type Ping struct {
 	Durations   []time.Duration `json:"durations"`
 }
 
+func (*Ping) sealed() {}
+
 func PingFromPB(in *pb.Ping) (*Ping, error) {
 	source, err := pbutils.AddrInfoFromPB(in.Source)
 	if err != nil {

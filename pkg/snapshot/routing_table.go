@@ -13,6 +13,8 @@ type RoutingTable struct {
 	Buckets   [][]peer.ID `json:"buckets"`
 }
 
+func (*RoutingTable) sealed() {}
+
 func RoutingTableFromPB(in *pb.RoutingTable) (*RoutingTable, error) {
 	buckets := make([][]peer.ID, 0, len(in.GetBuckets()))
 	for _, b := range in.GetBuckets() {

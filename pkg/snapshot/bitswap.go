@@ -13,6 +13,8 @@ type Bitswap struct {
 	DiscoveryFailed    uint32    `json:"discovery_failed"`
 }
 
+func (*Bitswap) sealed() {}
+
 func BitswapFromPB(in *pb.Bitswap) (*Bitswap, error) {
 	return &Bitswap{
 		Timestamp:          in.Timestamp.AsTime(),

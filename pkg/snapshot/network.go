@@ -19,6 +19,8 @@ type Network struct {
 	HighWater   uint32                        `json:"highwater"`
 }
 
+func (*Network) sealed() {}
+
 func NetworkFromPB(in *pb.Network) (*Network, error) {
 	// TODO: Fix this
 	return &Network{

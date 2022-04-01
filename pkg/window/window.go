@@ -109,9 +109,6 @@ func (w *windowImpl) Since(seqn uint64) *pb.Set {
 			resources = append(resources, v)
 		case *pb.Bitswap:
 			bitswap = append(bitswap, v)
-		default:
-			// TODO: remove this
-			panic("unimplemented")
 		}
 	}
 

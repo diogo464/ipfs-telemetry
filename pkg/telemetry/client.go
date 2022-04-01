@@ -55,45 +55,9 @@ func (c *Client) Snapshots(ctx context.Context) ([]snapshot.Snapshot, error) {
 		return nil, err
 	}
 
-	snapshots := make([]snapshot.Snapshot, 0)
-	for _, v := range response.GetSet().GetPings() {
-		s, err := snapshot.PingFromPB(v)
-		if err != nil {
-			return nil, err
-		}
-		snapshots = append(snapshots, s)
-	}
-
-	for _, v := range response.GetSet().GetNetworks() {
-		s, err := snapshot.NetworkFromPB(v)
-		if err != nil {
-			return nil, err
-		}
-		snapshots = append(snapshots, s)
-	}
-
-	for _, v := range response.GetSet().GetRoutingTables() {
-		s, err := snapshot.RoutingTableFromPB(v)
-		if err != nil {
-			return nil, err
-		}
-		snapshots = append(snapshots, s)
-	}
-
-	for _, v := range response.GetSet().GetResources() {
-		s, err := snapshot.ResourcesFromPB(v)
-		if err != nil {
-			return nil, err
-		}
-		snapshots = append(snapshots, s)
-	}
-
-	for _, v := range response.GetSet().GetBitswaps() {
-		s, err := snapshot.BitswapFromPB(v)
-		if err != nil {
-			return nil, err
-		}
-		snapshots = append(snapshots, s)
+	snapshots, err := snapshot.SetPBToSnapshotArray(response.GetSet())
+	if err != nil {
+		return nil, err
 	}
 
 	c.s.UUID = session

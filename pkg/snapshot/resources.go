@@ -16,6 +16,8 @@ type Resources struct {
 	Goroutines  uint32    `json:"goroutines"`
 }
 
+func (*Resources) sealed() {}
+
 func ResourcesFromPB(in *pb.Resources) (*Resources, error) {
 	return &Resources{
 		Timestamp:   in.GetTimestamp().AsTime(),
