@@ -6,7 +6,6 @@ import (
 
 	pb "git.d464.sh/adc/telemetry/pkg/proto/snapshot"
 	"git.d464.sh/adc/telemetry/pkg/snapshot"
-	"github.com/libp2p/go-libp2p-core/peer"
 )
 
 var _ Window = (*windowImpl)(nil)
@@ -132,13 +131,4 @@ func (w *windowImpl) clean() {
 	for len(w.items) > 0 && time.Since(w.items[0].timestamp) > w.duration {
 		w.items = w.items[1:]
 	}
-}
-
-func unpackPeerAddrInfo(info *peer.AddrInfo) (string, []string) {
-	pid := info.ID.Pretty()
-	addrs := make([]string, 0, len(info.Addrs))
-	for _, addr := range info.Addrs {
-		addrs = append(addrs, addr.String())
-	}
-	return pid, addrs
 }

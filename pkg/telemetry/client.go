@@ -4,20 +4,18 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"time"
 
 	pb "git.d464.sh/adc/telemetry/pkg/proto/telemetry"
 	"git.d464.sh/adc/telemetry/pkg/snapshot"
 	"github.com/google/uuid"
 	"github.com/libp2p/go-libp2p-core/host"
-	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/libp2p/go-libp2p-core/peer"
 	gostream "github.com/libp2p/go-libp2p-gostream"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
-var ERR_INVALID_RESPONSE = fmt.Errorf("invalid response")
+var ErrInvalidResponse = fmt.Errorf("invalid response")
 
 type Client struct {
 	h host.Host
@@ -160,16 +158,12 @@ func (c *Client) Upload(ctx context.Context) (uint64, error) {
 	//return rate, nil
 }
 
-func (c *Client) newStream(ctx context.Context) (network.Stream, error) {
-	return c.h.NewStream(ctx, c.p, ID)
-}
-
 func (c *Client) newGrpcClient() (pb.ClientClient, error) {
 	conn, err := grpc.Dial(
 		"",
 		grpc.WithInsecure(),
-		grpc.WithDialer(func(s string, d time.Duration) (net.Conn, error) {
-			return gostream.Dial(context.Background(), c.h, c.p, ID)
+		grpc.WithContextDialer(func(ctx context.Context, s string) (net.Conn, error) {
+			return gostream.Dial(ctx, c.h, c.p, ID)
 		}))
 	if err != nil {
 		return nil, err
