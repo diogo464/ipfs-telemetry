@@ -42,6 +42,9 @@ func newWindowImpl(duration time.Duration) *windowImpl {
 }
 
 func (w *windowImpl) push(t time.Time, v interface{}) {
+	w.Lock()
+	defer w.Unlock()
+
 	w.clean()
 	seqn := w.seqn
 	w.seqn += 1

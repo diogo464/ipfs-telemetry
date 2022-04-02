@@ -19,6 +19,7 @@ func main() {
 			CommandSystemInfo,
 			CommandUpload,
 			CommandDownload,
+			CommandWatch,
 		},
 	}
 	if err := app.Run(os.Args); err != nil {
@@ -35,8 +36,9 @@ func clientFromAddr(addr string) (*telemetry.Client, error) {
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println(info)
 	h.Peerstore().AddAddrs(info.ID, info.Addrs, peerstore.PermanentAddrTTL)
-	return telemetry.NewClient(h, info.ID), nil
+	return telemetry.NewClient(h, info.ID)
 }
 
 func printAsJson(v interface{}) {

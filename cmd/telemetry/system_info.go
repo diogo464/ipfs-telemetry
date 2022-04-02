@@ -17,6 +17,8 @@ func actionSystemInfo(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
+	defer client.Close()
+
 	info, err := client.SystemInfo(context.Background())
 	if err != nil {
 		return err

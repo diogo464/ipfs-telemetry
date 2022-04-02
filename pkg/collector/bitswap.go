@@ -1,6 +1,7 @@
 package collector
 
 import (
+	"context"
 	"time"
 
 	bt "git.d464.sh/adc/telemetry/pkg/bitswap"
@@ -14,14 +15,16 @@ type BitswapOptions struct {
 }
 
 type bitswapCollector struct {
+	ctx         context.Context
 	opts        BitswapOptions
 	sink        snapshot.Sink
 	bstelemetry *bt.BitswapTelemetry
 }
 
-func RunBitswapCollector(n *core.IpfsNode, sink snapshot.Sink, opts BitswapOptions) {
+func RunBitswapCollector(ctx context.Context, n *core.IpfsNode, sink snapshot.Sink, opts BitswapOptions) {
 	bs := n.Exchange.(*bitswap.Bitswap)
 	c := &bitswapCollector{
+		ctx:         ctx,
 		opts:        opts,
 		sink:        sink,
 		bstelemetry: bs.Telemetry,
@@ -30,13 +33,20 @@ func RunBitswapCollector(n *core.IpfsNode, sink snapshot.Sink, opts BitswapOptio
 }
 
 func (c *bitswapCollector) Run() {
+	ticker := time.NewTicker(c.opts.Interval)
+
+LOOP:
 	for {
-		stats := c.bstelemetry.GetDiscoveryStats()
-		c.sink.PushBitswap(&snapshot.Bitswap{
-			Timestamp:          time.Now(),
-			DiscoverySucceeded: uint32(stats.Succeeded),
-			DiscoveryFailed:    uint32(stats.Failed),
-		})
-		time.Sleep(c.opts.Interval)
+		select {
+		case <-ticker.C:
+			stats := c.bstelemetry.GetDiscoveryStats()
+			c.sink.PushBitswap(&snapshot.Bitswap{
+				Timestamp:          time.Now(),
+				DiscoverySucceeded: uint32(stats.Succeeded),
+				DiscoveryFailed:    uint32(stats.Failed),
+			})
+		case <-c.ctx.Done():
+			break LOOP
+		}
 	}
 }

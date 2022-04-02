@@ -20,16 +20,42 @@ import (
 var ErrInvalidResponse = fmt.Errorf("invalid response")
 
 type Client struct {
-	h host.Host
-	p peer.ID
 	// session uuid
 	s uuid.NullUUID
 	// sequence number for snapshots
 	n uint64
+
+	h host.Host
+	p peer.ID
+	c *grpc.ClientConn
 }
 
-func NewClient(h host.Host, p peer.ID) *Client {
-	return &Client{h: h, p: p, s: uuid.NullUUID{}, n: 0}
+func NewClient(h host.Host, p peer.ID) (*Client, error) {
+	conn, err := grpc.Dial(
+		"",
+		grpc.WithInsecure(),
+		grpc.WithContextDialer(func(ctx context.Context, s string) (net.Conn, error) {
+			fmt.Println("Grpc Dialing Peer")
+			conn, err := gostream.Dial(ctx, h, p, ID_TELEMETRY)
+			fmt.Println("Dial Complete")
+			return conn, err
+		}))
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &Client{
+		s: uuid.NullUUID{},
+		n: 0,
+		h: h,
+		p: p,
+		c: conn,
+	}, nil
+}
+
+func (c *Client) Close() {
+	c.c.Close()
 }
 
 func (c *Client) Session() uuid.NullUUID {
@@ -130,14 +156,5 @@ func (c *Client) Upload(ctx context.Context, payload uint32) (uint32, error) {
 }
 
 func (c *Client) newGrpcClient() (pb.ClientClient, error) {
-	conn, err := grpc.Dial(
-		"",
-		grpc.WithInsecure(),
-		grpc.WithContextDialer(func(ctx context.Context, s string) (net.Conn, error) {
-			return gostream.Dial(ctx, c.h, c.p, ID_TELEMETRY)
-		}))
-	if err != nil {
-		return nil, err
-	}
-	return pb.NewClientClient(conn), nil
+	return pb.NewClientClient(c.c), nil
 }

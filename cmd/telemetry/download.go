@@ -18,6 +18,8 @@ func actionDownload(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
+	defer client.Close()
+
 	rate, err := client.Download(context.Background(), telemetry.DEFAULT_PAYLOAD_SIZE)
 	if err != nil {
 		return err

@@ -1,6 +1,7 @@
 package collector
 
 import (
+	"context"
 	"time"
 
 	"git.d464.sh/adc/telemetry/pkg/snapshot"
@@ -13,21 +14,29 @@ type NetworkOptions struct {
 }
 
 type networkCollector struct {
+	ctx  context.Context
 	opts NetworkOptions
 	sink snapshot.Sink
 	node *core.IpfsNode
 }
 
-func RunNetworkCollector(n *core.IpfsNode, sink snapshot.Sink, opts NetworkOptions) {
-	c := &networkCollector{opts: opts, sink: sink, node: n}
+func RunNetworkCollector(ctx context.Context, n *core.IpfsNode, sink snapshot.Sink, opts NetworkOptions) {
+	c := &networkCollector{ctx: ctx, opts: opts, sink: sink, node: n}
 	c.Run()
 }
 
 func (c *networkCollector) Run() {
+	ticker := time.NewTicker(c.opts.Interval)
+
+LOOP:
 	for {
-		network := newNetworkFromNode(c.node)
-		c.sink.PushNetwork(network)
-		time.Sleep(c.opts.Interval)
+		select {
+		case <-ticker.C:
+			network := newNetworkFromNode(c.node)
+			c.sink.PushNetwork(network)
+		case <-c.ctx.Done():
+			break LOOP
+		}
 	}
 }
 

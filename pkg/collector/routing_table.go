@@ -1,6 +1,7 @@
 package collector
 
 import (
+	"context"
 	"time"
 
 	"git.d464.sh/adc/telemetry/pkg/snapshot"
@@ -12,21 +13,28 @@ type RoutingTableOptions struct {
 }
 
 type routingTableCollector struct {
+	ctx  context.Context
 	opts RoutingTableOptions
 	sink snapshot.Sink
 	node *core.IpfsNode
 }
 
-func RunRoutintTableCollector(n *core.IpfsNode, sink snapshot.Sink, opts RoutingTableOptions) {
-	c := &routingTableCollector{opts: opts, sink: sink, node: n}
+func RunRoutintTableCollector(ctx context.Context, n *core.IpfsNode, sink snapshot.Sink, opts RoutingTableOptions) {
+	c := &routingTableCollector{ctx: ctx, opts: opts, sink: sink, node: n}
 	c.Run()
 }
 
 func (c *routingTableCollector) Run() {
+	ticker := time.NewTicker(c.opts.Interval)
+LOOP:
 	for {
-		routing_table := newRoutingTableFromNode(c.node)
-		c.sink.PushRoutingTable(routing_table)
-		time.Sleep(c.opts.Interval)
+		select {
+		case <-ticker.C:
+			routing_table := newRoutingTableFromNode(c.node)
+			c.sink.PushRoutingTable(routing_table)
+		case <-c.ctx.Done():
+			break LOOP
+		}
 	}
 }
 
