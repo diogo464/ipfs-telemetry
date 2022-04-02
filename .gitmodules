@@ -13,3 +13,6 @@
 [submodule "third_party/go-libp2p-kbucket"]
 	path = third_party/go-libp2p-kbucket
 	url = https://git.d464.sh/adc/go-libp2p-kbucket
+[submodule "third_party/go-libp2p-quic-transport"]
+	path = third_party/go-libp2p-quic-transport
+	url = https://git.d464.sh/adc/go-libp2p-quic-transport
