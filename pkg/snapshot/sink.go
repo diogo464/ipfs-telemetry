@@ -6,4 +6,5 @@ type Sink interface {
 	PushNetwork(*Network)
 	PushResources(*Resources)
 	PushBitswap(*Bitswap)
+	PushStorage(*Storage)
 }

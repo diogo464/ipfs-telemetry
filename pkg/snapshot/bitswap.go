@@ -11,6 +11,8 @@ type Bitswap struct {
 	Timestamp          time.Time `json:"timestamp"`
 	DiscoverySucceeded uint32    `json:"discovery_succeeded"`
 	DiscoveryFailed    uint32    `json:"discovery_failed"`
+	MessagesIn         uint32    `json:"messages_in"`
+	MessagesOut        uint32    `json:"messages_out"`
 }
 
 func (*Bitswap) sealed() {}
@@ -20,6 +22,8 @@ func BitswapFromPB(in *pb.Bitswap) (*Bitswap, error) {
 		Timestamp:          in.Timestamp.AsTime(),
 		DiscoverySucceeded: in.GetDiscoverySucceeded(),
 		DiscoveryFailed:    in.GetDiscoveryFailed(),
+		MessagesIn:         in.GetMessagesIn(),
+		MessagesOut:        in.GetMessagesOut(),
 	}, nil
 }
 
@@ -28,5 +32,7 @@ func (bs *Bitswap) ToPB() *pb.Bitswap {
 		Timestamp:          timestamppb.New(bs.Timestamp),
 		DiscoverySucceeded: bs.DiscoverySucceeded,
 		DiscoveryFailed:    bs.DiscoveryFailed,
+		MessagesIn:         bs.MessagesIn,
+		MessagesOut:        bs.MessagesOut,
 	}
 }

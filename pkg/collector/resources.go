@@ -52,7 +52,7 @@ LOOP:
 
 			runtime.ReadMemStats(stats)
 			c.sink.PushResources(&snapshot.Resources{
-				Timestamp:   time.Now().UTC(),
+				Timestamp:   snapshot.NewTimestamp(),
 				CpuUsage:    float32(usage),
 				MemoryUsed:  stats.HeapAlloc,
 				MemoryFree:  mem_free,

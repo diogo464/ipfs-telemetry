@@ -92,6 +92,10 @@ func NewTelemetryService(n *core.IpfsNode, opts ...Option) (*TelemetryService, e
 		Interval: time.Second * 5,
 	})
 
+    go collector.RunStorageCollector(ctx, t.node, t.wnd, collector.StorageOptions{
+        Interval: time.Second * 5,
+    })
+
 	return t, nil
 }
 

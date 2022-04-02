@@ -2,7 +2,6 @@ package collector
 
 import (
 	"context"
-	"math/rand"
 	"time"
 
 	"git.d464.sh/adc/telemetry/pkg/snapshot"
@@ -86,17 +85,6 @@ LOOP:
 	}
 }
 
-func (c *pingCollector) pickRandomPeer() (peer.ID, bool) {
-	peers := c.h.Peerstore().PeersWithAddrs()
-	lpeers := len(peers)
-	if lpeers == 0 {
-		return peer.ID(""), false
-	}
-	index := rand.Intn(lpeers)
-	peerid := peers[index]
-	return peerid, true
-}
-
 func (c *pingCollector) ping(p peer.ID) (*snapshot.Ping, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), c.opts.Timeout)
 	defer cancel()
@@ -128,7 +116,7 @@ func (c *pingCollector) ping(p peer.ID) (*snapshot.Ping, error) {
 	destination := c.h.Peerstore().PeerInfo(p)
 
 	return &snapshot.Ping{
-		Timestamp:   time.Now().UTC(),
+		Timestamp:   snapshot.NewTimestamp(),
 		Source:      source,
 		Destination: destination,
 		Durations:   durations,

@@ -64,17 +64,30 @@ message Bitswap {
     google.protobuf.Timestamp timestamp     = 1;
     uint32 discovery_succeeded              = 2;
     uint32 discovery_failed                 = 3;
+    uint32 messages_in                      = 4;
+    uint32 messages_out                     = 5;
 }
 
 message Ipns {
     google.protobuf.Timestamp timestamp     = 1;
 }
 
+message Storage {
+    google.protobuf.Timestamp timestamp     = 1;
+    uint64 storage_used                     = 2;
+    uint64 storage_total                    = 3;
+    uint64 num_objects                      = 4;
+}
+
 message Set {
-    repeated Ping pings                     = 1;
-    repeated RoutingTable routing_tables    = 2;
-    repeated Network networks               = 3;
-    repeated Resources resources            = 4;
-    repeated TraceRoute traceroutes         = 5;
-    repeated Bitswap bitswaps               = 6;
+    repeated Ping pings                         = 1;
+    repeated RoutingTable routing_tables        = 2;
+    repeated Network networks                   = 3;
+    repeated Resources resources                = 4;
+    repeated TraceRoute traceroutes             = 5;
+    repeated Kademlia kademlias                 = 6;
+    repeated KademliaQueryTime kad_query_times  = 7;
+    repeated Bitswap bitswaps                   = 8;
+    repeated Ipns ipns                          = 9;
+    repeated Storage storages                   = 10;
 }

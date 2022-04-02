@@ -45,7 +45,7 @@ func newNetworkFromNode(n *core.IpfsNode) *snapshot.Network {
 	cmgr := n.PeerHost.ConnManager().(*connmgr.BasicConnMgr)
 	info := cmgr.GetInfo()
 	return &snapshot.Network{
-		Timestamp:   time.Now().UTC(),
+		Timestamp:   snapshot.NewTimestamp(),
 		Overall:     reporter.GetBandwidthTotals(),
 		PerProtocol: reporter.GetBandwidthByProtocol(),
 		NumConns:    uint32(info.ConnCount),

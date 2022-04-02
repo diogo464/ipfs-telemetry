@@ -20,6 +20,7 @@ func main() {
 			CommandUpload,
 			CommandDownload,
 			CommandWatch,
+			CommandTraceRoute,
 		},
 	}
 	if err := app.Run(os.Args); err != nil {

@@ -29,6 +29,9 @@ build: monitor crawler ipfs
 
 install: ipfs-install
 
+check:
+	./scripts/check.sh
+
 .PHONY: proto
 proto:
 	protoc $(PROTO_FLAGS) api/common.proto
@@ -46,6 +49,10 @@ tools:
 	$(GOCC) install github.com/volatiletech/sqlboiler/v4/drivers/sqlboiler-psql@latest
 	$(GOCC) install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 	$(GOCC) install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+	$(GOCC) get github.com/BurntSushi/go-sumtype
+
+tidy:
+	./scripts/tidy.sh
 
 database-up:
 		@ if podman container exists $(DATABASE_CONTAINER) ; then \

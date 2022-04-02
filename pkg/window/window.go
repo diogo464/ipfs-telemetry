@@ -75,6 +75,10 @@ func (w *windowImpl) PushBitswap(b *snapshot.Bitswap) {
 	w.push(b.Timestamp, b.ToPB())
 }
 
+func (w *windowImpl) PushStorage(s *snapshot.Storage) {
+	w.push(s.Timestamp, s.ToPB())
+}
+
 func (w *windowImpl) Since(seqn uint64) *pb.Set {
 	w.Lock()
 	defer w.Unlock()

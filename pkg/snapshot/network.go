@@ -22,12 +22,18 @@ type Network struct {
 func (*Network) sealed() {}
 
 func NetworkFromPB(in *pb.Network) (*Network, error) {
-	// TODO: Fix this
+	perprotocol := make(map[protocol.ID]metrics.Stats, len(in.GetStatsByProtocol()))
+	for k, v := range in.GetStatsByProtocol() {
+		perprotocol[protocol.ID(k)] = pbutils.MetricsStatsFromPB(v)
+	}
+
 	return &Network{
-		Timestamp: in.GetTimestamp().AsTime(),
-		NumConns:  in.GetNumConns(),
-		LowWater:  in.GetLowWater(),
-		HighWater: in.GetHighWater(),
+		Timestamp:   in.GetTimestamp().AsTime(),
+		Overall:     pbutils.MetricsStatsFromPB(in.GetStatsOverall()),
+		PerProtocol: perprotocol,
+		NumConns:    in.GetNumConns(),
+		LowWater:    in.GetLowWater(),
+		HighWater:   in.GetHighWater(),
 	}, nil
 }
 

@@ -2,6 +2,7 @@ package snapshot
 
 import (
 	"fmt"
+	"time"
 
 	pb "git.d464.sh/adc/telemetry/pkg/proto/snapshot"
 )
@@ -14,6 +15,7 @@ type Snapshot interface {
 }
 
 func FromPB(v interface{}) (Snapshot, error) {
+	// TODO: make sure this is up to date
 	switch s := v.(type) {
 	case *pb.Ping:
 		return PingFromPB(s)
@@ -80,6 +82,10 @@ func SetPBToSnapshotArray(in *pb.Set) ([]Snapshot, error) {
 	}
 
 	return snapshots, nil
+}
+
+func NewTimestamp() time.Time {
+	return time.Now().UTC()
 }
 
 type Set struct {

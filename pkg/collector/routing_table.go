@@ -41,5 +41,8 @@ LOOP:
 func newRoutingTableFromNode(n *core.IpfsNode) *snapshot.RoutingTable {
 	rt := n.DHT.WAN.RoutingTable()
 	buckets := rt.DumpBuckets()
-	return &snapshot.RoutingTable{Buckets: buckets}
+	return &snapshot.RoutingTable{
+		Timestamp: snapshot.NewTimestamp(),
+		Buckets:   buckets,
+	}
 }

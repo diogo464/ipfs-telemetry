@@ -20,6 +20,8 @@ func (s *Monitor) handleSnapshot(p peer.ID, ss snapshot.Snapshot) error {
 		return s.handleResourcesSnapshot(p, v)
 	case *snapshot.Bitswap:
 		return s.handleBitswapSnapshot(p, v)
+	case *snapshot.Storage:
+		return s.handleStorageSnapshot(p, v)
 	default:
 		panic("unimplemented")
 	}
@@ -47,5 +49,9 @@ func (s *Monitor) handleBitswapSnapshot(p peer.ID, ss *snapshot.Bitswap) error {
 		return err
 	}
 	fmt.Println(string(marshaled))
+	return nil
+}
+
+func (s *Monitor) handleStorageSnapshot(p peer.ID, ss *snapshot.Storage) error {
 	return nil
 }

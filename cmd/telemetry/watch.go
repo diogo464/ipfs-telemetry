@@ -12,6 +12,7 @@ var FLAG_RT = &cli.BoolFlag{Name: "rt"}
 var FLAG_NETWORK = &cli.BoolFlag{Name: "network"}
 var FLAG_RESOURCES = &cli.BoolFlag{Name: "resources"}
 var FLAG_BITSWAP = &cli.BoolFlag{Name: "bitswap"}
+var FLAG_STORAGE = &cli.BoolFlag{Name: "storage"}
 
 var CommandWatch = &cli.Command{
 	Name:   "watch",
@@ -22,6 +23,7 @@ var CommandWatch = &cli.Command{
 		FLAG_NETWORK,
 		FLAG_RESOURCES,
 		FLAG_BITSWAP,
+		FLAG_STORAGE,
 	},
 }
 
@@ -37,12 +39,14 @@ func actionWatch(c *cli.Context) error {
 	show_network := c.Bool(FLAG_NETWORK.Name)
 	show_resources := c.Bool(FLAG_RESOURCES.Name)
 	show_bitswap := c.Bool(FLAG_BITSWAP.Name)
-	if !show_ping && !show_rt && !show_network && !show_resources && !show_bitswap {
+	show_storage := c.Bool(FLAG_STORAGE.Name)
+	if !show_ping && !show_rt && !show_network && !show_resources && !show_bitswap && !show_storage {
 		show_ping = true
 		show_rt = true
 		show_network = true
 		show_resources = true
 		show_bitswap = true
+		show_storage = true
 	}
 
 	ticker := time.NewTicker(time.Second)
@@ -68,6 +72,8 @@ LOOP:
 					show = show_resources
 				case *snapshot.Bitswap:
 					show = show_bitswap
+				case *snapshot.Storage:
+					show = show_storage
 				}
 				if show {
 					printAsJson(s)
