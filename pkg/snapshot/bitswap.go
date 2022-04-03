@@ -7,6 +7,10 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+var _ Snapshot = (*Bitswap)(nil)
+
+const BITSWAP_NAME = "bitswap"
+
 type Bitswap struct {
 	Timestamp          time.Time `json:"timestamp"`
 	DiscoverySucceeded uint32    `json:"discovery_succeeded"`
@@ -15,7 +19,16 @@ type Bitswap struct {
 	MessagesOut        uint32    `json:"messages_out"`
 }
 
-func (*Bitswap) sealed() {}
+func (*Bitswap) sealed()                   {}
+func (*Bitswap) GetName() string           { return BITSWAP_NAME }
+func (b *Bitswap) GetTimestamp() time.Time { return b.Timestamp }
+func (b *Bitswap) ToPB() *pb.Snapshot {
+	return &pb.Snapshot{
+		Body: &pb.Snapshot_Bitswap{
+			Bitswap: BitswapToPB(b),
+		},
+	}
+}
 
 func BitswapFromPB(in *pb.Bitswap) (*Bitswap, error) {
 	return &Bitswap{
@@ -27,7 +40,7 @@ func BitswapFromPB(in *pb.Bitswap) (*Bitswap, error) {
 	}, nil
 }
 
-func (bs *Bitswap) ToPB() *pb.Bitswap {
+func BitswapToPB(bs *Bitswap) *pb.Bitswap {
 	return &pb.Bitswap{
 		Timestamp:          timestamppb.New(bs.Timestamp),
 		DiscoverySucceeded: bs.DiscoverySucceeded,

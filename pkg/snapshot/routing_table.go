@@ -8,12 +8,25 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+var _ Snapshot = (*RoutingTable)(nil)
+
+const ROUTING_TABLE_NAME = "routingtable"
+
 type RoutingTable struct {
 	Timestamp time.Time   `json:"timestamp"`
 	Buckets   [][]peer.ID `json:"buckets"`
 }
 
-func (*RoutingTable) sealed() {}
+func (*RoutingTable) sealed()                   {}
+func (*RoutingTable) GetName() string           { return ROUTING_TABLE_NAME }
+func (r *RoutingTable) GetTimestamp() time.Time { return r.Timestamp }
+func (r *RoutingTable) ToPB() *pb.Snapshot {
+	return &pb.Snapshot{
+		Body: &pb.Snapshot_RoutingTable{
+			RoutingTable: RoutingTableToPB(r),
+		},
+	}
+}
 
 func RoutingTableFromPB(in *pb.RoutingTable) (*RoutingTable, error) {
 	buckets := make([][]peer.ID, 0, len(in.GetBuckets()))
@@ -34,7 +47,7 @@ func RoutingTableFromPB(in *pb.RoutingTable) (*RoutingTable, error) {
 	}, nil
 }
 
-func (r *RoutingTable) ToPB() *pb.RoutingTable {
+func RoutingTableToPB(r *RoutingTable) *pb.RoutingTable {
 	buckets := make([]*pb.RoutingTable_Bucket, 0, len(r.Buckets))
 	for _, b := range r.Buckets {
 		peers := make([]string, 0, len(b))
@@ -54,7 +67,7 @@ func (r *RoutingTable) ToPB() *pb.RoutingTable {
 func RoutingTableArrayToPB(in []*RoutingTable) []*pb.RoutingTable {
 	out := make([]*pb.RoutingTable, 0, len(in))
 	for _, p := range in {
-		out = append(out, p.ToPB())
+		out = append(out, RoutingTableToPB(p))
 	}
 	return out
 }

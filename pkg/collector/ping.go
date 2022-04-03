@@ -66,7 +66,7 @@ LOOP:
 		case r := <-c.cresult:
 			inprogress = false
 			if r.err == nil {
-				c.sink.PushPing(r.ps)
+				c.sink.Push(r.ps)
 			}
 		case <-ticker.C:
 			if !inprogress {

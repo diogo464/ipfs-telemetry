@@ -31,7 +31,7 @@ LOOP:
 		select {
 		case <-ticker.C:
 			routing_table := newRoutingTableFromNode(c.node)
-			c.sink.PushRoutingTable(routing_table)
+			c.sink.Push(routing_table)
 		case <-c.ctx.Done():
 			break LOOP
 		}

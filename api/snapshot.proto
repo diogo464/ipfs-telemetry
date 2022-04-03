@@ -53,10 +53,14 @@ message TraceRoute {
     telemetry.AddrInfo origin               = 2;
     telemetry.AddrInfo destination          = 3;
     string provider                         = 4;
-    string output                           = 5;
+    bytes output                            = 5;
 }
 
 message Kademlia {
+    google.protobuf.Timestamp timestamp     = 1;
+}
+
+message KademliaQuery {
     google.protobuf.Timestamp timestamp     = 1;
 }
 
@@ -79,15 +83,17 @@ message Storage {
     uint64 num_objects                      = 4;
 }
 
-message Set {
-    repeated Ping pings                         = 1;
-    repeated RoutingTable routing_tables        = 2;
-    repeated Network networks                   = 3;
-    repeated Resources resources                = 4;
-    repeated TraceRoute traceroutes             = 5;
-    repeated Kademlia kademlias                 = 6;
-    repeated KademliaQueryTime kad_query_times  = 7;
-    repeated Bitswap bitswaps                   = 8;
-    repeated Ipns ipns                          = 9;
-    repeated Storage storages                   = 10;
+message Snapshot  {
+    oneof body {
+        Ping ping                       = 1; 
+        RoutingTable routing_table      = 2;
+        Network network                 = 3;
+        Resources resources             = 4;
+        TraceRoute traceroute           = 5;
+        Kademlia kademlia               = 6;
+        KademliaQuery kademlia_query    = 7;
+        Bitswap bitswap                 = 8;
+        Ipns ipns                       = 9;
+        Storage storage                 = 10;
+    }
 }

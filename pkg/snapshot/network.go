@@ -10,6 +10,10 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+var _ Snapshot = (*Network)(nil)
+
+const NETWORK_NAME = "network"
+
 type Network struct {
 	Timestamp   time.Time                     `json:"timestamp"`
 	Overall     metrics.Stats                 `json:"overall"`
@@ -19,7 +23,16 @@ type Network struct {
 	HighWater   uint32                        `json:"highwater"`
 }
 
-func (*Network) sealed() {}
+func (*Network) sealed()                   {}
+func (*Network) GetName() string           { return NETWORK_NAME }
+func (n *Network) GetTimestamp() time.Time { return n.Timestamp }
+func (n *Network) ToPB() *pb.Snapshot {
+	return &pb.Snapshot{
+		Body: &pb.Snapshot_Network{
+			Network: NetworkToPB(n),
+		},
+	}
+}
 
 func NetworkFromPB(in *pb.Network) (*Network, error) {
 	perprotocol := make(map[protocol.ID]metrics.Stats, len(in.GetStatsByProtocol()))
@@ -37,7 +50,7 @@ func NetworkFromPB(in *pb.Network) (*Network, error) {
 	}, nil
 }
 
-func (n *Network) ToPB() *pb.Network {
+func NetworkToPB(n *Network) *pb.Network {
 	byprotocol := make(map[string]*pb.Network_Stats)
 	for k, v := range n.PerProtocol {
 		byprotocol[string(k)] = pbutils.MetricsStatsToPB(&v)
@@ -56,7 +69,7 @@ func (n *Network) ToPB() *pb.Network {
 func NetworkArrayToPB(in []*Network) []*pb.Network {
 	out := make([]*pb.Network, 0, len(in))
 	for _, p := range in {
-		out = append(out, p.ToPB())
+		out = append(out, NetworkToPB(p))
 	}
 	return out
 }

@@ -7,6 +7,10 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+var _ Snapshot = (*Storage)(nil)
+
+const STORAGE_NAME = "storage"
+
 type Storage struct {
 	Timestamp    time.Time `json:"timestamp"`
 	StorageUsed  uint64    `json:"storage_used"`
@@ -14,7 +18,16 @@ type Storage struct {
 	NumObjects   uint64    `json:"num_objects"`
 }
 
-func (*Storage) sealed() {}
+func (*Storage) sealed()                   {}
+func (*Storage) GetName() string           { return STORAGE_NAME }
+func (s *Storage) GetTimestamp() time.Time { return s.Timestamp }
+func (s *Storage) ToPB() *pb.Snapshot {
+	return &pb.Snapshot{
+		Body: &pb.Snapshot_Storage{
+			Storage: StorageToPB(s),
+		},
+	}
+}
 
 func StorageFromPB(in *pb.Storage) (*Storage, error) {
 	return &Storage{
@@ -24,7 +37,7 @@ func StorageFromPB(in *pb.Storage) (*Storage, error) {
 	}, nil
 }
 
-func (s *Storage) ToPB() *pb.Storage {
+func StorageToPB(s *Storage) *pb.Storage {
 	return &pb.Storage{
 		Timestamp:    timestamppb.New(s.Timestamp),
 		StorageUsed:  s.StorageUsed,

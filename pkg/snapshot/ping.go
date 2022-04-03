@@ -9,6 +9,10 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+var _ Snapshot = (*Ping)(nil)
+
+const PING_NAME = "ping"
+
 type Ping struct {
 	Timestamp   time.Time       `json:"timestamp"`
 	Source      peer.AddrInfo   `json:"source"`
@@ -16,7 +20,16 @@ type Ping struct {
 	Durations   []time.Duration `json:"durations"`
 }
 
-func (*Ping) sealed() {}
+func (*Ping) sealed()                   {}
+func (*Ping) GetName() string           { return PING_NAME }
+func (p *Ping) GetTimestamp() time.Time { return p.Timestamp }
+func (p *Ping) ToPB() *pb.Snapshot {
+	return &pb.Snapshot{
+		Body: &pb.Snapshot_Ping{
+			Ping: PingToPB(p),
+		},
+	}
+}
 
 func PingFromPB(in *pb.Ping) (*Ping, error) {
 	source, err := pbutils.AddrInfoFromPB(in.Source)
@@ -39,7 +52,7 @@ func PingFromPB(in *pb.Ping) (*Ping, error) {
 	}, nil
 }
 
-func (p *Ping) ToPB() *pb.Ping {
+func PingToPB(p *Ping) *pb.Ping {
 	source := pbutils.AddrInfoToPB(&p.Source)
 	destination := pbutils.AddrInfoToPB(&p.Destination)
 
@@ -54,7 +67,7 @@ func (p *Ping) ToPB() *pb.Ping {
 func PingArrayToPB(in []*Ping) []*pb.Ping {
 	out := make([]*pb.Ping, 0, len(in))
 	for _, p := range in {
-		out = append(out, p.ToPB())
+		out = append(out, PingToPB(p))
 	}
 	return out
 }

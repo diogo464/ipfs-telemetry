@@ -7,6 +7,10 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+var _ Snapshot = (*Resources)(nil)
+
+const RESOURCES_NAME = "resources"
+
 type Resources struct {
 	Timestamp   time.Time `json:"timestamp"`
 	CpuUsage    float32   `json:"cpu_usage"`
@@ -16,7 +20,16 @@ type Resources struct {
 	Goroutines  uint32    `json:"goroutines"`
 }
 
-func (*Resources) sealed() {}
+func (*Resources) sealed()                   {}
+func (*Resources) GetName() string           { return RESOURCES_NAME }
+func (r *Resources) GetTimestamp() time.Time { return r.Timestamp }
+func (r *Resources) ToPB() *pb.Snapshot {
+	return &pb.Snapshot{
+		Body: &pb.Snapshot_Resources{
+			Resources: ResourcesToPB(r),
+		},
+	}
+}
 
 func ResourcesFromPB(in *pb.Resources) (*Resources, error) {
 	return &Resources{
@@ -29,7 +42,7 @@ func ResourcesFromPB(in *pb.Resources) (*Resources, error) {
 	}, nil
 }
 
-func (r *Resources) ToPB() *pb.Resources {
+func ResourcesToPB(r *Resources) *pb.Resources {
 	return &pb.Resources{
 		Timestamp:   timestamppb.New(r.Timestamp),
 		CpuUsage:    r.CpuUsage,

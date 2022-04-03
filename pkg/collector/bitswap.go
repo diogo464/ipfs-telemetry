@@ -49,7 +49,7 @@ LOOP:
 		select {
 		case <-ticker.C:
 			stats := c.bstelemetry.GetDiscoveryStats()
-			c.sink.PushBitswap(&snapshot.Bitswap{
+			c.sink.Push(&snapshot.Bitswap{
 				Timestamp:          snapshot.NewTimestamp(),
 				DiscoverySucceeded: uint32(stats.Succeeded),
 				DiscoveryFailed:    uint32(stats.Failed),

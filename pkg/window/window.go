@@ -12,13 +12,13 @@ var _ Window = (*windowImpl)(nil)
 
 type Window interface {
 	snapshot.Sink
-	Since(seqn uint64) *pb.Set
+	Since(seqn uint64) []*pb.Snapshot
 	NextSeqN() uint64
 }
 
 type windowItem struct {
 	seqn      uint64
-	snapshot  interface{}
+	snapshot  *pb.Snapshot
 	timestamp time.Time
 }
 
@@ -41,7 +41,7 @@ func newWindowImpl(duration time.Duration) *windowImpl {
 	}
 }
 
-func (w *windowImpl) push(t time.Time, v interface{}) {
+func (w *windowImpl) push(t time.Time, v *pb.Snapshot) {
 	w.Lock()
 	defer w.Unlock()
 
@@ -55,31 +55,11 @@ func (w *windowImpl) push(t time.Time, v interface{}) {
 	})
 }
 
-func (w *windowImpl) PushPing(ping *snapshot.Ping) {
-	w.push(ping.Timestamp, ping.ToPB())
+func (w *windowImpl) Push(s snapshot.Snapshot) {
+	w.push(s.GetTimestamp(), s.ToPB())
 }
 
-func (w *windowImpl) PushRoutingTable(rt *snapshot.RoutingTable) {
-	w.push(rt.Timestamp, rt.ToPB())
-}
-
-func (w *windowImpl) PushNetwork(n *snapshot.Network) {
-	w.push(n.Timestamp, n.ToPB())
-}
-
-func (w *windowImpl) PushResources(r *snapshot.Resources) {
-	w.push(r.Timestamp, r.ToPB())
-}
-
-func (w *windowImpl) PushBitswap(b *snapshot.Bitswap) {
-	w.push(b.Timestamp, b.ToPB())
-}
-
-func (w *windowImpl) PushStorage(s *snapshot.Storage) {
-	w.push(s.Timestamp, s.ToPB())
-}
-
-func (w *windowImpl) Since(seqn uint64) *pb.Set {
+func (w *windowImpl) Since(seqn uint64) []*pb.Snapshot {
 	w.Lock()
 	defer w.Unlock()
 
@@ -98,33 +78,12 @@ func (w *windowImpl) Since(seqn uint64) *pb.Set {
 		return nil
 	}
 
-	pings := make([]*pb.Ping, 0)
-	routingtables := make([]*pb.RoutingTable, 0)
-	networks := make([]*pb.Network, 0)
-	resources := make([]*pb.Resources, 0)
-	bitswap := make([]*pb.Bitswap, 0)
+	snapshots := make([]*pb.Snapshot, 0, size)
 	for i := start; i < len(w.items); i++ {
-		switch v := w.items[i].snapshot.(type) {
-		case *pb.Ping:
-			pings = append(pings, v)
-		case *pb.RoutingTable:
-			routingtables = append(routingtables, v)
-		case *pb.Network:
-			networks = append(networks, v)
-		case *pb.Resources:
-			resources = append(resources, v)
-		case *pb.Bitswap:
-			bitswap = append(bitswap, v)
-		}
+		snapshots = append(snapshots, w.items[i].snapshot)
 	}
 
-	return &pb.Set{
-		Pings:         pings,
-		RoutingTables: routingtables,
-		Networks:      networks,
-		Resources:     resources,
-		Bitswaps:      bitswap,
-	}
+	return snapshots
 }
 
 func (w *windowImpl) NextSeqN() uint64 {

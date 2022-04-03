@@ -49,7 +49,8 @@ tools:
 	$(GOCC) install github.com/volatiletech/sqlboiler/v4/drivers/sqlboiler-psql@latest
 	$(GOCC) install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 	$(GOCC) install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
-	$(GOCC) get github.com/BurntSushi/go-sumtype
+	$(GOCC) install github.com/BurntSushi/go-sumtype
+	$(GOCC) install honnef.co/go/tools/cmd/staticcheck@latest 
 
 tidy:
 	./scripts/tidy.sh

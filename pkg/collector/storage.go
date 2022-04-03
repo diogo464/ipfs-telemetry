@@ -20,7 +20,7 @@ func RunStorageCollector(ctx context.Context, node *core.IpfsNode, sink snapshot
 		select {
 		case <-ticker.C:
 			if stat, err := corerepo.RepoStat(ctx, node); err == nil {
-				sink.PushStorage(&snapshot.Storage{
+				sink.Push(&snapshot.Storage{
 					Timestamp:    snapshot.NewTimestamp(),
 					StorageUsed:  stat.RepoSize,
 					StorageTotal: stat.SizeStat.StorageMax,

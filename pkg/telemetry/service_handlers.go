@@ -34,12 +34,12 @@ func (s *TelemetryService) GetSnapshots(ctx context.Context, req *pb.GetSnapshot
 	}
 
 	session := s.session.String()
-	set := s.wnd.Since(since)
+	snapshots := s.wnd.Since(since)
 
 	return &pb.GetSnapshotsResponse{
-		Session: session,
-		Next:    s.wnd.NextSeqN(),
-		Set:     set,
+		Session:   session,
+		Next:      s.wnd.NextSeqN(),
+		Snapshots: snapshots,
 	}, nil
 }
 

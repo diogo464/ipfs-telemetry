@@ -33,7 +33,7 @@ LOOP:
 		select {
 		case <-ticker.C:
 			network := newNetworkFromNode(c.node)
-			c.sink.PushNetwork(network)
+			c.sink.Push(network)
 		case <-c.ctx.Done():
 			break LOOP
 		}

@@ -15,7 +15,7 @@ import (
 )
 
 type TelemetryService struct {
-	pb.UnimplementedClientServer
+	pb.UnimplementedTelemetryServer
 	// current session, randomly generated number
 	session uuid.UUID
 	// the node we are collecting telemetry from
@@ -55,7 +55,7 @@ func NewTelemetryService(n *core.IpfsNode, opts ...Option) (*TelemetryService, e
 	}
 
 	grpc_server := grpc.NewServer()
-	pb.RegisterClientServer(grpc_server, t)
+	pb.RegisterTelemetryServer(grpc_server, t)
 	t.grpc_server = grpc_server
 
 	go func() {
@@ -92,9 +92,13 @@ func NewTelemetryService(n *core.IpfsNode, opts ...Option) (*TelemetryService, e
 		Interval: time.Second * 5,
 	})
 
-    go collector.RunStorageCollector(ctx, t.node, t.wnd, collector.StorageOptions{
-        Interval: time.Second * 5,
-    })
+	go collector.RunStorageCollector(ctx, t.node, t.wnd, collector.StorageOptions{
+		Interval: time.Second * 5,
+	})
+
+	go collector.RunKademliaCollector(ctx, t.wnd, collector.KademliaOptions{
+		Interval: time.Second * 5,
+	})
 
 	return t, nil
 }

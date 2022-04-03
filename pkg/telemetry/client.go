@@ -81,16 +81,21 @@ func (c *Client) Snapshots(ctx context.Context) ([]snapshot.Snapshot, error) {
 		return nil, err
 	}
 
-	snapshots, err := snapshot.SetPBToSnapshotArray(response.GetSet())
-	if err != nil {
-		return nil, err
+	snapshots := response.GetSnapshots()
+	converted := make([]snapshot.Snapshot, len(snapshots))
+	for i, s := range snapshots {
+		v, err := snapshot.FromPB(s)
+		if err != nil {
+			return nil, err
+		}
+		converted[i] = v
 	}
 
 	c.s.UUID = session
 	c.s.Valid = true
 	c.n = response.Next
 
-	return snapshots, nil
+	return converted, nil
 }
 
 func (c *Client) SystemInfo(ctx context.Context) (*SystemInfo, error) {
@@ -155,6 +160,6 @@ func (c *Client) Upload(ctx context.Context, payload uint32) (uint32, error) {
 	return rate, nil
 }
 
-func (c *Client) newGrpcClient() (pb.ClientClient, error) {
-	return pb.NewClientClient(c.c), nil
+func (c *Client) newGrpcClient() (pb.TelemetryClient, error) {
+	return pb.NewTelemetryClient(c.c), nil
 }
