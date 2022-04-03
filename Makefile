@@ -25,7 +25,7 @@ crawler:
 telemetry:
 	$(GOCC) build -o bin/telemetry cmd/telemetry/*
 
-build: monitor crawler ipfs
+build: monitor crawler telemetry ipfs
 
 install: ipfs-install
 
@@ -52,8 +52,9 @@ tools:
 	$(GOCC) install github.com/volatiletech/sqlboiler/v4/drivers/sqlboiler-psql@latest
 	$(GOCC) install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 	$(GOCC) install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
-	$(GOCC) install github.com/BurntSushi/go-sumtype
+	$(GOCC) get github.com/BurntSushi/go-sumtype
 	$(GOCC) install honnef.co/go/tools/cmd/staticcheck@latest 
+	$(GOCC) install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 
 tidy:
 	./scripts/tidy.sh

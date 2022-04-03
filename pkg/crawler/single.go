@@ -7,11 +7,6 @@ import (
 	"github.com/libp2p/go-libp2p-core/peer"
 )
 
-type singleCrawlHandler struct {
-	addrs []peer.AddrInfo
-	err   error
-}
-
 func CrawSingle(ctx context.Context, h host.Host, p peer.AddrInfo) ([]peer.AddrInfo, error) {
 	crawler, err := newImplCrawler(h, NullEventHandler{}, WithConcurrency(1))
 	if err != nil {

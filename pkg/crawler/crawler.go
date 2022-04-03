@@ -81,7 +81,7 @@ func (c *implCrawler) Crawl(ctx context.Context) error {
 			defer wg.Done()
 		LOOP:
 			for pid := range cwork {
-				res := c.crawlPeer(ctx, handler, pid)
+				res := c.crawlPeer(workctx, handler, pid)
 				select {
 				case cresult <- res:
 				case <-workctx.Done():
@@ -146,7 +146,7 @@ func (c *implCrawler) crawlPeer(ctx context.Context, handler EventHandler, pid p
 	if err := c.h.Connect(ctx, c.h.Peerstore().PeerInfo(pid)); err != nil {
 		return crawlResult{err: err}
 	}
-	defer c.h.Network().ClosePeer(pid)
+	defer func() { _ = c.h.Network().ClosePeer(pid) }()
 
 	if err := handler.OnConnect(pid); err != nil {
 		return crawlResult{usererr: err}
@@ -168,6 +168,12 @@ func (c *implCrawler) crawlPeer(ctx context.Context, handler EventHandler, pid p
 
 		if len(addrset) == prevlen {
 			break
+		}
+
+		select {
+		case <-ctx.Done():
+			return crawlResult{err: ctx.Err()}
+		default:
 		}
 	}
 

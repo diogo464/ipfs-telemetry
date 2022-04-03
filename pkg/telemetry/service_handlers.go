@@ -61,7 +61,7 @@ func (s *TelemetryService) uploadHandler(stream network.Stream) {
 		return
 	}
 	rate := uint32(float64(n) / elapsed.Seconds())
-	utils.WriteU32(stream, rate)
+	_ = utils.WriteU32(stream, rate)
 }
 
 func (s *TelemetryService) downloadHandler(stream network.Stream) {
@@ -79,5 +79,5 @@ func (s *TelemetryService) downloadHandler(stream network.Stream) {
 		return
 	}
 	rate := uint32(float64(n) / elapsed.Seconds())
-	utils.WriteU32(stream, rate)
+	_ = utils.WriteU32(stream, rate)
 }

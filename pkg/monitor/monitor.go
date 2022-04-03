@@ -66,8 +66,11 @@ LOOP:
 		select {
 		case discovered := <-s.cdiscovered:
 			fmt.Println("Discovered:", discovered)
-			s.setupPeer(discovered)
-			s.collectTelemetry(discovered)
+			if err := s.setupPeer(discovered); err != nil {
+				fmt.Println("Failed to setup discovered peer", discovered, ":", err)
+			} else {
+				s.collectTelemetry(discovered)
+			}
 		case collect := <-s.ccollect:
 			fmt.Println("Collect:", collect)
 			s.collectTelemetry(collect)

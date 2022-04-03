@@ -1,0 +1,6 @@
+/deploy/
+/.gitignore
+/.gitmodules
+/dbconfig.yml
+/prometheus.yml
+/sqlboiler.toml

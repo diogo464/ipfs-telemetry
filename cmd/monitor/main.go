@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net"
 	"net/http"
 	"os"
@@ -59,7 +60,7 @@ func mainAction(c *cli.Context) error {
 
 	go func() {
 		http.Handle("/metrics", promhttp.Handler())
-		http.ListenAndServe(":2112", nil)
+		log.Fatal(http.ListenAndServe(":2112", nil))
 	}()
 
 	pb.RegisterMonitorServer(grpc_server, server)
