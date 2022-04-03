@@ -1,21 +1,17 @@
 package main
 
 import (
-	"context"
-	"database/sql"
 	"fmt"
 	"net"
+	"net/http"
 	"os"
-	"time"
 
+	"git.d464.sh/adc/telemetry/pkg/monitor"
 	pb "git.d464.sh/adc/telemetry/pkg/proto/monitor"
-	"github.com/ipfs/go-datastore"
+	"git.d464.sh/adc/telemetry/pkg/snapshot"
 	_ "github.com/lib/pq"
-	"github.com/libp2p/go-libp2p"
-	"github.com/libp2p/go-libp2p-core/host"
 	"github.com/libp2p/go-libp2p-core/peer"
-	"github.com/libp2p/go-libp2p-core/routing"
-	dht "github.com/libp2p/go-libp2p-kad-dht"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/urfave/cli/v2"
 	"google.golang.org/grpc"
 )
@@ -38,53 +34,32 @@ func main() {
 }
 
 func mainAction(c *cli.Context) error {
-	h, err := createHost()
-	if err != nil {
-		return err
-	}
-	defer h.Close()
-
 	listener, err := net.Listen("tcp", c.String(FLAG_ADDRESS.Name))
 	if err != nil {
 		return err
 	}
 	grpc_server := grpc.NewServer()
 
-	url := c.String(FLAG_DATABASE.Name)
-	db, err := sql.Open("postgres", url)
+	//url := c.String(FLAG_DATABASE.Name)
+	//db, err := sql.Open("postgres", url)
+	//if err != nil {
+	//	return err
+	//}
+	//defer db.Close()
+
+	exporter := monitor.NewExporterFn(func(i peer.ID, s []snapshot.Snapshot) {
+		fmt.Printf("Received %v snapshots\n", len(s))
+	})
+
+	server, err := monitor.NewMonitor(c.Context, exporter)
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-
-	server, err := NewMonitor(h, db)
-	if err != nil {
-		return err
-	}
-
-	pids := make([]peer.ID, 0, c.Args().Len())
-	for _, spid := range c.Args().Slice() {
-		pid, err := peer.Decode(spid)
-		if err != nil {
-			return err
-		}
-		pids = append(pids, pid)
-	}
+	defer server.Close()
 
 	go func() {
-		for _, pid := range pids {
-			server.PeerDiscovered(pid)
-		}
-	}()
-
-	//go func() {
-	//	http.Handle("/metrics", promhttp.Handler())
-	//	http.ListenAndServe(":2112", nil)
-	//}()
-
-	go func() {
-		<-c.Context.Done()
-		fmt.Println("CLI CONTEXT TERMINATED")
+		http.Handle("/metrics", promhttp.Handler())
+		http.ListenAndServe(":2112", nil)
 	}()
 
 	pb.RegisterMonitorServer(grpc_server, server)
@@ -95,38 +70,8 @@ func mainAction(c *cli.Context) error {
 		}
 	}()
 
-	server.StartMonitoring(c.Context)
-	fmt.Println("Staring GRPC graceful stop")
+	server.Run(c.Context)
 	grpc_server.GracefulStop()
-	fmt.Println("GRPC stopped")
 
 	return nil
-}
-
-func createHost() (host.Host, error) {
-	return libp2p.New(
-		libp2p.NoListenAddrs,
-		libp2p.Routing(func(h host.Host) (routing.PeerRouting, error) {
-			client := dht.NewDHTClient(context.TODO(), h, datastore.NewMapDatastore())
-			if err := client.Bootstrap(context.TODO()); err != nil {
-				return nil, err
-			}
-
-			var err error = nil
-			var success bool = false
-			for _, bootstrap := range dht.GetDefaultBootstrapPeerAddrInfos() {
-				err = h.Connect(context.TODO(), bootstrap)
-				if err == nil {
-					success = true
-				}
-			}
-
-			if success {
-				client.RefreshRoutingTable()
-				time.Sleep(time.Second * 2)
-				return client, nil
-			} else {
-				return nil, err
-			}
-		}))
 }

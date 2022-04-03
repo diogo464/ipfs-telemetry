@@ -25,9 +25,10 @@ func NewCrawler(h host.Host, handler EventHandler, opts ...Option) (Crawler, err
 }
 
 type crawlResult struct {
-	peer  peer.ID
-	peers []peer.AddrInfo
-	err   error
+	peer    peer.ID
+	peers   []peer.AddrInfo
+	err     error
+	usererr error
 }
 
 type implCrawler struct {
@@ -66,19 +67,26 @@ func newImplCrawler(h host.Host, handler EventHandler, opts ...Option) (*implCra
 func (c *implCrawler) Crawl(ctx context.Context) error {
 	handler := c.handler
 	cwork := make(chan peer.ID)
-	cresult := make(chan crawlResult)
+	cresult := make(chan crawlResult, 1)
+	workctx, cancel := context.WithCancel(ctx)
 	wg := new(sync.WaitGroup)
 
 	defer wg.Wait()
 	defer close(cwork)
+	defer cancel()
 
 	wg.Add(int(c.c.concurrency))
 	for i := 0; i < int(c.c.concurrency); i++ {
 		go func() {
 			defer wg.Done()
+		LOOP:
 			for pid := range cwork {
 				res := c.crawlPeer(ctx, handler, pid)
-				cresult <- res
+				select {
+				case cresult <- res:
+				case <-workctx.Done():
+					break LOOP
+				}
 			}
 		}()
 	}
@@ -102,7 +110,16 @@ func (c *implCrawler) Crawl(ctx context.Context) error {
 		}
 
 		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+		}
+
+		select {
 		case result := <-cresult:
+			if result.usererr != nil {
+				return result.usererr
+			}
 			if result.err == nil {
 				for _, addr := range result.peers {
 					if _, ok := queried[addr.ID]; !ok {
@@ -116,8 +133,6 @@ func (c *implCrawler) Crawl(ctx context.Context) error {
 		case cworkopt <- next_id:
 			pending = pending[1:]
 			inprogress += 1
-		case <-ctx.Done():
-			return ctx.Err()
 		}
 	}
 
@@ -133,7 +148,9 @@ func (c *implCrawler) crawlPeer(ctx context.Context, handler EventHandler, pid p
 	}
 	defer c.h.Network().ClosePeer(pid)
 
-	handler.OnConnect(pid)
+	if err := handler.OnConnect(pid); err != nil {
+		return crawlResult{usererr: err}
+	}
 
 	var result crawlResult
 	var addrset map[peer.ID]peer.AddrInfo = make(map[peer.ID]peer.AddrInfo)
@@ -161,9 +178,9 @@ func (c *implCrawler) crawlPeer(ctx context.Context, handler EventHandler, pid p
 	result.peers = discovered
 
 	if result.err == nil {
-		handler.OnFinish(pid, discovered)
+		result.usererr = handler.OnFinish(pid, discovered)
 	} else {
-		handler.OnFail(pid, result.err)
+		result.usererr = handler.OnFail(pid, result.err)
 	}
 
 	return result

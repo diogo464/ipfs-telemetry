@@ -35,9 +35,7 @@ func NewClient(h host.Host, p peer.ID) (*Client, error) {
 		"",
 		grpc.WithInsecure(),
 		grpc.WithContextDialer(func(ctx context.Context, s string) (net.Conn, error) {
-			fmt.Println("Grpc Dialing Peer")
 			conn, err := gostream.Dial(ctx, h, p, ID_TELEMETRY)
-			fmt.Println("Dial Complete")
 			return conn, err
 		}))
 

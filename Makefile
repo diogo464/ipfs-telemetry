@@ -32,6 +32,9 @@ install: ipfs-install
 check:
 	./scripts/check.sh
 
+clean:
+	rm -rf bin/ pkg/proto pkg/models
+
 .PHONY: proto
 proto:
 	protoc $(PROTO_FLAGS) api/common.proto
