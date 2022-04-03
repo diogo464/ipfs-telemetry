@@ -15,7 +15,9 @@ require (
 	github.com/libp2p/go-libp2p-core v0.11.0
 	github.com/libp2p/go-libp2p-gostream v0.3.0
 	github.com/libp2p/go-libp2p-kad-dht v0.15.0
+	github.com/libp2p/go-msgio v0.1.0
 	github.com/multiformats/go-multiaddr v0.4.1
+	github.com/multiformats/go-multihash v0.1.0
 	github.com/prometheus/client_golang v1.11.0
 	github.com/shirou/gopsutil v2.21.11+incompatible
 	github.com/spf13/viper v1.9.0
@@ -141,7 +143,6 @@ require (
 	github.com/libp2p/go-libp2p-yamux v0.6.0 // indirect
 	github.com/libp2p/go-maddr-filter v0.1.0 // indirect
 	github.com/libp2p/go-mplex v0.3.0 // indirect
-	github.com/libp2p/go-msgio v0.1.0 // indirect
 	github.com/libp2p/go-nat v0.1.0 // indirect
 	github.com/libp2p/go-netroute v0.1.6 // indirect
 	github.com/libp2p/go-openssl v0.0.7 // indirect
@@ -175,7 +176,6 @@ require (
 	github.com/multiformats/go-multiaddr-fmt v0.1.0 // indirect
 	github.com/multiformats/go-multibase v0.0.3 // indirect
 	github.com/multiformats/go-multicodec v0.3.0 // indirect
-	github.com/multiformats/go-multihash v0.1.0 // indirect
 	github.com/multiformats/go-multistream v0.2.2 // indirect
 	github.com/multiformats/go-varint v0.0.6 // indirect
 	github.com/nxadm/tail v1.4.8 // indirect
