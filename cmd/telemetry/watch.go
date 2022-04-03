@@ -13,6 +13,7 @@ var FLAG_NETWORK = &cli.BoolFlag{Name: "network"}
 var FLAG_RESOURCES = &cli.BoolFlag{Name: "resources"}
 var FLAG_BITSWAP = &cli.BoolFlag{Name: "bitswap"}
 var FLAG_STORAGE = &cli.BoolFlag{Name: "storage"}
+var FLAG_KADEMLIA = &cli.BoolFlag{Name: "kademlia"}
 
 var CommandWatch = &cli.Command{
 	Name:   "watch",
@@ -24,6 +25,7 @@ var CommandWatch = &cli.Command{
 		FLAG_RESOURCES,
 		FLAG_BITSWAP,
 		FLAG_STORAGE,
+		FLAG_KADEMLIA,
 	},
 }
 
@@ -40,13 +42,15 @@ func actionWatch(c *cli.Context) error {
 	show_resources := c.Bool(FLAG_RESOURCES.Name)
 	show_bitswap := c.Bool(FLAG_BITSWAP.Name)
 	show_storage := c.Bool(FLAG_STORAGE.Name)
-	if !show_ping && !show_rt && !show_network && !show_resources && !show_bitswap && !show_storage {
+	show_kademlia := c.Bool(FLAG_KADEMLIA.Name)
+	if !show_ping && !show_rt && !show_network && !show_resources && !show_bitswap && !show_storage && !show_kademlia {
 		show_ping = true
 		show_rt = true
 		show_network = true
 		show_resources = true
 		show_bitswap = true
 		show_storage = true
+		show_kademlia = true
 	}
 
 	ticker := time.NewTicker(time.Second)
@@ -74,6 +78,8 @@ LOOP:
 					show = show_bitswap
 				case *snapshot.Storage:
 					show = show_storage
+				case *snapshot.KademliaQuery:
+					show = show_kademlia
 				}
 				if show {
 					printAsJson(s)

@@ -37,7 +37,7 @@ func FromPB(v *pb.Snapshot) (Snapshot, error) {
 	case *pb.Snapshot_Kademlia:
 		panic("unimplemented")
 	case *pb.Snapshot_KademliaQuery:
-		panic("unimplemented")
+		return KademliaQueryFromPB(v.GetKademliaQuery())
 	case *pb.Snapshot_Bitswap:
 		return BitswapFromPB(v.GetBitswap())
 	case *pb.Snapshot_Ipns:
