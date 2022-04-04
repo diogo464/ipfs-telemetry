@@ -6,6 +6,7 @@ import (
 	"git.d464.sh/adc/telemetry/pkg/pbutils"
 	pb "git.d464.sh/adc/telemetry/pkg/proto/snapshot"
 	"github.com/libp2p/go-libp2p-core/metrics"
+	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/libp2p/go-libp2p-core/protocol"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -15,12 +16,13 @@ var _ Snapshot = (*Network)(nil)
 const NETWORK_NAME = "network"
 
 type Network struct {
-	Timestamp   time.Time                     `json:"timestamp"`
-	Overall     metrics.Stats                 `json:"overall"`
-	PerProtocol map[protocol.ID]metrics.Stats `json:"perprotocol"`
-	NumConns    uint32                        `json:"numconns"`
-	LowWater    uint32                        `json:"lowwater"`
-	HighWater   uint32                        `json:"highwater"`
+	Timestamp       time.Time                     `json:"timestamp"`
+	Overall         metrics.Stats                 `json:"overall"`
+	StatsByProtocol map[protocol.ID]metrics.Stats `json:"stats_by_protocol"`
+	StatsByPeer     map[peer.ID]metrics.Stats     `json:"stats_by_peer"`
+	NumConns        uint32                        `json:"numconns"`
+	LowWater        uint32                        `json:"lowwater"`
+	HighWater       uint32                        `json:"highwater"`
 }
 
 func (*Network) sealed()                   {}
@@ -35,31 +37,45 @@ func (n *Network) ToPB() *pb.Snapshot {
 }
 
 func NetworkFromPB(in *pb.Network) (*Network, error) {
-	perprotocol := make(map[protocol.ID]metrics.Stats, len(in.GetStatsByProtocol()))
+	byprotocol := make(map[protocol.ID]metrics.Stats, len(in.GetStatsByProtocol()))
 	for k, v := range in.GetStatsByProtocol() {
-		perprotocol[protocol.ID(k)] = pbutils.MetricsStatsFromPB(v)
+		byprotocol[protocol.ID(k)] = pbutils.MetricsStatsFromPB(v)
+	}
+	bypeer := make(map[peer.ID]metrics.Stats, len(in.GetStatsByPeer()))
+	for k, v := range in.GetStatsByPeer() {
+		p, err := peer.Decode(k)
+		if err != nil {
+			return nil, err
+		}
+		bypeer[p] = pbutils.MetricsStatsFromPB(v)
 	}
 
 	return &Network{
-		Timestamp:   in.GetTimestamp().AsTime(),
-		Overall:     pbutils.MetricsStatsFromPB(in.GetStatsOverall()),
-		PerProtocol: perprotocol,
-		NumConns:    in.GetNumConns(),
-		LowWater:    in.GetLowWater(),
-		HighWater:   in.GetHighWater(),
+		Timestamp:       in.GetTimestamp().AsTime(),
+		Overall:         pbutils.MetricsStatsFromPB(in.GetStatsOverall()),
+		StatsByProtocol: byprotocol,
+		StatsByPeer:     bypeer,
+		NumConns:        in.GetNumConns(),
+		LowWater:        in.GetLowWater(),
+		HighWater:       in.GetHighWater(),
 	}, nil
 }
 
 func NetworkToPB(n *Network) *pb.Network {
 	byprotocol := make(map[string]*pb.Network_Stats)
-	for k, v := range n.PerProtocol {
+	for k, v := range n.StatsByProtocol {
 		byprotocol[string(k)] = pbutils.MetricsStatsToPB(&v)
+	}
+	bypeer := make(map[string]*pb.Network_Stats)
+	for k, v := range n.StatsByPeer {
+		bypeer[k.Pretty()] = pbutils.MetricsStatsToPB(&v)
 	}
 
 	return &pb.Network{
 		Timestamp:       timestamppb.New(n.Timestamp),
 		StatsOverall:    pbutils.MetricsStatsToPB(&n.Overall),
 		StatsByProtocol: byprotocol,
+		StatsByPeer:     bypeer,
 		NumConns:        n.NumConns,
 		LowWater:        n.LowWater,
 		HighWater:       n.HighWater,

@@ -7,7 +7,7 @@ import (
 
 	"git.d464.sh/adc/telemetry/pkg/collector"
 	pb "git.d464.sh/adc/telemetry/pkg/proto/telemetry"
-	"git.d464.sh/adc/telemetry/pkg/window"
+	"git.d464.sh/adc/telemetry/pkg/telemetry/window"
 	"github.com/google/uuid"
 	"github.com/ipfs/go-ipfs/core"
 	gostream "github.com/libp2p/go-libp2p-gostream"
@@ -73,14 +73,10 @@ func NewTelemetryService(n *core.IpfsNode, opts ...Option) (*TelemetryService, e
 	})
 
 	go collector.RunNetworkCollector(ctx, t.node, t.wnd, collector.NetworkOptions{
-		Interval: time.Second * 3,
-	})
-
-	go collector.RunNetworkCollector(ctx, t.node, t.wnd, collector.NetworkOptions{
 		Interval: time.Second * 15,
 	})
 
-	go collector.RunRoutintTableCollector(ctx, t.node, t.wnd, collector.RoutingTableOptions{
+	go collector.RunRoutingTableCollector(ctx, t.node, t.wnd, collector.RoutingTableOptions{
 		Interval: time.Second * 10,
 	})
 
@@ -99,6 +95,12 @@ func NewTelemetryService(n *core.IpfsNode, opts ...Option) (*TelemetryService, e
 	go collector.RunKademliaCollector(ctx, t.wnd, collector.KademliaOptions{
 		Interval: time.Second * 5,
 	})
+
+	go collector.RunTraceRouteCollector(ctx, h, t.wnd, collector.TraceRouteOptions{
+		Interval: time.Second * 5,
+	})
+
+	go metricsTask(t.wnd)
 
 	return t, nil
 }

@@ -19,7 +19,7 @@ type routingTableCollector struct {
 	node *core.IpfsNode
 }
 
-func RunRoutintTableCollector(ctx context.Context, n *core.IpfsNode, sink snapshot.Sink, opts RoutingTableOptions) {
+func RunRoutingTableCollector(ctx context.Context, n *core.IpfsNode, sink snapshot.Sink, opts RoutingTableOptions) {
 	c := &routingTableCollector{ctx: ctx, opts: opts, sink: sink, node: n}
 	c.Run()
 }

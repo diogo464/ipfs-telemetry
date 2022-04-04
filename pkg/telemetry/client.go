@@ -66,7 +66,7 @@ func (c *Client) Snapshots(ctx context.Context) ([]snapshot.Snapshot, error) {
 		return nil, err
 	}
 
-	response, err := client.GetSnapshots(ctx, &pb.GetSnapshotsRequest{
+	stream, err := client.GetSnapshots(ctx, &pb.GetSnapshotsRequest{
 		Session: c.s.UUID.String(),
 		Since:   c.n,
 	})
@@ -74,24 +74,34 @@ func (c *Client) Snapshots(ctx context.Context) ([]snapshot.Snapshot, error) {
 		return nil, err
 	}
 
-	session, err := uuid.Parse(response.Session)
-	if err != nil {
-		return nil, err
-	}
-
-	snapshots := response.GetSnapshots()
-	converted := make([]snapshot.Snapshot, len(snapshots))
-	for i, s := range snapshots {
-		v, err := snapshot.FromPB(s)
+	converted := make([]snapshot.Snapshot, 0)
+	for {
+		response, err := stream.Recv()
+		if err == io.EOF {
+			break
+		}
 		if err != nil {
 			return nil, err
 		}
-		converted[i] = v
-	}
 
-	c.s.UUID = session
-	c.s.Valid = true
-	c.n = response.Next
+		session, err := uuid.Parse(response.Session)
+		if err != nil {
+			return nil, err
+		}
+
+		snapshots := response.GetSnapshots()
+		for _, s := range snapshots {
+			v, err := snapshot.FromPB(s)
+			if err != nil {
+				return nil, err
+			}
+			converted = append(converted, v)
+		}
+
+		c.s.UUID = session
+		c.s.Valid = true
+		c.n = response.Next
+	}
 
 	return converted, nil
 }

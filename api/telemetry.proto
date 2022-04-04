@@ -6,9 +6,15 @@ import "google/protobuf/empty.proto";
 
 option go_package = "git.d464.sh/adc/telemetry/pkg/proto/telemetry";
 
+message SystemInfo {
+    string os       = 1; 
+    string arch     = 2;
+    uint32 numcpu   = 3;
+}
+
 service Telemetry {
     rpc GetSystemInfo(google.protobuf.Empty) returns (SystemInfo);
-    rpc GetSnapshots(GetSnapshotsRequest) returns (GetSnapshotsResponse);
+    rpc GetSnapshots(GetSnapshotsRequest) returns (stream GetSnapshotsResponse);
 }
 
 message GetSnapshotsRequest {
@@ -20,10 +26,4 @@ message GetSnapshotsResponse {
     string session                          = 1; 
     uint64 next                             = 2;
     repeated snapshot.Snapshot snapshots    = 3;
-}
-
-message SystemInfo {
-    string os       = 1; 
-    string arch     = 2;
-    uint32 numcpu   = 3;
 }

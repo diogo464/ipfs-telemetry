@@ -22,10 +22,10 @@ func (s *TelemetryService) GetSystemInfo(context.Context, *emptypb.Empty) (*pb.S
 	return response, nil
 }
 
-func (s *TelemetryService) GetSnapshots(ctx context.Context, req *pb.GetSnapshotsRequest) (*pb.GetSnapshotsResponse, error) {
+func (s *TelemetryService) GetSnapshots(req *pb.GetSnapshotsRequest, stream pb.Telemetry_GetSnapshotsServer) error {
 	remote_sesssion, err := uuid.Parse(req.Session)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	var since uint64 = 0
@@ -35,12 +35,23 @@ func (s *TelemetryService) GetSnapshots(ctx context.Context, req *pb.GetSnapshot
 
 	session := s.session.String()
 	snapshots := s.wnd.Since(since)
+	for len(snapshots) > 0 {
+		split := 128
+		if len(snapshots) < split {
+			split = len(snapshots)
+		}
 
-	return &pb.GetSnapshotsResponse{
-		Session:   session,
-		Next:      s.wnd.NextSeqN(),
-		Snapshots: snapshots,
-	}, nil
+		err = stream.Send(&pb.GetSnapshotsResponse{
+			Session:   session,
+			Next:      s.wnd.NextSeqN(),
+			Snapshots: snapshots[:split],
+		})
+		if err != nil {
+			return err
+		}
+		snapshots = snapshots[split:]
+	}
+	return nil
 }
 
 func (s *TelemetryService) uploadHandler(stream network.Stream) {

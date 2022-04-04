@@ -25,7 +25,7 @@ type windowItem struct {
 type windowImpl struct {
 	sync.Mutex
 	seqn     uint64
-	items    []windowItem
+	items    *vecdeque[windowItem]
 	duration time.Duration
 }
 
@@ -36,7 +36,7 @@ func NewWindow(duration time.Duration) Window {
 func newWindowImpl(duration time.Duration) *windowImpl {
 	return &windowImpl{
 		seqn:     1,
-		items:    []windowItem{},
+		items:    newVecDeque[windowItem](),
 		duration: duration,
 	}
 }
@@ -48,7 +48,7 @@ func (w *windowImpl) push(t time.Time, v *pb.Snapshot) {
 	w.clean()
 	seqn := w.seqn
 	w.seqn += 1
-	w.items = append(w.items, windowItem{
+	w.items.PushBack(windowItem{
 		seqn:      seqn,
 		snapshot:  v,
 		timestamp: t,
@@ -63,24 +63,24 @@ func (w *windowImpl) Since(seqn uint64) []*pb.Snapshot {
 	w.Lock()
 	defer w.Unlock()
 
-	if len(w.items) == 0 {
+	if w.items.IsEmpty() {
 		return nil
 	}
 
-	left := w.items[0].seqn
+	left := w.items.Front().seqn
 	if seqn < left {
 		seqn = left
 	}
 
 	start := int(seqn - left)
-	size := len(w.items) - start
+	size := w.items.Len() - start
 	if size <= 0 {
 		return nil
 	}
 
 	snapshots := make([]*pb.Snapshot, 0, size)
-	for i := start; i < len(w.items); i++ {
-		snapshots = append(snapshots, w.items[i].snapshot)
+	for i := start; i < w.items.Len(); i++ {
+		snapshots = append(snapshots, w.items.Get(i).snapshot)
 	}
 
 	return snapshots
@@ -94,7 +94,7 @@ func (w *windowImpl) NextSeqN() uint64 {
 }
 
 func (w *windowImpl) clean() {
-	for len(w.items) > 0 && time.Since(w.items[0].timestamp) > w.duration {
-		w.items = w.items[1:]
+	for !w.items.IsEmpty() && time.Since(w.items.Front().timestamp) > w.duration {
+		w.items.PopFront()
 	}
 }

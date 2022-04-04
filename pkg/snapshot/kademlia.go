@@ -9,14 +9,61 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+var _ Snapshot = (*Kademlia)(nil)
 var _ Snapshot = (*KademliaQuery)(nil)
 
+const KADEMLIA_NAME = "kademlia"
 const KADEMLIA_QUERY_NAME = "kademliaquery"
 
+type KademliaMessageType = pb.KademliaMessageType
+
+const (
+	KademliaMessageTypePutValue     = pb.KademliaMessageType_PUT_VALUE
+	KademliaMessageTypeGetValue     = pb.KademliaMessageType_GET_VALUE
+	KademliaMessageTypeAddProvider  = pb.KademliaMessageType_ADD_PROVIDER
+	KademliaMessageTypeGetProviders = pb.KademliaMessageType_GET_PROVIDERS
+	KademliaMessageTypeFindNode     = pb.KademliaMessageType_FIND_NODE
+	KademliaMessageTypePing         = pb.KademliaMessageType_PING
+)
+
+type Kademlia struct {
+	Timestamp   time.Time                      `json:"timestamp"`
+	MessagesIn  map[KademliaMessageType]uint64 `json:"messages_in"`
+	MessagesOut map[KademliaMessageType]uint64 `json:"messages_out"`
+}
+
+func (*Kademlia) sealed()                   {}
+func (*Kademlia) GetName() string           { return KADEMLIA_NAME }
+func (p *Kademlia) GetTimestamp() time.Time { return p.Timestamp }
+func (p *Kademlia) ToPB() *pb.Snapshot {
+	return &pb.Snapshot{
+		Body: &pb.Snapshot_Kademlia{
+			Kademlia: KademliaToPB(p),
+		},
+	}
+}
+
+func KademliaFromPB(in *pb.Kademlia) (*Kademlia, error) {
+	return &Kademlia{
+		Timestamp:   in.GetTimestamp().AsTime(),
+		MessagesIn:  kademliaCountMapFromPB(in.GetMessagesIn()),
+		MessagesOut: kademliaCountMapFromPB(in.GetMessagesOut()),
+	}, nil
+}
+
+func KademliaToPB(in *Kademlia) *pb.Kademlia {
+	return &pb.Kademlia{
+		Timestamp:   timestamppb.New(in.Timestamp),
+		MessagesIn:  kademliaCountMapToPB(in.MessagesIn),
+		MessagesOut: kademliaCountMapToPB(in.MessagesOut),
+	}
+}
+
 type KademliaQuery struct {
-	Timestamp time.Time     `json:"timestamp"`
-	Peer      peer.ID       `json:"peer"`
-	Duration  time.Duration `json:"duration"`
+	Timestamp time.Time           `json:"timestamp"`
+	Peer      peer.ID             `json:"peer"`
+	QueryType KademliaMessageType `json:"query_type"`
+	Duration  time.Duration       `json:"duration"`
 }
 
 func (*KademliaQuery) sealed()                   {}
@@ -38,6 +85,7 @@ func KademliaQueryFromPB(in *pb.KademliaQuery) (*KademliaQuery, error) {
 	return &KademliaQuery{
 		Timestamp: in.GetTimestamp().AsTime(),
 		Peer:      p,
+		QueryType: in.GetQueryType(),
 		Duration:  in.GetDuration().AsDuration(),
 	}, nil
 }
@@ -46,6 +94,38 @@ func KademliaQueryToPB(p *KademliaQuery) *pb.KademliaQuery {
 	return &pb.KademliaQuery{
 		Timestamp: timestamppb.New(p.Timestamp),
 		Peer:      p.Peer.Pretty(),
+		QueryType: p.QueryType,
 		Duration:  durationpb.New(p.Duration),
 	}
+}
+
+func kademliaCountMapFromPB(in map[uint32]uint64) map[KademliaMessageType]uint64 {
+	out := make(map[KademliaMessageType]uint64, len(in))
+	// ignore unkown message types
+	for k, v := range in {
+		switch k {
+		case uint32(KademliaMessageTypePutValue):
+			out[KademliaMessageTypePutValue] = v
+		case uint32(KademliaMessageTypeGetValue):
+			out[KademliaMessageTypeGetValue] = v
+		case uint32(KademliaMessageTypeAddProvider):
+			out[KademliaMessageTypeAddProvider] = v
+		case uint32(KademliaMessageTypeGetProviders):
+			out[KademliaMessageTypeGetProviders] = v
+		case uint32(KademliaMessageTypeFindNode):
+			out[KademliaMessageTypeFindNode] = v
+		case uint32(KademliaMessageTypePing):
+			out[KademliaMessageTypePing] = v
+		default:
+		}
+	}
+	return out
+}
+
+func kademliaCountMapToPB(in map[KademliaMessageType]uint64) map[uint32]uint64 {
+	out := make(map[uint32]uint64, len(in))
+	for k, v := range in {
+		out[uint32(k)] = v
+	}
+	return out
 }

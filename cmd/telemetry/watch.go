@@ -14,6 +14,8 @@ var FLAG_RESOURCES = &cli.BoolFlag{Name: "resources"}
 var FLAG_BITSWAP = &cli.BoolFlag{Name: "bitswap"}
 var FLAG_STORAGE = &cli.BoolFlag{Name: "storage"}
 var FLAG_KADEMLIA = &cli.BoolFlag{Name: "kademlia"}
+var FLAG_KADEMLIAQUERY = &cli.BoolFlag{Name: "kademliaquery"}
+var FLAG_TRACEROUTE = &cli.BoolFlag{Name: "traceroute"}
 
 var CommandWatch = &cli.Command{
 	Name:   "watch",
@@ -26,6 +28,8 @@ var CommandWatch = &cli.Command{
 		FLAG_BITSWAP,
 		FLAG_STORAGE,
 		FLAG_KADEMLIA,
+		FLAG_KADEMLIAQUERY,
+		FLAG_TRACEROUTE,
 	},
 }
 
@@ -43,7 +47,9 @@ func actionWatch(c *cli.Context) error {
 	show_bitswap := c.Bool(FLAG_BITSWAP.Name)
 	show_storage := c.Bool(FLAG_STORAGE.Name)
 	show_kademlia := c.Bool(FLAG_KADEMLIA.Name)
-	if !show_ping && !show_rt && !show_network && !show_resources && !show_bitswap && !show_storage && !show_kademlia {
+	show_kademlia_query := c.Bool(FLAG_KADEMLIAQUERY.Name)
+	show_traceroute := c.Bool(FLAG_TRACEROUTE.Name)
+	if !show_ping && !show_rt && !show_network && !show_resources && !show_bitswap && !show_storage && !show_kademlia && !show_traceroute && !show_kademlia_query {
 		show_ping = true
 		show_rt = true
 		show_network = true
@@ -51,6 +57,8 @@ func actionWatch(c *cli.Context) error {
 		show_bitswap = true
 		show_storage = true
 		show_kademlia = true
+		show_kademlia_query = true
+		show_traceroute = true
 	}
 
 	ticker := time.NewTicker(time.Second)
@@ -78,8 +86,12 @@ LOOP:
 					show = show_bitswap
 				case *snapshot.Storage:
 					show = show_storage
-				case *snapshot.KademliaQuery:
+				case *snapshot.Kademlia:
 					show = show_kademlia
+				case *snapshot.KademliaQuery:
+					show = show_kademlia_query
+				case *snapshot.TraceRoute:
+					show = show_traceroute
 				}
 				if show {
 					printAsJson(s)

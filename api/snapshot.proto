@@ -33,10 +33,13 @@ message Network {
 
     google.protobuf.Timestamp timestamp     = 1;
     Stats stats_overall                     = 2;
+    // ProtocolID -> Stats
     map<string, Stats> stats_by_protocol    = 3;
-    uint32 num_conns                        = 4;
-    uint32 low_water                        = 5;
-    uint32 high_water                       = 6;
+    // PeerID -> Stats
+    map<string, Stats> stats_by_peer        = 4;
+    uint32 num_conns                        = 5;
+    uint32 low_water                        = 6;
+    uint32 high_water                       = 7;
 }
 
 message Resources {
@@ -56,14 +59,27 @@ message TraceRoute {
     bytes output                            = 5;
 }
 
+enum KademliaMessageType {
+    PUT_VALUE      = 0;
+    GET_VALUE      = 1;
+    ADD_PROVIDER   = 2;
+    GET_PROVIDERS  = 3;
+    FIND_NODE      = 4;
+    PING           = 5;
+}
+
 message Kademlia {
     google.protobuf.Timestamp timestamp     = 1;
+    // map<KademliaMessageType, uint64>
+    map<uint32, uint64> messages_in         = 2;
+    map<uint32, uint64> messages_out        = 3;
 }
 
 message KademliaQuery {
     google.protobuf.Timestamp timestamp     = 1;
     string peer                             = 2;
-    google.protobuf.Duration duration       = 3; 
+    KademliaMessageType query_type          = 3;
+    google.protobuf.Duration duration       = 4; 
 }
 
 message Bitswap {

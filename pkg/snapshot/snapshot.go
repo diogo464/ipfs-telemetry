@@ -35,7 +35,7 @@ func FromPB(v *pb.Snapshot) (Snapshot, error) {
 	case *pb.Snapshot_Traceroute:
 		return TraceRouteFromPB(v.GetTraceroute())
 	case *pb.Snapshot_Kademlia:
-		panic("unimplemented")
+		return KademliaFromPB(v.GetKademlia())
 	case *pb.Snapshot_KademliaQuery:
 		return KademliaQueryFromPB(v.GetKademliaQuery())
 	case *pb.Snapshot_Bitswap:
