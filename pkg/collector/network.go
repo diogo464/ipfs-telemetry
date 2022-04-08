@@ -48,7 +48,7 @@ func newNetworkFromNode(n *core.IpfsNode) *snapshot.Network {
 		Timestamp:       snapshot.NewTimestamp(),
 		Overall:         reporter.GetBandwidthTotals(),
 		StatsByProtocol: reporter.GetBandwidthByProtocol(),
-		StatsByPeer:     reporter.GetBandwidthByPeer(),
+		StatsByPeer:     nil, //reporter.GetBandwidthByPeer(),
 		NumConns:        uint32(info.ConnCount),
 		LowWater:        uint32(info.LowWater),
 		HighWater:       uint32(info.HighWater),

@@ -1,13 +1,16 @@
 package pbutils
 
 import (
+	"io"
 	"time"
 
 	pbc "git.d464.sh/adc/telemetry/pkg/proto/common"
 	pbs "git.d464.sh/adc/telemetry/pkg/proto/snapshot"
+	"git.d464.sh/adc/telemetry/pkg/rle"
 	"github.com/libp2p/go-libp2p-core/metrics"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/multiformats/go-multiaddr"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 )
 
@@ -64,4 +67,12 @@ func MetricsStatsFromPB(in *pbs.Network_Stats) metrics.Stats {
 		RateIn:   float64(in.GetRateIn()),
 		RateOut:  float64(in.GetRateOut()),
 	}
+}
+
+func ReadRle(r io.Reader, v proto.Message) error {
+	data, err := rle.Read(r)
+	if err != nil {
+		return err
+	}
+	return proto.Unmarshal(data, v)
 }

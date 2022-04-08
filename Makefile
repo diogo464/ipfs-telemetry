@@ -41,6 +41,7 @@ proto:
 	protoc $(PROTO_FLAGS) api/snapshot.proto
 	protoc $(PROTO_FLAGS) api/telemetry.proto
 	protoc $(PROTO_FLAGS) api/monitor.proto
+	protoc $(PROTO_FLAGS) api/window.proto
 
 generate:
 	sqlboiler --wipe psql
@@ -48,32 +49,17 @@ generate:
 setup: tools generate proto
 
 tools:
-	$(GOCC) install github.com/volatiletech/sqlboiler/v4@latest
-	$(GOCC) install github.com/volatiletech/sqlboiler/v4/drivers/sqlboiler-psql@latest
 	$(GOCC) install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 	$(GOCC) install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
-	$(GOCC) get github.com/BurntSushi/go-sumtype
 	$(GOCC) install honnef.co/go/tools/cmd/staticcheck@latest 
 	$(GOCC) install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+	mkdir -p bin/ && cd third_party/go-sumtype && $(GOCC) build -o ../../bin
 
 tidy:
 	./scripts/tidy.sh
 
 database-up:
-		@ if podman container exists $(DATABASE_CONTAINER) ; then \
-			podman start $(DATABASE_CONTAINER) && sleep 3 ; \
-		else \
-			podman run --name=$(DATABASE_CONTAINER) --tty --interactive --detach --network=host -e POSTGRES_PASSWORD=$(DATABASE_PASSWORD) $(DATABASE_IMAGE) && sleep 3 ; \
-		fi ;
+	./scripts/database.sh up
 
 database-down:
-	podman rm -f $(DATABASE_CONTAINER)
-
-migrate-up:
-	migrate -path $(DATABASE_MIGRATIONS) -database $(DATABASE_URL) up
-
-migrate-down:
-	migrate -path $(DATABASE_MIGRATIONS) -database $(DATABASE_URL) down
-
-migrate-version:
-	migrate -path $(DATABASE_MIGRATIONS) -database $(DATABASE_URL) version
+	./scripts/database.sh down

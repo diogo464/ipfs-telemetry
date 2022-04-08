@@ -31,6 +31,7 @@ func (s *Storage) ToPB() *pb.Snapshot {
 
 func StorageFromPB(in *pb.Storage) (*Storage, error) {
 	return &Storage{
+		Timestamp:    in.GetTimestamp().AsTime(),
 		StorageUsed:  in.GetStorageUsed(),
 		StorageTotal: in.GetStorageTotal(),
 		NumObjects:   in.GetNumObjects(),

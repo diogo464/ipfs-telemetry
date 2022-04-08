@@ -26,6 +26,15 @@ const (
 	KademliaMessageTypePing         = pb.KademliaMessageType_PING
 )
 
+var KademliaMessageTypeString = map[KademliaMessageType]string{
+	KademliaMessageTypePutValue:     "putvalue",
+	KademliaMessageTypeGetValue:     "getvalue",
+	KademliaMessageTypeAddProvider:  "addprovider",
+	KademliaMessageTypeGetProviders: "getproviders",
+	KademliaMessageTypeFindNode:     "findnode",
+	KademliaMessageTypePing:         "ping",
+}
+
 type Kademlia struct {
 	Timestamp   time.Time                      `json:"timestamp"`
 	MessagesIn  map[KademliaMessageType]uint64 `json:"messages_in"`

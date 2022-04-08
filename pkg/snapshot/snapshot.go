@@ -40,11 +40,21 @@ func FromPB(v *pb.Snapshot) (Snapshot, error) {
 		return KademliaQueryFromPB(v.GetKademliaQuery())
 	case *pb.Snapshot_Bitswap:
 		return BitswapFromPB(v.GetBitswap())
-	case *pb.Snapshot_Ipns:
-		panic("unimplemented")
 	case *pb.Snapshot_Storage:
 		return StorageFromPB(v.GetStorage())
 	default:
 		panic("unimplemented")
 	}
+}
+
+func FromArrayPB(v []*pb.Snapshot) ([]Snapshot, error) {
+	out := make([]Snapshot, 0, len(v))
+	for _, spb := range v {
+		s, err := FromPB(spb)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, s)
+	}
+	return out, nil
 }

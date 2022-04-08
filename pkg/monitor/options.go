@@ -14,6 +14,7 @@ import (
 const (
 	DEFAULT_MAX_FAILED_ATTEMPTS = 3
 	DEFAULT_COLLECT_PERIOD      = time.Second * 1
+	DEFAULT_BANDWIDTH_PERIOD    = time.Second * 5
 )
 
 type Option func(*options) error
@@ -23,14 +24,16 @@ type options struct {
 	// to a peer before that peer is removed
 	MaxFailedAttemps int
 	// How often should telemetry be collected from peers
-	CollectPeriod time.Duration
-	Host          host.Host
+	CollectPeriod   time.Duration
+	BandwidthPeriod time.Duration
+	Host            host.Host
 }
 
 func defaults() *options {
 	return &options{
 		MaxFailedAttemps: DEFAULT_MAX_FAILED_ATTEMPTS,
 		CollectPeriod:    DEFAULT_COLLECT_PERIOD,
+		BandwidthPeriod:  DEFAULT_BANDWIDTH_PERIOD,
 	}
 }
 
@@ -53,6 +56,13 @@ func WithMaxFailedAttempts(attemps int) Option {
 func WithCollectPeriod(period time.Duration) Option {
 	return func(o *options) error {
 		o.CollectPeriod = period
+		return nil
+	}
+}
+
+func WithBandwidthPeriod(period time.Duration) Option {
+	return func(o *options) error {
+		o.BandwidthPeriod = period
 		return nil
 	}
 }

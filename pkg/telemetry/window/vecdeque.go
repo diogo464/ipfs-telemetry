@@ -14,8 +14,10 @@ func (v *vecdeque[T]) PushBack(x T) {
 	v.buf = append(v.buf, x)
 }
 
-func (v *vecdeque[T]) PopFront() {
+func (v *vecdeque[T]) PopFront() T {
+	x := v.buf[0]
 	v.buf = v.buf[1:]
+	return x
 }
 
 func (v *vecdeque[T]) Get(i int) T {
@@ -36,4 +38,10 @@ func (v *vecdeque[T]) Len() int {
 
 func (v *vecdeque[T]) IsEmpty() bool {
 	return v.Len() == 0
+}
+
+func (v *vecdeque[T]) TakeBuffer() []T {
+	b := v.buf
+	v.buf = make([]T, 0, len(b))
+	return b
 }

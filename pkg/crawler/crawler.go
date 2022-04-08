@@ -25,7 +25,6 @@ func NewCrawler(h host.Host, handler EventHandler, opts ...Option) (Crawler, err
 }
 
 type crawlResult struct {
-	peer    peer.ID
 	peers   []peer.AddrInfo
 	err     error
 	usererr error

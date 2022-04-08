@@ -9,7 +9,6 @@ import (
 	pb "git.d464.sh/adc/telemetry/pkg/proto/telemetry"
 	"git.d464.sh/adc/telemetry/pkg/snapshot"
 	"git.d464.sh/adc/telemetry/pkg/utils"
-	"github.com/google/uuid"
 	"github.com/libp2p/go-libp2p-core/host"
 	"github.com/libp2p/go-libp2p-core/peer"
 	gostream "github.com/libp2p/go-libp2p-gostream"
@@ -19,15 +18,33 @@ import (
 
 var ErrInvalidResponse = fmt.Errorf("invalid response")
 
-type Client struct {
-	// session uuid
-	s uuid.NullUUID
-	// sequence number for snapshots
-	n uint64
+type SnapshotStreamItem struct {
+	NextSeqN  uint64
+	Snapshots []snapshot.Snapshot
+}
 
+type Client struct {
 	h host.Host
 	p peer.ID
 	c *grpc.ClientConn
+}
+
+func Connect(ctx context.Context, h host.Host, p peer.ID) (*Client, error) {
+	stream, err := gostream.Dial(ctx, h, p, ID_TELEMETRY)
+	if err != nil {
+		return nil, err
+	}
+	conn, err := grpc.Dial(
+		"",
+		grpc.WithInsecure(),
+		grpc.WithContextDialer(func(ctx context.Context, s string) (net.Conn, error) {
+			return stream, err
+		}))
+	return &Client{
+		h: h,
+		p: p,
+		c: conn,
+	}, nil
 }
 
 func NewClient(h host.Host, p peer.ID) (*Client, error) {
@@ -44,8 +61,6 @@ func NewClient(h host.Host, p peer.ID) (*Client, error) {
 	}
 
 	return &Client{
-		s: uuid.NullUUID{},
-		n: 0,
 		h: h,
 		p: p,
 		c: conn,
@@ -56,54 +71,63 @@ func (c *Client) Close() {
 	c.c.Close()
 }
 
-func (c *Client) Session() uuid.NullUUID {
-	return c.s
-}
-
-func (c *Client) Snapshots(ctx context.Context) ([]snapshot.Snapshot, error) {
+func (c *Client) SessionInfo(ctx context.Context) (*SessionInfo, error) {
 	client, err := c.newGrpcClient()
 	if err != nil {
 		return nil, err
 	}
 
-	stream, err := client.GetSnapshots(ctx, &pb.GetSnapshotsRequest{
-		Session: c.s.UUID.String(),
-		Since:   c.n,
-	})
+	response, err := client.GetSessionInfo(ctx, &emptypb.Empty{})
 	if err != nil {
 		return nil, err
 	}
 
-	converted := make([]snapshot.Snapshot, 0)
+	session, err := ParseSession(response.GetSession())
+	if err != nil {
+		return nil, err
+	}
+
+	return &SessionInfo{
+		Session:  session,
+		BootTime: response.GetBootTime().AsTime(),
+	}, nil
+}
+
+func (c *Client) Snapshots(ctx context.Context, since uint64, css chan<- SnapshotStreamItem) error {
+	client, err := c.newGrpcClient()
+	if err != nil {
+		return err
+	}
+
+	stream, err := client.GetSnapshots(ctx, &pb.GetSnapshotsRequest{
+		Since: since,
+	})
+	if err != nil {
+		return err
+	}
+
 	for {
 		response, err := stream.Recv()
 		if err == io.EOF {
 			break
 		}
 		if err != nil {
-			return nil, err
+			return err
 		}
 
-		session, err := uuid.Parse(response.Session)
+		snapshotspb := response.GetSnapshots()
+		snapshots, err := snapshot.FromArrayPB(snapshotspb)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
-		snapshots := response.GetSnapshots()
-		for _, s := range snapshots {
-			v, err := snapshot.FromPB(s)
-			if err != nil {
-				return nil, err
-			}
-			converted = append(converted, v)
+		css <- SnapshotStreamItem{
+			NextSeqN:  response.GetNext(),
+			Snapshots: snapshots,
 		}
-
-		c.s.UUID = session
-		c.s.Valid = true
-		c.n = response.Next
 	}
 
-	return converted, nil
+	return nil
 }
 
 func (c *Client) SystemInfo(ctx context.Context) (*SystemInfo, error) {
@@ -166,6 +190,21 @@ func (c *Client) Upload(ctx context.Context, payload uint32) (uint32, error) {
 	}
 
 	return rate, nil
+}
+
+func (c *Client) Bandwidth(ctx context.Context, payload uint32) (Bandwidth, error) {
+	download, err := c.Download(ctx, payload)
+	if err != nil {
+		return Bandwidth{}, err
+	}
+	upload, err := c.Upload(ctx, payload)
+	if err != nil {
+		return Bandwidth{}, err
+	}
+	return Bandwidth{
+		UploadRate:   upload,
+		DownloadRate: download,
+	}, nil
 }
 
 func (c *Client) newGrpcClient() (pb.TelemetryClient, error) {

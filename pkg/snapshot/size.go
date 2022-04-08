@@ -50,7 +50,7 @@ func RoutingTableSize(s *RoutingTable) int {
 }
 
 func NetworkSize(s *Network) int {
-	return timestampSize + metricsStatsSize + len(s.StatsByProtocol)*metricsStatsSize + len(s.StatsByPeer)*(metricsStatsSize+peerIdSize) + 4*3
+	return timestampSize + metricsStatsSize + len(s.StatsByProtocol)*metricsStatsSize + /*len(s.StatsByPeer)*(metricsStatsSize+peerIdSize) */ +4*3
 }
 
 func ResourcesSize(s *Resources) int {

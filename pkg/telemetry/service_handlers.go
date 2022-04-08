@@ -8,10 +8,18 @@ import (
 
 	pb "git.d464.sh/adc/telemetry/pkg/proto/telemetry"
 	"git.d464.sh/adc/telemetry/pkg/utils"
-	"github.com/google/uuid"
 	"github.com/libp2p/go-libp2p-core/network"
 	"google.golang.org/protobuf/types/known/emptypb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
+
+func (s *TelemetryService) GetSessionInfo(context.Context, *emptypb.Empty) (*pb.GetSessionInfoResponse, error) {
+	response := &pb.GetSessionInfoResponse{
+		Session:  s.session.String(),
+		BootTime: timestamppb.New(s.boot_time),
+	}
+	return response, nil
+}
 
 func (s *TelemetryService) GetSystemInfo(context.Context, *emptypb.Empty) (*pb.SystemInfo, error) {
 	response := &pb.SystemInfo{
@@ -23,34 +31,23 @@ func (s *TelemetryService) GetSystemInfo(context.Context, *emptypb.Empty) (*pb.S
 }
 
 func (s *TelemetryService) GetSnapshots(req *pb.GetSnapshotsRequest, stream pb.Telemetry_GetSnapshotsServer) error {
-	remote_sesssion, err := uuid.Parse(req.Session)
-	if err != nil {
-		return err
-	}
-
-	var since uint64 = 0
-	if remote_sesssion == s.session {
-		since = req.GetSince()
-	}
-
-	session := s.session.String()
-	snapshots := s.wnd.Since(since)
-	for len(snapshots) > 0 {
-		split := 128
-		if len(snapshots) < split {
-			split = len(snapshots)
+	since := req.GetSince()
+	for {
+		result := s.snapshots.Fetch(since, FETCH_BLOCK_SIZE)
+		since = result.FirstSeqN + uint64(len(result.Snapshots))
+		if len(result.Snapshots) == 0 {
+			break
 		}
 
-		err = stream.Send(&pb.GetSnapshotsResponse{
-			Session:   session,
-			Next:      s.wnd.NextSeqN(),
-			Snapshots: snapshots[:split],
+		err := stream.Send(&pb.GetSnapshotsResponse{
+			Next:      since,
+			Snapshots: result.Snapshots,
 		})
 		if err != nil {
 			return err
 		}
-		snapshots = snapshots[split:]
 	}
+
 	return nil
 }
 

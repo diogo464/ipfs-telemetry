@@ -66,7 +66,9 @@ LOOP:
 	for {
 		select {
 		case <-ticker.C:
-			snapshots, err := client.Snapshots(c.Context)
+			//snapshots, err := client.StreamSnapshots(c.Context)
+			var err error = nil
+			var snapshots = []snapshot.Snapshot{}
 			if err != nil {
 				return err
 			}

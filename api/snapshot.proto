@@ -90,10 +90,6 @@ message Bitswap {
     uint32 messages_out                     = 5;
 }
 
-message Ipns {
-    google.protobuf.Timestamp timestamp     = 1;
-}
-
 message Storage {
     google.protobuf.Timestamp timestamp     = 1;
     uint64 storage_used                     = 2;
@@ -111,7 +107,6 @@ message Snapshot  {
         Kademlia kademlia               = 6;
         KademliaQuery kademlia_query    = 7;
         Bitswap bitswap                 = 8;
-        Ipns ipns                       = 9;
-        Storage storage                 = 10;
+        Storage storage                 = 9;
     }
 }

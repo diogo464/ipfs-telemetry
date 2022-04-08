@@ -1,0 +1,13 @@
+syntax = "proto3";
+package telemetry.window;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "git.d464.sh/adc/telemetry/pkg/proto/window";
+
+message WindowHeader {
+    string session                              = 1; 
+    uint64 first_seqn                           = 2;
+    uint64 snapshot_count                       = 3;
+    google.protobuf.Timestamp last_timestamp    = 4;
+}

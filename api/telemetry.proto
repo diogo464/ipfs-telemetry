@@ -3,6 +3,7 @@ package telemetry;
 
 import "snapshot.proto";
 import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
 
 option go_package = "git.d464.sh/adc/telemetry/pkg/proto/telemetry";
 
@@ -13,17 +14,21 @@ message SystemInfo {
 }
 
 service Telemetry {
+    rpc GetSessionInfo(google.protobuf.Empty) returns (GetSessionInfoResponse);
     rpc GetSystemInfo(google.protobuf.Empty) returns (SystemInfo);
     rpc GetSnapshots(GetSnapshotsRequest) returns (stream GetSnapshotsResponse);
 }
 
+message GetSessionInfoResponse  {
+    string session                      = 1;
+    google.protobuf.Timestamp boot_time = 2;
+}
+
 message GetSnapshotsRequest {
-    string session  = 1;
-    uint64 since    = 2;
+    uint64 since    = 1;
 }
 
 message GetSnapshotsResponse {
-    string session                          = 1; 
-    uint64 next                             = 2;
-    repeated snapshot.Snapshot snapshots    = 3;
+    uint64 next                             = 1;
+    repeated snapshot.Snapshot snapshots    = 2;
 }

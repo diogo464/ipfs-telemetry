@@ -11,8 +11,7 @@ type options struct {
 }
 
 var defaults = func(o *options) {
-	o.windowDuration = time.Minute * 30
-
+	o.windowDuration = time.Minute * 90
 }
 
 func WithWindowDuration(duration time.Duration) Option {

@@ -9,9 +9,7 @@ import (
 
 	"git.d464.sh/adc/telemetry/pkg/monitor"
 	pb "git.d464.sh/adc/telemetry/pkg/proto/monitor"
-	"git.d464.sh/adc/telemetry/pkg/snapshot"
-	_ "github.com/lib/pq"
-	"github.com/libp2p/go-libp2p-core/peer"
+	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/urfave/cli/v2"
 	"google.golang.org/grpc"
@@ -41,16 +39,11 @@ func mainAction(c *cli.Context) error {
 	}
 	grpc_server := grpc.NewServer()
 
-	//url := c.String(FLAG_DATABASE.Name)
-	//db, err := sql.Open("postgres", url)
-	//if err != nil {
-	//	return err
-	//}
-	//defer db.Close()
-
-	exporter := monitor.NewExporterFn(func(i peer.ID, s []snapshot.Snapshot) {
-		fmt.Printf("Received %v snapshots\n", len(s))
-	})
+	client := influxdb2.NewClient("http://localhost:8086", "1tzS8zED9lUkUXniy4sFwq3193_5vPnXLcTPsgpwe4gi6oP_mDc1sicifSR00P8i8HZnNz0FNsv8-tRkH_-Pcw==")
+	defer client.Close()
+	writeAPI := client.WriteAPI("adc", "telemetry")
+	exporter := NewInfluxExporter(writeAPI)
+	defer exporter.Close()
 
 	server, err := monitor.NewMonitor(c.Context, exporter)
 	if err != nil {
