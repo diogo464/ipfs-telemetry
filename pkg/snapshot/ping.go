@@ -11,7 +11,7 @@ import (
 
 var _ Snapshot = (*Ping)(nil)
 
-const PING_NAME = "ping"
+const PingName = "ping"
 
 type Ping struct {
 	Timestamp   time.Time       `json:"timestamp"`
@@ -21,8 +21,11 @@ type Ping struct {
 }
 
 func (*Ping) sealed()                   {}
-func (*Ping) GetName() string           { return PING_NAME }
+func (*Ping) GetName() string           { return PingName }
 func (p *Ping) GetTimestamp() time.Time { return p.Timestamp }
+func (p *Ping) GetSizeEstimate() uint32 {
+	return estimateTimestampSize + 2*estimatePeerAddrInfoSize + uint32(len(p.Durations))*estimateDurationSize
+}
 func (p *Ping) ToPB() *pb.Snapshot {
 	return &pb.Snapshot{
 		Body: &pb.Snapshot_Ping{

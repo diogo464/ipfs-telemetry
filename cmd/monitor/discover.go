@@ -25,7 +25,7 @@ func discoverAction(c *cli.Context) error {
 		pids = append(pids, p)
 	}
 
-	conn, err := grpc.Dial("localhost:5000", grpc.WithInsecure())
+	conn, err := grpc.Dial(c.String(FLAG_ADDRESS.Name), grpc.WithInsecure())
 	if err != nil {
 		return err
 	}

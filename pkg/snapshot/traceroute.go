@@ -11,7 +11,7 @@ import (
 
 var _ Snapshot = (*TraceRoute)(nil)
 
-const TRACE_ROUTE_NAME = "traceroute"
+const TraceRouteName = "traceroute"
 
 type TraceRoute struct {
 	Timestamp   time.Time
@@ -22,8 +22,11 @@ type TraceRoute struct {
 }
 
 func (*TraceRoute) sealed()                   {}
-func (*TraceRoute) GetName() string           { return TRACE_ROUTE_NAME }
+func (*TraceRoute) GetName() string           { return TraceRouteName }
 func (t *TraceRoute) GetTimestamp() time.Time { return t.Timestamp }
+func (t *TraceRoute) GetSizeEstimate() uint32 {
+	return estimateTimestampSize + 2*estimatePeerAddrInfoSize + uint32(len(t.Provider)) + uint32(len(t.Output))
+}
 func (t *TraceRoute) ToPB() *pb.Snapshot {
 	return &pb.Snapshot{
 		Body: &pb.Snapshot_Traceroute{

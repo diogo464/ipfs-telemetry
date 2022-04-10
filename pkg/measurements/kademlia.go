@@ -16,6 +16,7 @@ type Kademlia interface {
 	IncMessageIn(snapshot.KademliaMessageType)
 	IncMessageOut(snapshot.KademliaMessageType)
 	PushQuery(peer.ID, snapshot.KademliaMessageType, time.Duration)
+	PushHandler(p peer.ID, m snapshot.KademliaMessageType, handler time.Duration, write time.Duration)
 }
 
 func ConvertKademliaMessageType(in pb.Message_MessageType) snapshot.KademliaMessageType {

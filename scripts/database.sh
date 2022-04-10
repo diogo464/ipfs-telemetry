@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 
-CONTAINER_NAME="monitor-db"
+CONTAINER_NAME="monitor-influxdb"
 
 if [[ "$1" == "up" ]]; then
     if podman container exists $CONTAINER_NAME ; then

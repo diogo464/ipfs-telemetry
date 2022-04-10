@@ -9,7 +9,7 @@ import (
 
 var _ Snapshot = (*Resources)(nil)
 
-const RESOURCES_NAME = "resources"
+const ResourceName = "resources"
 
 type Resources struct {
 	Timestamp   time.Time `json:"timestamp"`
@@ -21,8 +21,11 @@ type Resources struct {
 }
 
 func (*Resources) sealed()                   {}
-func (*Resources) GetName() string           { return RESOURCES_NAME }
+func (*Resources) GetName() string           { return ResourceName }
 func (r *Resources) GetTimestamp() time.Time { return r.Timestamp }
+func (r *Resources) GetSizeEstimate() uint32 {
+	return estimateTimestampSize + 4 + 3*8 + 4
+}
 func (r *Resources) ToPB() *pb.Snapshot {
 	return &pb.Snapshot{
 		Body: &pb.Snapshot_Resources{

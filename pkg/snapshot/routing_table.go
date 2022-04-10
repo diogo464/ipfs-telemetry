@@ -10,7 +10,7 @@ import (
 
 var _ Snapshot = (*RoutingTable)(nil)
 
-const ROUTING_TABLE_NAME = "routingtable"
+const RoutingTableName = "routingtable"
 
 type RoutingTable struct {
 	Timestamp time.Time   `json:"timestamp"`
@@ -18,8 +18,15 @@ type RoutingTable struct {
 }
 
 func (*RoutingTable) sealed()                   {}
-func (*RoutingTable) GetName() string           { return ROUTING_TABLE_NAME }
+func (*RoutingTable) GetName() string           { return RoutingTableName }
 func (r *RoutingTable) GetTimestamp() time.Time { return r.Timestamp }
+func (r *RoutingTable) GetSizeEstimate() uint32 {
+	var totalPeers uint32 = 0
+	for _, b := range r.Buckets {
+		totalPeers += uint32(len(b))
+	}
+	return estimateTimestampSize + totalPeers*estimatePeerIdSize
+}
 func (r *RoutingTable) ToPB() *pb.Snapshot {
 	return &pb.Snapshot{
 		Body: &pb.Snapshot_RoutingTable{

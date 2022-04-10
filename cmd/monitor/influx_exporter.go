@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"strconv"
 
 	"git.d464.sh/adc/telemetry/pkg/monitor"
@@ -57,7 +56,6 @@ func (*InfluxExporter) ExportSystemInfo(peer.ID, telemetry.Session, telemetry.Sy
 
 // Export implements monitor.Exporter
 func (e *InfluxExporter) ExportSnapshots(p peer.ID, sess telemetry.Session, snaps []snapshot.Snapshot) {
-	fmt.Println("Exporting ", len(snaps), "snapshots")
 	for _, snap := range snaps {
 		switch v := snap.(type) {
 		case *snapshot.Ping:
@@ -72,16 +70,21 @@ func (e *InfluxExporter) ExportSnapshots(p peer.ID, sess telemetry.Session, snap
 		case *snapshot.Kademlia:
 			e.exportKademlia(p, sess, v)
 		case *snapshot.KademliaQuery:
+			e.exportKademliaQuery(p, sess, v)
+		case *snapshot.KademliaHandler:
+			e.exportKademliaHandler(p, sess, v)
 		case *snapshot.Bitswap:
 			e.exportBitswap(p, sess, v)
 		case *snapshot.Storage:
 			e.exportStorage(p, sess, v)
+		case *snapshot.Window:
+			e.exportWindow(p, sess, v)
 		}
 	}
 }
 
+// ExportBandwidth implements monitor.Exporter
 func (e *InfluxExporter) ExportBandwidth(p peer.ID, sess telemetry.Session, bw telemetry.Bandwidth) {
-	fmt.Println("Bandwidth ", bw)
 }
 
 func (e *InfluxExporter) exportPing(p peer.ID, sess telemetry.Session, snap *snapshot.Ping) {
@@ -141,6 +144,23 @@ func (e *InfluxExporter) exportKademlia(p peer.ID, sess telemetry.Session, snap 
 	exportWithDirection(snap.MessagesIn, "out")
 }
 
+func (e *InfluxExporter) exportKademliaQuery(p peer.ID, sess telemetry.Session, snap *snapshot.KademliaQuery) {
+	point := influxdb2.NewPointWithMeasurement("kademlia_query").
+		AddTag("remote_peer", snap.Peer.Pretty()).
+		AddField("type", snapshot.KademliaMessageTypeString[snap.QueryType]).
+		AddField("duration", snap.Duration.Nanoseconds())
+	e.writePoint(p, sess, snap, point)
+}
+
+func (e *InfluxExporter) exportKademliaHandler(p peer.ID, sess telemetry.Session, snap *snapshot.KademliaHandler) {
+	point := influxdb2.NewPointWithMeasurement("kademlia_handler").
+		AddTag("type", snapshot.KademliaMessageTypeString[snap.HandlerType]).
+		AddField("handler", snap.HandlerDuration.Nanoseconds()).
+		AddField("write", snap.WriteDuration.Nanoseconds()).
+		AddField("total", (snap.WriteDuration + snap.HandlerDuration).Nanoseconds())
+	e.writePoint(p, sess, snap, point)
+}
+
 func (e *InfluxExporter) exportBitswap(p peer.ID, sess telemetry.Session, snap *snapshot.Bitswap) {
 	point := influxdb2.NewPointWithMeasurement("bitswap").
 		AddField("messages_in", snap.MessagesIn).
@@ -158,8 +178,25 @@ func (e *InfluxExporter) exportStorage(p peer.ID, sess telemetry.Session, snap *
 	e.writePoint(p, sess, snap, point)
 }
 
+func (e *InfluxExporter) exportWindow(p peer.ID, sess telemetry.Session, snap *snapshot.Window) {
+	{
+		point := influxdb2.NewPointWithMeasurement("window_count")
+		for k, v := range snap.SnapshotCount {
+			point.AddField(k, v)
+		}
+		e.writePoint(p, sess, snap, point)
+	}
+	{
+		point := influxdb2.NewPointWithMeasurement("window_memory")
+		for k, v := range snap.SnapshotMemory {
+			point.AddField(k, v)
+		}
+		e.writePoint(p, sess, snap, point)
+	}
+}
+
 func (e *InfluxExporter) writePoint(p peer.ID, sess telemetry.Session, snap snapshot.Snapshot, point *write.Point) {
-	point.AddTag("node", p.Pretty())
+	point.AddTag("peer", p.Pretty())
 	point.AddTag("session", sess.String())
 	point.SetTime(snap.GetTimestamp())
 	e.writer.WritePoint(point)

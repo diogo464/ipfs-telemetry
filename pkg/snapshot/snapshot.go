@@ -1,13 +1,20 @@
 package snapshot
 
 import (
-	"fmt"
 	"time"
 
 	pb "git.d464.sh/adc/telemetry/pkg/proto/snapshot"
 )
 
-var ErrInvalidPbType = fmt.Errorf("invalid pb type")
+const (
+	estimatePeerIdSize       = 64
+	estimateMultiAddrSize    = 48
+	estimateProtocolIdSize   = 32
+	estimatePeerAddrInfoSize = estimatePeerIdSize + estimateMultiAddrSize*8
+	estimateDurationSize     = 8
+	estimateTimestampSize    = 24
+	estimateMetricsStatsSize = 4 * 8
+)
 
 func NewTimestamp() time.Time {
 	return time.Now().UTC()
@@ -19,6 +26,7 @@ type Snapshot interface {
 
 	GetName() string
 	GetTimestamp() time.Time
+	GetSizeEstimate() uint32
 	ToPB() *pb.Snapshot
 }
 
@@ -38,10 +46,14 @@ func FromPB(v *pb.Snapshot) (Snapshot, error) {
 		return KademliaFromPB(v.GetKademlia())
 	case *pb.Snapshot_KademliaQuery:
 		return KademliaQueryFromPB(v.GetKademliaQuery())
+	case *pb.Snapshot_KademliaHandler:
+		return KademliaHandlerFromPB(v.GetKademliaHandler())
 	case *pb.Snapshot_Bitswap:
 		return BitswapFromPB(v.GetBitswap())
 	case *pb.Snapshot_Storage:
 		return StorageFromPB(v.GetStorage())
+	case *pb.Snapshot_Window:
+		return WindowFromPB(v.GetWindow())
 	default:
 		panic("unimplemented")
 	}

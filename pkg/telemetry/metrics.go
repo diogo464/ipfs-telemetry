@@ -16,7 +16,7 @@ func metricsTask(w window.Window) {
 	for {
 		w.Stats(stats)
 
-		for n, mem := range stats.MemoryCounts {
+		for n, mem := range stats.Memory {
 			if _, ok := snapshotMemory[n]; !ok {
 				snapshotMemory[n] = promauto.NewGauge(prometheus.GaugeOpts{
 					Name:        "telemetry_snapshot_memory",
@@ -26,7 +26,7 @@ func metricsTask(w window.Window) {
 			}
 			snapshotMemory[n].Set(float64(mem))
 		}
-		for n, count := range stats.SnapshotCounts {
+		for n, count := range stats.Count {
 			if _, ok := snapshotCounts[n]; !ok {
 				snapshotCounts[n] = promauto.NewGauge(prometheus.GaugeOpts{
 					Name:        "telemetry_snapshot_count",

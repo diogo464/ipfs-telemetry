@@ -8,8 +8,8 @@ import (
 )
 
 type Stats struct {
-	SnapshotCounts map[string]int
-	MemoryCounts   map[string]int
+	Count  map[string]uint32
+	Memory map[string]uint32
 }
 
 type Window interface {
@@ -30,7 +30,7 @@ type windowItem struct {
 	seqn      uint64
 	snapshot  *pb.Snapshot
 	timestamp time.Time
-	size      int
+	size      uint32
 	name      string
 }
 

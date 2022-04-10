@@ -2,15 +2,13 @@ package collector
 
 import (
 	"context"
-	"fmt"
-	"net"
 	"time"
 
 	"git.d464.sh/adc/telemetry/pkg/snapshot"
 	"git.d464.sh/adc/telemetry/pkg/traceroute"
+	"git.d464.sh/adc/telemetry/pkg/utils"
 	"github.com/libp2p/go-libp2p-core/host"
 	"github.com/libp2p/go-libp2p-core/peer"
-	"github.com/multiformats/go-multiaddr"
 )
 
 type TraceRouteOptions struct {
@@ -50,11 +48,11 @@ LOOP:
 }
 
 func (c *traceRouteCollector) trace(p peer.ID) (*snapshot.TraceRoute, error) {
-	ip, ok := getFirstPublicIPFromMultiaddrs(c.h.Peerstore().Addrs(p))
-	if !ok {
-		return nil, fmt.Errorf("peer has no public IP's")
+	ip, err := utils.GetFirstPublicAddressFromMultiaddrs(c.h.Peerstore().Addrs(p))
+	if err != nil {
+		return nil, err
 	}
-	result, err := traceroute.Trace(ip)
+	result, err := traceroute.Trace(ip.String())
 	if err != nil {
 		return nil, err
 	}
@@ -68,24 +66,4 @@ func (c *traceRouteCollector) trace(p peer.ID) (*snapshot.TraceRoute, error) {
 		Provider:    result.Provider,
 		Output:      result.Output,
 	}, nil
-}
-
-func getFirstPublicIPFromMultiaddrs(in []multiaddr.Multiaddr) (string, bool) {
-	checkPrivate := func(in string) bool {
-		if ip := net.ParseIP(in); ip != nil {
-			return ip.IsPrivate()
-		}
-		return true
-	}
-
-	for _, addr := range in {
-		for _, code := range []int{multiaddr.P_IP4, multiaddr.P_IP6} {
-			if v, err := addr.ValueForProtocol(code); err == nil {
-				if !checkPrivate(v) {
-					return v, true
-				}
-			}
-		}
-	}
-	return "", false
 }

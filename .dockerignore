@@ -1,4 +1,6 @@
 /deploy/
+/Dockerfile
+/docker-compose.yml
 /.gitignore
 /.gitmodules
 /dbconfig.yml

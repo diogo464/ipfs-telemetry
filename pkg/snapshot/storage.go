@@ -9,7 +9,7 @@ import (
 
 var _ Snapshot = (*Storage)(nil)
 
-const STORAGE_NAME = "storage"
+const StorageName = "storage"
 
 type Storage struct {
 	Timestamp    time.Time `json:"timestamp"`
@@ -19,8 +19,11 @@ type Storage struct {
 }
 
 func (*Storage) sealed()                   {}
-func (*Storage) GetName() string           { return STORAGE_NAME }
+func (*Storage) GetName() string           { return StorageName }
 func (s *Storage) GetTimestamp() time.Time { return s.Timestamp }
+func (s *Storage) GetSizeEstimate() uint32 {
+	return estimateTimestampSize + 3*8
+}
 func (s *Storage) ToPB() *pb.Snapshot {
 	return &pb.Snapshot{
 		Body: &pb.Snapshot_Storage{

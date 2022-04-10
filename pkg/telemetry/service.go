@@ -103,6 +103,10 @@ func NewTelemetryService(n *core.IpfsNode, opts ...Option) (*TelemetryService, e
 		Interval: time.Second * 5,
 	})
 
+	go collector.RunWindowCollector(ctx, o.windowDuration, t.snapshots, t.snapshots, collector.StorageOptions{
+		Interval: time.Second * 5,
+	})
+
 	go metricsTask(t.snapshots)
 
 	return t, nil

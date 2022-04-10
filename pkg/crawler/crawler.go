@@ -1,192 +1,175 @@
 package crawler
 
-// adapted from: github.com/libp2p/go-libp2p-kad-dht/crawler
-
 import (
 	"context"
-	"math"
 	"sync"
-	"time"
 
-	"git.d464.sh/adc/telemetry/pkg/preimage"
+	pb "git.d464.sh/adc/telemetry/pkg/proto/crawler"
+	"git.d464.sh/adc/telemetry/pkg/telemetry"
+	"git.d464.sh/adc/telemetry/pkg/walker"
 	"github.com/libp2p/go-libp2p-core/host"
 	"github.com/libp2p/go-libp2p-core/peer"
-	pb "github.com/libp2p/go-libp2p-kad-dht/pb"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
-const ADDRESS_TTL = time.Duration(math.MaxInt64)
+var _ (walker.Observer) = (*Crawler)(nil)
 
-type Crawler interface {
-	Crawl(ctx context.Context) error
+const DEFAULT_CHANNEL_BUFFER_SIZE = 32
+
+type Crawler struct {
+	pb.UnimplementedCrawlerServer
+	h    host.Host
+	w    walker.Walker
+	opts *options
+
+	peers_mu sync.Mutex
+	peers    map[peer.ID]struct{} // active peers
+	tpeers   map[peer.ID]struct{} //active telemetry peers
+
+	subscribers_mu sync.Mutex
+	subscribers    map[chan<- peer.ID]struct{}
 }
 
-func NewCrawler(h host.Host, handler EventHandler, opts ...Option) (Crawler, error) {
-	return newImplCrawler(h, handler, opts...)
-}
-
-type crawlResult struct {
-	peers   []peer.AddrInfo
-	err     error
-	usererr error
-}
-
-type implCrawler struct {
-	c       *config
-	h       host.Host
-	m       *pb.ProtocolMessenger
-	t       *preimage.Table
-	handler EventHandler
-}
-
-func newImplCrawler(h host.Host, handler EventHandler, opts ...Option) (*implCrawler, error) {
-	c := new(config)
-	defaults(c)
-	if err := apply(c, opts...); err != nil {
+func NewCrawler(h host.Host, o ...Option) (*Crawler, error) {
+	opts := defaults()
+	if err := apply(opts, o...); err != nil {
 		return nil, err
 	}
 
-	messenger, err := pb.NewProtocolMessenger(&scraperMessageSender{
-		h: h,
-	})
+	c := &Crawler{
+		h:    h,
+		w:    nil,
+		opts: opts,
+
+		peers:  make(map[peer.ID]struct{}),
+		tpeers: make(map[peer.ID]struct{}),
+
+		subscribers: make(map[chan<- peer.ID]struct{}),
+	}
+
+	w, err := walker.New(h, walker.WithObserver(walker.NewMultiObserver(c, opts.observer)))
 	if err != nil {
 		return nil, err
 	}
 
-	crawler := &implCrawler{
-		c:       c,
-		h:       h,
-		m:       messenger,
-		t:       preimage.Generate(),
-		handler: handler,
-	}
-
-	return crawler, nil
+	c.w = w
+	return c, nil
 }
 
-func (c *implCrawler) Crawl(ctx context.Context) error {
-	handler := c.handler
-	cwork := make(chan peer.ID)
-	cresult := make(chan crawlResult, 1)
-	workctx, cancel := context.WithCancel(ctx)
-	wg := new(sync.WaitGroup)
-
-	defer wg.Wait()
-	defer close(cwork)
-	defer cancel()
-
-	wg.Add(int(c.c.concurrency))
-	for i := 0; i < int(c.c.concurrency); i++ {
-		go func() {
-			defer wg.Done()
-		LOOP:
-			for pid := range cwork {
-				res := c.crawlPeer(workctx, handler, pid)
-				select {
-				case cresult <- res:
-				case <-workctx.Done():
-					break LOOP
-				}
-			}
-		}()
-	}
-
-	inprogress := 0
-	pending := make([]peer.ID, 0)
-	queried := make(map[peer.ID]struct{})
-
-	for _, addr := range c.c.seeds {
-		c.h.Peerstore().AddAddrs(addr.ID, addr.Addrs, ADDRESS_TTL)
-		pending = append(pending, addr.ID)
-	}
-
-	for len(pending) > 0 || inprogress > 0 {
-		var next_id peer.ID
-		var cworkopt chan peer.ID
-
-		if len(pending) > 0 {
-			next_id = pending[0]
-			cworkopt = cwork
-		}
-
+func (c *Crawler) Run(ctx context.Context) error {
+	for {
 		select {
 		case <-ctx.Done():
-			return ctx.Err()
+			return nil
 		default:
 		}
 
-		select {
-		case result := <-cresult:
-			if result.usererr != nil {
-				return result.usererr
-			}
-			if result.err == nil {
-				for _, addr := range result.peers {
-					if _, ok := queried[addr.ID]; !ok {
-						c.h.Peerstore().AddAddrs(addr.ID, addr.Addrs, ADDRESS_TTL)
-						pending = append(pending, addr.ID)
-						queried[addr.ID] = struct{}{}
-					}
-				}
-			}
-			inprogress -= 1
-		case cworkopt <- next_id:
-			pending = pending[1:]
-			inprogress += 1
+		if err := c.w.Walk(ctx); err != nil {
+			return err
 		}
+
+		PeersLastCrawl.Set(float64(len(c.peers)))
+		PeersTelemetryLastCrawl.Set(float64(len(c.tpeers)))
+		PeersCurrentCrawl.Set(0)
+		PeersTelemetryCurrentCrawl.Set(0)
+		CompletedCrawls.Inc()
+
+		c.peers = make(map[peer.ID]struct{})
+		c.tpeers = make(map[peer.ID]struct{})
+	}
+}
+
+// ObservePeer implements walker.Observer
+func (c *Crawler) ObservePeer(p *walker.Peer) {
+	hasTelemetry, err := c.peerHasTelemetry(p.ID)
+	if err != nil { // dont stop the crawl, just ignore this peer
+		return
 	}
 
+	c.peers_mu.Lock()
+	{
+		if _, ok := c.peers[p.ID]; !ok {
+			PeersCurrentCrawl.Inc()
+			if hasTelemetry {
+				PeersTelemetryCurrentCrawl.Inc()
+			}
+		}
+		c.peers[p.ID] = struct{}{}
+		if hasTelemetry {
+			c.tpeers[p.ID] = struct{}{}
+		}
+	}
+	c.peers_mu.Unlock()
+
+	if hasTelemetry {
+		c.broadcastPeer(p.ID)
+	}
+}
+
+// ObserveError implements walker.Observer
+func (*Crawler) ObserveError(*walker.Error) {
+	ErrorsCurrentCrawl.Inc()
+}
+
+func (c *Crawler) Subscribe(req *emptypb.Empty, stream pb.Crawler_SubscribeServer) error {
+	csubscribe := make(chan peer.ID, DEFAULT_CHANNEL_BUFFER_SIZE)
+	c.subscribers_mu.Lock()
+	c.subscribers[csubscribe] = struct{}{}
+	c.subscribers_mu.Unlock()
+	defer func() {
+		c.subscribers_mu.Lock()
+		delete(c.subscribers, csubscribe)
+		c.subscribers_mu.Unlock()
+	}()
+
+	go func() {
+		for _, p := range c.cloneKnownTelemetryPeers() {
+			csubscribe <- p
+		}
+	}()
+
+	for p := range csubscribe {
+		err := stream.Send(&pb.SubscribeItem{
+			PeerId: p.Pretty(),
+		})
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
-func (c *implCrawler) crawlPeer(ctx context.Context, handler EventHandler, pid peer.ID) crawlResult {
-	ctx, cancel := context.WithTimeout(ctx, c.c.requestTimeout)
-	defer cancel()
-
-	if err := c.h.Connect(ctx, c.h.Peerstore().PeerInfo(pid)); err != nil {
-		return crawlResult{err: err}
-	}
-	defer func() { _ = c.h.Network().ClosePeer(pid) }()
-
-	if err := handler.OnConnect(pid); err != nil {
-		return crawlResult{usererr: err}
-	}
-
-	var result crawlResult
-	var addrset map[peer.ID]peer.AddrInfo = make(map[peer.ID]peer.AddrInfo)
-	for _, target := range c.t.GetIDsForPeer(pid) {
-		addrs, err := c.m.GetClosestPeers(ctx, pid, target)
-		if err != nil {
-			result.err = err
-			break
-		}
-
-		prevlen := len(addrset)
-		for _, addr := range addrs {
-			addrset[addr.ID] = *addr
-		}
-
-		if len(addrset) == prevlen {
-			break
-		}
-
+func (c *Crawler) broadcastPeer(p peer.ID) {
+	c.subscribers_mu.Lock()
+	defer c.subscribers_mu.Unlock()
+	for subscriber := range c.subscribers {
 		select {
-		case <-ctx.Done():
-			return crawlResult{err: ctx.Err()}
+		case subscriber <- p:
 		default:
 		}
 	}
+}
 
-	discovered := make([]peer.AddrInfo, 0, len(addrset))
-	for _, v := range addrset {
-		discovered = append(discovered, v)
-	}
-	result.peers = discovered
-
-	if result.err == nil {
-		result.usererr = handler.OnFinish(pid, discovered)
-	} else {
-		result.usererr = handler.OnFail(pid, result.err)
+func (c *Crawler) peerHasTelemetry(p peer.ID) (bool, error) {
+	protocols, err := c.h.Peerstore().GetProtocols(p)
+	if err != nil {
+		return false, err
 	}
 
-	return result
+	for _, protocol := range protocols {
+		if protocol == telemetry.ID_TELEMETRY {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func (c *Crawler) cloneKnownTelemetryPeers() []peer.ID {
+	c.peers_mu.Lock()
+	defer c.peers_mu.Unlock()
+	peers := make([]peer.ID, 0, len(c.tpeers))
+	for k := range c.tpeers {
+		peers = append(peers, k)
+	}
+	return peers
 }

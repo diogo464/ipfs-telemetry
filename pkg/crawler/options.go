@@ -1,54 +1,29 @@
 package crawler
 
-import (
-	"time"
+import "git.d464.sh/adc/telemetry/pkg/walker"
 
-	"github.com/libp2p/go-libp2p-core/peer"
-	dht "github.com/libp2p/go-libp2p-kad-dht"
-)
+type Option func(*options) error
 
-type Option func(*config) error
-
-type config struct {
-	requestTimeout time.Duration
-	concurrency    uint
-	seeds          []peer.AddrInfo
+type options struct {
+	observer walker.Observer
 }
 
-func WithTimeout(timeout time.Duration) Option {
-	return func(c *config) error {
-		c.requestTimeout = timeout
+func WithObserver(observer walker.Observer) Option {
+	return func(o *options) error {
+		o.observer = observer
 		return nil
 	}
 }
 
-// How many requests can be happening in parallel
-func WithConcurrency(concurrency uint) Option {
-	return func(c *config) error {
-		if concurrency == 0 {
-			concurrency = 1
-		}
-		c.concurrency = concurrency
-		return nil
+func defaults() *options {
+	return &options{
+		observer: &walker.NullObserver{},
 	}
 }
 
-func WithSeeds(seeds []peer.AddrInfo) Option {
-	return func(c *config) error {
-		c.seeds = seeds
-		return nil
-	}
-}
-
-func defaults(c *config) {
-	c.requestTimeout = time.Minute * 2
-	c.concurrency = 96
-	c.seeds = dht.GetDefaultBootstrapPeerAddrInfos()
-}
-
-func apply(c *config, opts ...Option) error {
-	for _, opt := range opts {
-		if err := opt(c); err != nil {
+func apply(opts *options, o ...Option) error {
+	for _, opt := range o {
+		if err := opt(opts); err != nil {
 			return err
 		}
 	}

@@ -7,9 +7,7 @@ import (
 	"git.d464.sh/adc/telemetry/pkg/measurements"
 	"git.d464.sh/adc/telemetry/pkg/snapshot"
 	"github.com/ipfs/go-bitswap"
-	bsmsg "github.com/ipfs/go-bitswap/message"
 	"github.com/ipfs/go-ipfs/core"
-	"github.com/libp2p/go-libp2p-core/peer"
 	"go.uber.org/atomic"
 )
 
@@ -21,11 +19,12 @@ type bitswapCollector struct {
 	ctx  context.Context
 	opts BitswapOptions
 	sink snapshot.Sink
+	bs   *bitswap.Bitswap
 
 	discovery_successes *atomic.Uint32
 	discovery_failures  *atomic.Uint32
-	messages_in         *atomic.Uint32
-	messages_out        *atomic.Uint32
+	messages_in         uint64
+	messages_out        uint64
 }
 
 func RunBitswapCollector(ctx context.Context, n *core.IpfsNode, sink snapshot.Sink, opts BitswapOptions) {
@@ -34,13 +33,13 @@ func RunBitswapCollector(ctx context.Context, n *core.IpfsNode, sink snapshot.Si
 		ctx:  ctx,
 		opts: opts,
 		sink: sink,
+		bs:   bs,
 
 		discovery_successes: atomic.NewUint32(0),
 		discovery_failures:  atomic.NewUint32(0),
-		messages_in:         atomic.NewUint32(0),
-		messages_out:        atomic.NewUint32(0),
+		messages_in:         0,
+		messages_out:        0,
 	}
-	bitswap.WithTracer(c)(bs)
 	measurements.BitswapRegister(c)
 	c.Run()
 }
@@ -52,12 +51,13 @@ LOOP:
 	for {
 		select {
 		case <-ticker.C:
+			nstats := c.bs.NetworkStat()
 			c.sink.Push(&snapshot.Bitswap{
 				Timestamp:          snapshot.NewTimestamp(),
 				DiscoverySucceeded: c.discovery_successes.Load(),
 				DiscoveryFailed:    c.discovery_failures.Load(),
-				MessagesIn:         c.messages_in.Load(),
-				MessagesOut:        c.messages_out.Load(),
+				MessagesIn:         nstats.MessagesRecvd,
+				MessagesOut:        nstats.MessagesSent,
 			})
 		case <-c.ctx.Done():
 			break LOOP
@@ -68,11 +68,3 @@ LOOP:
 // measurements.Bitswap impl
 func (c *bitswapCollector) IncDiscoverySuccess() { c.discovery_successes.Inc() }
 func (c *bitswapCollector) IncDiscoveryFailure() { c.discovery_failures.Inc() }
-
-// bitswap.Tracer impl
-func (c *bitswapCollector) MessageReceived(peer.ID, bsmsg.BitSwapMessage) {
-	c.messages_in.Inc()
-}
-func (c *bitswapCollector) MessageSent(peer.ID, bsmsg.BitSwapMessage) {
-	c.messages_out.Inc()
-}

@@ -69,6 +69,14 @@ func MetricsStatsFromPB(in *pbs.Network_Stats) metrics.Stats {
 	}
 }
 
+func MultiAddrsToPB(in []multiaddr.Multiaddr) []string {
+	addrs := make([]string, 0, len(in))
+	for _, a := range in {
+		addrs = append(addrs, a.String())
+	}
+	return addrs
+}
+
 func ReadRle(r io.Reader, v proto.Message) error {
 	data, err := rle.Read(r)
 	if err != nil {

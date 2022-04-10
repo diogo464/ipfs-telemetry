@@ -13,10 +13,17 @@ type KademliaOptions struct {
 	Interval time.Duration
 }
 
-type kademliaCollectorTiming struct {
+type kademliaQueryTiming struct {
 	p peer.ID
 	t snapshot.KademliaMessageType
 	d time.Duration
+}
+
+type kademliaHandlerTiming struct {
+	p peer.ID
+	t snapshot.KademliaMessageType
+	h time.Duration
+	w time.Duration
 }
 
 type kademliaCollector struct {
@@ -24,9 +31,10 @@ type kademliaCollector struct {
 	opts KademliaOptions
 	sink snapshot.Sink
 
-	ctiming chan kademliaCollectorTiming
-	cmsgin  chan snapshot.KademliaMessageType
-	cmsgout chan snapshot.KademliaMessageType
+	cquery   chan kademliaQueryTiming
+	chandler chan kademliaHandlerTiming
+	cmsgin   chan snapshot.KademliaMessageType
+	cmsgout  chan snapshot.KademliaMessageType
 }
 
 func RunKademliaCollector(ctx context.Context, sink snapshot.Sink, opts KademliaOptions) {
@@ -35,9 +43,10 @@ func RunKademliaCollector(ctx context.Context, sink snapshot.Sink, opts Kademlia
 		opts: opts,
 		sink: sink,
 
-		ctiming: make(chan kademliaCollectorTiming, 128),
-		cmsgin:  make(chan snapshot.KademliaMessageType, 128),
-		cmsgout: make(chan snapshot.KademliaMessageType, 128),
+		cquery:   make(chan kademliaQueryTiming, 128),
+		chandler: make(chan kademliaHandlerTiming, 128),
+		cmsgin:   make(chan snapshot.KademliaMessageType, 128),
+		cmsgout:  make(chan snapshot.KademliaMessageType, 128),
 	}
 	c.Run()
 }
@@ -58,11 +67,19 @@ LOOP:
 				MessagesIn:  messages_in,
 				MessagesOut: messages_out,
 			})
-		case timing := <-c.ctiming:
+		case timing := <-c.cquery:
 			c.sink.Push(&snapshot.KademliaQuery{
 				Timestamp: snapshot.NewTimestamp(),
 				Peer:      timing.p,
+				QueryType: timing.t,
 				Duration:  timing.d,
+			})
+		case timing := <-c.chandler:
+			c.sink.Push(&snapshot.KademliaHandler{
+				Timestamp:       snapshot.NewTimestamp(),
+				HandlerType:     timing.t,
+				HandlerDuration: timing.h,
+				WriteDuration:   timing.w,
 			})
 		case t := <-c.cmsgin:
 			messages_in[t] += 1
@@ -82,9 +99,17 @@ func (c *kademliaCollector) IncMessageOut(t snapshot.KademliaMessageType) {
 	c.cmsgout <- t
 }
 func (c *kademliaCollector) PushQuery(p peer.ID, t snapshot.KademliaMessageType, d time.Duration) {
-	c.ctiming <- kademliaCollectorTiming{
+	c.cquery <- kademliaQueryTiming{
 		p: p,
 		t: t,
 		d: d,
+	}
+}
+func (c *kademliaCollector) PushHandler(p peer.ID, t snapshot.KademliaMessageType, handler time.Duration, write time.Duration) {
+	c.chandler <- kademliaHandlerTiming{
+		p: p,
+		t: t,
+		h: handler,
+		w: write,
 	}
 }

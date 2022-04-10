@@ -32,30 +32,39 @@ message Network {
     }
 
     google.protobuf.Timestamp timestamp     = 1;
-    Stats stats_overall                     = 2;
+    // multiaddresses of this peer
+    repeated string addresses               = 2;
+    Stats stats_overall                     = 3;
     // ProtocolID -> Stats
-    map<string, Stats> stats_by_protocol    = 3;
-    // PeerID -> Stats
-    map<string, Stats> stats_by_peer        = 4;
-    uint32 num_conns                        = 5;
-    uint32 low_water                        = 6;
-    uint32 high_water                       = 7;
+    map<string, Stats> stats_by_protocol    = 4;
+    // PeerID -> Stats.
+    // Not allways present.
+    map<string, Stats> stats_by_peer        = 5;
+    uint32 num_conns                        = 6;
+    uint32 low_water                        = 7;
+    uint32 high_water                       = 8;
 }
 
 message Resources {
     google.protobuf.Timestamp timestamp     = 1;
-    float cpu_usage     = 2; 
-    uint64 memory_used  = 3;
-    uint64 memory_free  = 4;
-    uint64 memory_total = 5;
-    uint32 goroutines   = 6;
+    // percentange cpu usage, can be > 100%
+    float cpu_usage         = 2; 
+    // total memory in use by this process
+    uint64 memory_used      = 3;
+    // total system free memory
+    uint64 memory_free      = 4;
+    // total system memory
+    uint64 memory_total     = 5;
+    uint32 goroutines       = 6;
 }
 
 message TraceRoute {
     google.protobuf.Timestamp timestamp     = 1;
     telemetry.AddrInfo origin               = 2;
     telemetry.AddrInfo destination          = 3;
+    // name of the traceroute executable
     string provider                         = 4;
+    // stdout of the process
     bytes output                            = 5;
 }
 
@@ -82,12 +91,19 @@ message KademliaQuery {
     google.protobuf.Duration duration       = 4; 
 }
 
+message KademliaHandler {
+    google.protobuf.Timestamp timestamp         = 1;
+    KademliaMessageType handler_type            = 3;
+    google.protobuf.Duration handler_duration   = 4; 
+    google.protobuf.Duration write_duration     = 5; 
+}
+
 message Bitswap {
     google.protobuf.Timestamp timestamp     = 1;
     uint32 discovery_succeeded              = 2;
     uint32 discovery_failed                 = 3;
-    uint32 messages_in                      = 4;
-    uint32 messages_out                     = 5;
+    uint64 messages_in                      = 4;
+    uint64 messages_out                     = 5;
 }
 
 message Storage {
@@ -95,6 +111,15 @@ message Storage {
     uint64 storage_used                     = 2;
     uint64 storage_total                    = 3;
     uint64 num_objects                      = 4;
+}
+
+message Window {
+    google.protobuf.Timestamp timestamp         = 1;
+    google.protobuf.Duration window_duration    = 2;
+    // maps snapshot name to its count
+    map<string, uint32> snapshot_count          = 3;
+    // maps snapshot name to its estimate memory usage
+    map<string, uint32> snapshot_memory         = 4;
 }
 
 message Snapshot  {
@@ -106,7 +131,9 @@ message Snapshot  {
         TraceRoute traceroute           = 5;
         Kademlia kademlia               = 6;
         KademliaQuery kademlia_query    = 7;
-        Bitswap bitswap                 = 8;
-        Storage storage                 = 9;
+        KademliaHandler kademlia_handler= 8;
+        Bitswap bitswap                 = 9;
+        Storage storage                 = 10;
+        Window window                   = 11;
     }
 }

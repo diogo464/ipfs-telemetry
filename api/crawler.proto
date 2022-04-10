@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+
+option go_package = "git.d464.sh/adc/telemetry/pkg/proto/crawler";
+
+service Crawler {
+    // Stream all the peers known to support the telemetry protocol including
+    // the ones already known before this rpc
+    rpc Subscribe(google.protobuf.Empty) returns (stream SubscribeItem) {}
+}
+
+message SubscribeItem {
+    string peer_id = 1; 
+}

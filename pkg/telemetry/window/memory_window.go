@@ -26,8 +26,8 @@ func NewMemoryWindow(duration time.Duration) *MemoryWindow {
 		duration: duration,
 		items:    newVecDeque[windowItem](),
 		stats: &Stats{
-			SnapshotCounts: map[string]int{},
-			MemoryCounts:   map[string]int{},
+			Count:  map[string]uint32{},
+			Memory: map[string]uint32{},
 		},
 	}
 }
@@ -37,9 +37,9 @@ func (w *MemoryWindow) Push(s snapshot.Snapshot) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	name := s.GetName()
-	size := snapshot.SnapshotSize(s)
-	w.stats.SnapshotCounts[name] += 1
-	w.stats.MemoryCounts[name] += size
+	size := s.GetSizeEstimate()
+	w.stats.Count[name] += 1
+	w.stats.Memory[name] += size
 
 	w.items.PushBack(windowItem{
 		seqn:      nextSeqN(w.items),
@@ -85,25 +85,25 @@ func (w *MemoryWindow) Stats(out *Stats) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
-	if out.SnapshotCounts == nil {
-		out.SnapshotCounts = make(map[string]int)
+	if out.Count == nil {
+		out.Count = make(map[string]uint32)
 	}
-	if out.MemoryCounts == nil {
-		out.MemoryCounts = make(map[string]int)
+	if out.Memory == nil {
+		out.Memory = make(map[string]uint32)
 	}
 
-	for k, v := range w.stats.SnapshotCounts {
-		out.SnapshotCounts[k] = v
+	for k, v := range w.stats.Count {
+		out.Count[k] = v
 	}
-	for k, v := range w.stats.MemoryCounts {
-		out.MemoryCounts[k] = v
+	for k, v := range w.stats.Memory {
+		out.Memory[k] = v
 	}
 }
 
 func (w *MemoryWindow) clean() {
 	for !w.items.IsEmpty() && time.Since(w.items.Front().timestamp) > w.duration {
 		item := w.items.PopFront()
-		w.stats.SnapshotCounts[item.name] -= 1
-		w.stats.MemoryCounts[item.name] -= item.size
+		w.stats.Count[item.name] -= 1
+		w.stats.Memory[item.name] -= item.size
 	}
 }

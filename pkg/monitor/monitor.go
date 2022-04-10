@@ -9,6 +9,7 @@ import (
 	"git.d464.sh/adc/telemetry/pkg/waker"
 	"github.com/libp2p/go-libp2p-core/host"
 	"github.com/libp2p/go-libp2p-core/peer"
+	"go.uber.org/zap"
 )
 
 const (
@@ -82,12 +83,16 @@ LOOP:
 		case action := <-s.actions.Receive():
 			switch action.kind {
 			case ActionDiscover:
+				zap.S().Debugw("discover", "peer", action.pid)
 				s.onActionDiscover(action.pid)
 			case ActionTelemetry:
+				zap.S().Debugw("telemetry", "peer", action.pid)
 				s.onActionTelemetry(action.pid)
 			case ActionBandwidth:
+				zap.S().Debugw("bandwidth", "peer", action.pid)
 				s.onActionBandwidth(action.pid)
 			case ActionRemovePeer:
+				zap.S().Debugw("removing", "peer", action.pid)
 				delete(s.peers, action.pid)
 			}
 		case <-ctx.Done():
@@ -140,24 +145,21 @@ func (s *Monitor) collectTelemetry(state *peerState) {
 			pid:  state.id,
 		}, s.opts.CollectPeriod)
 	} else {
-		state.failedAttemps += 1
-		if state.failedAttemps > s.opts.MaxFailedAttemps {
-			s.actions.PushNow(&action{
-				kind: ActionRemovePeer,
-				pid:  state.id,
-			})
-		}
+		s.peerError(state, err)
 	}
 }
 
 func (s *Monitor) tryCollectTelemetry(state *peerState) error {
 	ctx := context.Background()
 
+	zap.S().Debug("creating client")
 	client, err := telemetry.NewClient(s.h, state.id)
 	if err != nil {
 		return err
 	}
+	defer client.Close()
 
+	zap.S().Debug("getting session info")
 	session, err := client.SessionInfo(ctx)
 	if err != nil {
 		return err
@@ -169,10 +171,12 @@ func (s *Monitor) tryCollectTelemetry(state *peerState) error {
 		state.lastSession = session.Session
 	}
 
+	zap.S().Debug("streaming snapshots")
 	stream := make(chan telemetry.SnapshotStreamItem)
 	go func() {
 		for item := range stream {
 			state.lastSeqN = item.NextSeqN
+			zap.S().Debug("exporting ", len(item.Snapshots), " snapshots")
 			s.exporter.ExportSnapshots(state.id, session.Session, item.Snapshots)
 		}
 	}()
@@ -195,13 +199,7 @@ func (s *Monitor) collectBandwidth(state *peerState) {
 			pid:  state.id,
 		}, s.opts.BandwidthPeriod)
 	} else {
-		state.failedAttemps += 1
-		if state.failedAttemps > s.opts.MaxFailedAttemps {
-			s.actions.PushNow(&action{
-				kind: ActionRemovePeer,
-				pid:  state.id,
-			})
-		}
+		s.peerError(state, err)
 	}
 }
 
@@ -211,6 +209,7 @@ func (s *Monitor) tryCollectBandwidth(state *peerState) error {
 	if err != nil {
 		return err
 	}
+	defer client.Close()
 
 	session, err := client.SessionInfo(ctx)
 	if err != nil {
@@ -225,4 +224,16 @@ func (s *Monitor) tryCollectBandwidth(state *peerState) error {
 	s.exporter.ExportBandwidth(state.id, session.Session, bandwidth)
 
 	return nil
+}
+
+// must be holding the state's lock
+func (s *Monitor) peerError(state *peerState, err error) {
+	zap.S().Error("peer error", err, state.id)
+	state.failedAttemps += 1
+	if state.failedAttemps > s.opts.MaxFailedAttemps {
+		s.actions.PushNow(&action{
+			kind: ActionRemovePeer,
+			pid:  state.id,
+		})
+	}
 }

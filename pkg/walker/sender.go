@@ -1,4 +1,4 @@
-package crawler
+package walker
 
 import (
 	"context"
@@ -11,11 +11,11 @@ import (
 	"github.com/libp2p/go-msgio/protoio"
 )
 
-type scraperMessageSender struct {
+type messageSender struct {
 	h host.Host
 }
 
-func (ms *scraperMessageSender) SendRequest(ctx context.Context, p peer.ID, pmes *pb.Message) (*pb.Message, error) {
+func (ms *messageSender) SendRequest(ctx context.Context, p peer.ID, pmes *pb.Message) (*pb.Message, error) {
 	stream, err := ms.h.NewStream(ctx, p, dht.DefaultProtocols...)
 	if err != nil {
 		return nil, err
@@ -36,7 +36,7 @@ func (ms *scraperMessageSender) SendRequest(ctx context.Context, p peer.ID, pmes
 	return msg, nil
 }
 
-func (ms *scraperMessageSender) SendMessage(ctx context.Context, p peer.ID, pmes *pb.Message) error {
+func (ms *messageSender) SendMessage(ctx context.Context, p peer.ID, pmes *pb.Message) error {
 	stream, err := ms.h.NewStream(ctx, p, dht.DefaultProtocols...)
 	if err != nil {
 		return err

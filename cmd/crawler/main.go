@@ -1,46 +1,42 @@
 package main
 
 import (
-	"context"
+	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"os"
 
 	"git.d464.sh/adc/telemetry/pkg/crawler"
-	"git.d464.sh/adc/telemetry/pkg/monitor"
-	"git.d464.sh/adc/telemetry/pkg/telemetry"
+	pb "git.d464.sh/adc/telemetry/pkg/proto/crawler"
+	"git.d464.sh/adc/telemetry/pkg/utils"
+	"git.d464.sh/adc/telemetry/pkg/walker"
+	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
+	"github.com/influxdata/influxdb-client-go/v2/api"
 	"github.com/libp2p/go-libp2p"
-	"github.com/libp2p/go-libp2p-core/host"
-	"github.com/libp2p/go-libp2p-core/peer"
+	"github.com/mmcloughlin/geohash"
+	"github.com/oschwald/geoip2-golang"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/urfave/cli/v2"
 	"google.golang.org/grpc"
 )
 
-var FLAG_MONITOR_ADDRESS = &cli.StringFlag{
-	Name:    "monitor-address",
-	Aliases: []string{"monitor"},
-	Usage:   "address of the monitor",
-	EnvVars: []string{"CRAWLER_MONITOR_ADDRESS"},
-	Value:   "localhost:5000",
-}
-
-var FLAG_PROMETHEUS_ADDRESS = &cli.StringFlag{
-	Name:    "prometheus-address",
-	Aliases: []string{"prometheus"},
-	Usage:   "address of the monitor",
-	EnvVars: []string{"CRAWLER_PROMETHEUS_ADDRESS"},
-	Value:   "localhost:2113",
-}
+var geodb *geoip2.Reader
+var writer api.WriteAPI
 
 func main() {
 	app := &cli.App{
 		Name:        "crawler",
 		Description: "discovery peers supporting the telemetry protocol",
 		Action:      mainAction,
+		Commands:    []*cli.Command{SubscribeCommand},
 		Flags: []cli.Flag{
-			FLAG_MONITOR_ADDRESS,
 			FLAG_PROMETHEUS_ADDRESS,
+			FLAG_INFLUXDB_ADDRESS,
+			FLAG_INFLUXDB_TOKEN,
+			FLAG_INFLUXDB_ORG,
+			FLAG_INFLUXDB_BUCKET,
+			FLAG_ADDRESS,
 		},
 	}
 
@@ -49,101 +45,62 @@ func main() {
 	}
 }
 
-type eventHandler struct {
-	h      host.Host
-	client monitor.Client
-
-	peers map[peer.ID]struct{}
-}
-
-func newEventHandler(h host.Host, client monitor.Client) *eventHandler {
-	return &eventHandler{
-		h:      h,
-		client: client,
-
-		peers: make(map[peer.ID]struct{}),
-	}
-}
-
-func (e *eventHandler) peerHasTelemetry(p peer.ID) (bool, error) {
-	protocols, err := e.h.Peerstore().GetProtocols(p)
+func testObserver(p *walker.Peer) {
+	public, err := utils.GetFirstPublicAddressFromMultiaddrs(p.Addresses)
 	if err != nil {
-		return false, err
+		fmt.Println(err)
+		return
 	}
 
-	for _, protocol := range protocols {
-		if protocol == telemetry.ID_TELEMETRY {
-			return true, nil
-		}
-	}
-	return false, nil
-}
-
-// craweler.EventHandler impl
-func (e *eventHandler) OnConnect(p peer.ID) error {
-	TotalCrawls.Add(1)
-
-	hasTelemetry, err := e.peerHasTelemetry(p)
-	if err != nil { // dont stop the crawl, just ignore this peer
-		return nil
+	city, err := geodb.City(public)
+	if err != nil {
+		fmt.Println(err)
 	}
 
-	if _, ok := e.peers[p]; !ok {
-		e.peers[p] = struct{}{}
-		UniquePeers.Add(1)
-		if hasTelemetry {
-			UniquePeersTelemetry.Add(1)
-		}
-	}
-
-	if hasTelemetry {
-		if err := e.client.Discover(context.Background(), p); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-func (e *eventHandler) OnFinish(p peer.ID, addrs []peer.AddrInfo) error {
-	SuccessfulCrawls.Add(1)
-	return nil
-}
-func (e *eventHandler) OnFail(p peer.ID, err error) error {
-	FailedCrawls.Add(1)
-	return nil
+	gh := geohash.Encode(city.Location.Latitude, city.Location.Longitude)
+	writer.WritePoint(influxdb2.NewPointWithMeasurement("location").AddField("geohash", gh))
 }
 
 func mainAction(c *cli.Context) error {
-	conn, err := grpc.Dial(c.String(FLAG_MONITOR_ADDRESS.Name), grpc.WithInsecure())
+	gdb, err := geoip2.Open("GeoLite2-City.mmdb")
 	if err != nil {
 		return err
 	}
-	client := monitor.NewClient(conn)
+	geodb = gdb
+
+	client := influxdb2.NewClient(c.String(FLAG_INFLUXDB_ADDRESS.Name), c.String(FLAG_INFLUXDB_TOKEN.Name))
+	defer client.Close()
+	writer = client.WriteAPI(c.String(FLAG_INFLUXDB_ORG.Name), c.String(FLAG_INFLUXDB_BUCKET.Name))
+	fmt.Println("ORG =", c.String(FLAG_INFLUXDB_ORG.Name), " BUCKET =", c.String(FLAG_INFLUXDB_BUCKET.Name))
+
+	listener, err := net.Listen("tcp", c.String(FLAG_ADDRESS.Name))
+	if err != nil {
+		return err
+	}
+	grpc_server := grpc.NewServer()
 
 	h, err := libp2p.New(libp2p.NoListenAddrs)
 	if err != nil {
 		return err
 	}
 
-	handler := newEventHandler(h, client)
-	crwlr, err := crawler.NewCrawler(h, handler)
+	crlwr, err := crawler.NewCrawler(h, crawler.WithObserver(walker.NewPeerObserverFn(testObserver)))
 	if err != nil {
 		return err
 	}
+
+	pb.RegisterCrawlerServer(grpc_server, crlwr)
+	go func() {
+		err = grpc_server.Serve(listener)
+		if err != nil {
+			fmt.Println(err)
+		}
+	}()
 
 	go func() {
 		http.Handle("/metrics", promhttp.Handler())
 		log.Fatal(http.ListenAndServe(c.String(FLAG_PROMETHEUS_ADDRESS.Name), nil))
 	}()
 
-	for {
-		err = crwlr.Crawl(c.Context)
-		if err != nil {
-			if err == context.Canceled {
-				return nil
-			} else {
-				return err
-			}
-		}
-	}
+	return crlwr.Run(c.Context)
 }

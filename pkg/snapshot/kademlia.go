@@ -12,8 +12,9 @@ import (
 var _ Snapshot = (*Kademlia)(nil)
 var _ Snapshot = (*KademliaQuery)(nil)
 
-const KADEMLIA_NAME = "kademlia"
-const KADEMLIA_QUERY_NAME = "kademliaquery"
+const KademliaName = "kademlia"
+const KademliaQueryName = "kademliaquery"
+const KademliaHandlerName = "kademliahandler"
 
 type KademliaMessageType = pb.KademliaMessageType
 
@@ -42,8 +43,11 @@ type Kademlia struct {
 }
 
 func (*Kademlia) sealed()                   {}
-func (*Kademlia) GetName() string           { return KADEMLIA_NAME }
+func (*Kademlia) GetName() string           { return KademliaName }
 func (p *Kademlia) GetTimestamp() time.Time { return p.Timestamp }
+func (p *Kademlia) GetSizeEstimate() uint32 {
+	return estimateTimestampSize + uint32(len(p.MessagesIn))*(4+8) + uint32(len(p.MessagesOut))*(4+8)
+}
 func (p *Kademlia) ToPB() *pb.Snapshot {
 	return &pb.Snapshot{
 		Body: &pb.Snapshot_Kademlia{
@@ -76,8 +80,11 @@ type KademliaQuery struct {
 }
 
 func (*KademliaQuery) sealed()                   {}
-func (*KademliaQuery) GetName() string           { return KADEMLIA_QUERY_NAME }
+func (*KademliaQuery) GetName() string           { return KademliaQueryName }
 func (p *KademliaQuery) GetTimestamp() time.Time { return p.Timestamp }
+func (p *KademliaQuery) GetSizeEstimate() uint32 {
+	return estimateTimestampSize + estimatePeerIdSize + 4 + estimateDurationSize
+}
 func (p *KademliaQuery) ToPB() *pb.Snapshot {
 	return &pb.Snapshot{
 		Body: &pb.Snapshot_KademliaQuery{
@@ -105,6 +112,45 @@ func KademliaQueryToPB(p *KademliaQuery) *pb.KademliaQuery {
 		Peer:      p.Peer.Pretty(),
 		QueryType: p.QueryType,
 		Duration:  durationpb.New(p.Duration),
+	}
+}
+
+type KademliaHandler struct {
+	Timestamp       time.Time           `json:"timestamp"`
+	HandlerType     KademliaMessageType `json:"handler_type"`
+	HandlerDuration time.Duration       `json:"handler_duration"`
+	WriteDuration   time.Duration       `json:"write_duration"`
+}
+
+func (*KademliaHandler) sealed()                   {}
+func (*KademliaHandler) GetName() string           { return KademliaHandlerName }
+func (p *KademliaHandler) GetTimestamp() time.Time { return p.Timestamp }
+func (p *KademliaHandler) GetSizeEstimate() uint32 {
+	return estimateTimestampSize + 4 + 2*estimateDurationSize
+}
+func (p *KademliaHandler) ToPB() *pb.Snapshot {
+	return &pb.Snapshot{
+		Body: &pb.Snapshot_KademliaHandler{
+			KademliaHandler: KademliaHandlerToPB(p),
+		},
+	}
+}
+
+func KademliaHandlerFromPB(in *pb.KademliaHandler) (*KademliaHandler, error) {
+	return &KademliaHandler{
+		Timestamp:       in.GetTimestamp().AsTime(),
+		HandlerType:     in.GetHandlerType(),
+		HandlerDuration: in.GetHandlerDuration().AsDuration(),
+		WriteDuration:   in.GetWriteDuration().AsDuration(),
+	}, nil
+}
+
+func KademliaHandlerToPB(p *KademliaHandler) *pb.KademliaHandler {
+	return &pb.KademliaHandler{
+		Timestamp:       timestamppb.New(p.Timestamp),
+		HandlerType:     p.HandlerType,
+		HandlerDuration: durationpb.New(p.HandlerDuration),
+		WriteDuration:   durationpb.New(p.WriteDuration),
 	}
 }
 

@@ -25,7 +25,10 @@ crawler:
 telemetry:
 	$(GOCC) build -o bin/telemetry cmd/telemetry/*
 
-build: monitor crawler telemetry ipfs
+link:
+	$(GOCC) build -o bin/link cmd/link/*
+
+build: monitor crawler telemetry ipfs link
 
 install: ipfs-install
 
@@ -42,6 +45,7 @@ proto:
 	protoc $(PROTO_FLAGS) api/telemetry.proto
 	protoc $(PROTO_FLAGS) api/monitor.proto
 	protoc $(PROTO_FLAGS) api/window.proto
+	protoc $(PROTO_FLAGS) api/crawler.proto
 
 generate:
 	sqlboiler --wipe psql

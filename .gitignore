@@ -3,8 +3,10 @@
 /*.json
 !/set-target.sh
 
-/third_party
+# /third_party
 
 # generated files
 /pkg/models
 /pkg/proto
+
+/*.mmdb
