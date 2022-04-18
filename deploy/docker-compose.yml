@@ -10,6 +10,7 @@ services:
       CRAWLER_INFLUXDB_TOKEN: "token"
       CRAWLER_INFLUXDB_ORG: "adc"
       CRAWLER_INFLUXDB_BUCKET: "crawler"
+      CRAWLER_ADDRESS: ":5600"
     depends_on:
       - influxdb
       - prometheus
@@ -24,9 +25,21 @@ services:
       MONITOR_INFLUXDB_TOKEN: "token"
       MONITOR_INFLUXDB_ORG: "adc"
       MONITOR_INFLUXDB_BUCKET: "telemetry"
+      MONITOR_ADDRESS: ":5600"
     depends_on:
       - influxdb
       - prometheus
+  link:
+    build:
+      context: ../
+      dockerfile: deploy/Dockerfile
+    command: link
+    environment:
+      LINK_CRAWLER: "crawler:5600"
+      LINK_MONITOR: "monitor:5600"
+    depends_on:
+      - crawler
+      - monitor
   grafana:
     image: docker.io/grafana/grafana:latest
     volumes:

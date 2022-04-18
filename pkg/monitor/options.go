@@ -13,7 +13,7 @@ import (
 
 const (
 	DEFAULT_MAX_FAILED_ATTEMPTS = 3
-	DEFAULT_COLLECT_PERIOD      = time.Second * 1
+	DEFAULT_COLLECT_PERIOD      = time.Second * 5
 	DEFAULT_BANDWIDTH_PERIOD    = time.Second * 5
 )
 

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"git.d464.sh/adc/telemetry/pkg/crawler"
 	"git.d464.sh/adc/telemetry/pkg/monitor"
@@ -42,25 +43,33 @@ func main() {
 }
 
 func mainAction(c *cli.Context) error {
-	monitor_conn, err := grpc.Dial(c.String(FLAG_MONITOR.Name), grpc.WithInsecure())
-	if err != nil {
-		return err
-	}
-
-	crawler_conn, err := grpc.Dial(c.String(FLAG_CRAWLER.Name), grpc.WithInsecure())
-	if err != nil {
-		return err
-	}
-
-	mon := monitor.NewClient(monitor_conn)
-	crw := crawler.NewClient(crawler_conn)
-	peers := make(chan peer.ID)
-	go func() {
-		for p := range peers {
-			if err := mon.Discover(c.Context, p); err != nil {
-				fmt.Println(err)
-			}
+	for {
+		monitor_conn, err := grpc.Dial(c.String(FLAG_MONITOR.Name), grpc.WithInsecure())
+		if err != nil {
+			return err
 		}
-	}()
-	return crw.Subscribe(c.Context, peers)
+
+		crawler_conn, err := grpc.Dial(c.String(FLAG_CRAWLER.Name), grpc.WithInsecure())
+		if err != nil {
+			return err
+		}
+
+		mon := monitor.NewClient(monitor_conn)
+		crw := crawler.NewClient(crawler_conn)
+		peers := make(chan peer.ID)
+		go func() {
+			for p := range peers {
+				if err := mon.Discover(c.Context, p); err != nil {
+					fmt.Println(err)
+					break
+				}
+			}
+		}()
+
+		err = crw.Subscribe(c.Context, peers)
+		if err != nil {
+			fmt.Println(err)
+		}
+		time.Sleep(time.Second)
+	}
 }

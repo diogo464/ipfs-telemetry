@@ -75,6 +75,16 @@ func WriteU64(w io.Writer, v uint64) error {
 }
 
 func GetFirstPublicAddressFromMultiaddrs(in []multiaddr.Multiaddr) (net.IP, error) {
+	public := GetPublicAddressesFromMultiaddrs(in)
+	if len(public) == 0 {
+		return nil, fmt.Errorf("no public address found")
+	} else {
+		return public[0], nil
+	}
+}
+
+func GetPublicAddressesFromMultiaddrs(in []multiaddr.Multiaddr) []net.IP {
+	public := make([]net.IP, 0)
 	for _, addr := range in {
 		for _, code := range []int{multiaddr.P_IP4, multiaddr.P_IP6} {
 			if v, err := addr.ValueForProtocol(code); err == nil {
@@ -85,9 +95,9 @@ func GetFirstPublicAddressFromMultiaddrs(in []multiaddr.Multiaddr) (net.IP, erro
 				if ip.IsPrivate() {
 					continue
 				}
-				return ip, nil
+				public = append(public, ip)
 			}
 		}
 	}
-	return nil, fmt.Errorf("no public address found")
+	return public
 }

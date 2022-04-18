@@ -9,6 +9,7 @@ import (
 	"git.d464.sh/adc/telemetry/pkg/walker"
 	"github.com/libp2p/go-libp2p-core/host"
 	"github.com/libp2p/go-libp2p-core/peer"
+	"go.uber.org/atomic"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
@@ -25,6 +26,7 @@ type Crawler struct {
 	peers_mu sync.Mutex
 	peers    map[peer.ID]struct{} // active peers
 	tpeers   map[peer.ID]struct{} //active telemetry peers
+	errors   *atomic.Uint32
 
 	subscribers_mu sync.Mutex
 	subscribers    map[chan<- peer.ID]struct{}
@@ -43,6 +45,7 @@ func NewCrawler(h host.Host, o ...Option) (*Crawler, error) {
 
 		peers:  make(map[peer.ID]struct{}),
 		tpeers: make(map[peer.ID]struct{}),
+		errors: atomic.NewUint32(0),
 
 		subscribers: make(map[chan<- peer.ID]struct{}),
 	}
@@ -72,6 +75,9 @@ func (c *Crawler) Run(ctx context.Context) error {
 		PeersTelemetryLastCrawl.Set(float64(len(c.tpeers)))
 		PeersCurrentCrawl.Set(0)
 		PeersTelemetryCurrentCrawl.Set(0)
+		ErrorsLastCrawl.Set(float64(c.errors.Load()))
+		ErrorsCurrentCrawl.Set(0)
+		c.errors.Store(0)
 		CompletedCrawls.Inc()
 
 		c.peers = make(map[peer.ID]struct{})
@@ -107,8 +113,9 @@ func (c *Crawler) ObservePeer(p *walker.Peer) {
 }
 
 // ObserveError implements walker.Observer
-func (*Crawler) ObserveError(*walker.Error) {
+func (c *Crawler) ObserveError(*walker.Error) {
 	ErrorsCurrentCrawl.Inc()
+	c.errors.Inc()
 }
 
 func (c *Crawler) Subscribe(req *emptypb.Empty, stream pb.Crawler_SubscribeServer) error {

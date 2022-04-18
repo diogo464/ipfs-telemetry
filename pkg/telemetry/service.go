@@ -76,7 +76,8 @@ func NewTelemetryService(n *core.IpfsNode, opts ...Option) (*TelemetryService, e
 	})
 
 	go collector.RunNetworkCollector(ctx, t.node, t.snapshots, collector.NetworkOptions{
-		Interval: time.Second * 60,
+		Interval:                time.Second * 30,
+		BandwidthByPeerInterval: time.Minute * 5,
 	})
 
 	go collector.RunRoutingTableCollector(ctx, t.node, t.snapshots, collector.RoutingTableOptions{

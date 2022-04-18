@@ -14,6 +14,7 @@ import (
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/influxdata/influxdb-client-go/v2/api"
 	"github.com/libp2p/go-libp2p"
+	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/mmcloughlin/geohash"
 	"github.com/oschwald/geoip2-golang"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -23,6 +24,7 @@ import (
 
 var geodb *geoip2.Reader
 var writer api.WriteAPI
+var seen map[peer.ID]struct{} = make(map[peer.ID]struct{})
 
 func main() {
 	app := &cli.App{
@@ -46,6 +48,13 @@ func main() {
 }
 
 func testObserver(p *walker.Peer) {
+	seen[p.ID] = struct{}{}
+	for _, bucket := range p.Buckets {
+		for _, info := range bucket {
+			seen[info.ID] = struct{}{}
+		}
+	}
+
 	public, err := utils.GetFirstPublicAddressFromMultiaddrs(p.Addresses)
 	if err != nil {
 		fmt.Println(err)

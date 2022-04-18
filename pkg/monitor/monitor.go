@@ -139,14 +139,14 @@ func (s *Monitor) collectTelemetry(state *peerState) {
 	state.mu.Lock()
 	defer state.mu.Unlock()
 
-	if err := s.tryCollectTelemetry(state); err == nil {
-		s.actions.Push(&action{
-			kind: ActionTelemetry,
-			pid:  state.id,
-		}, s.opts.CollectPeriod)
-	} else {
+	if err := s.tryCollectTelemetry(state); err != nil {
 		s.peerError(state, err)
 	}
+
+	s.actions.Push(&action{
+		kind: ActionTelemetry,
+		pid:  state.id,
+	}, s.opts.CollectPeriod)
 }
 
 func (s *Monitor) tryCollectTelemetry(state *peerState) error {
@@ -193,14 +193,14 @@ func (s *Monitor) collectBandwidth(state *peerState) {
 	state.mu.Lock()
 	defer state.mu.Unlock()
 
-	if err := s.tryCollectBandwidth(state); err == nil {
-		s.actions.Push(&action{
-			kind: ActionBandwidth,
-			pid:  state.id,
-		}, s.opts.BandwidthPeriod)
-	} else {
+	if err := s.tryCollectBandwidth(state); err != nil {
 		s.peerError(state, err)
 	}
+
+	s.actions.Push(&action{
+		kind: ActionBandwidth,
+		pid:  state.id,
+	}, s.opts.BandwidthPeriod)
 }
 
 func (s *Monitor) tryCollectBandwidth(state *peerState) error {

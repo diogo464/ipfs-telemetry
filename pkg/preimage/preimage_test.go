@@ -3,6 +3,10 @@ package preimage
 import (
 	"strconv"
 	"testing"
+	"time"
+
+	"github.com/libp2p/go-libp2p"
+	kbucket "github.com/libp2p/go-libp2p-kbucket"
 )
 
 func TestPrefixFromHash(t *testing.T) {
@@ -61,5 +65,25 @@ func assertPrefix(t *testing.T, nbits int, prefix int, expected int) {
 			strconv.FormatInt(int64(prefix), 2),
 			strconv.FormatInt(int64(expected), 2),
 		)
+	}
+}
+
+func TestBucketPlacement(t *testing.T) {
+	h, err := libp2p.New(libp2p.NoListenAddrs)
+	if err != nil {
+		t.Error(err)
+	}
+	pid := generateRandomPeerID()
+	tmpRT, err := kbucket.NewRoutingTable(20, kbucket.ConvertPeerID(pid), time.Hour, h.Peerstore(), time.Hour, nil)
+	if err != nil {
+		t.Error(err)
+	}
+	table := Generate()
+	ids := table.GetIDsForPeer(pid)
+	for i, id := range ids {
+		cpl := tmpRT.CommonPrefixLen(id)
+		if cpl != i {
+			t.Error("Invalid CPL, got ", cpl, " expected ", i)
+		}
 	}
 }
