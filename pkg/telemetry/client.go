@@ -130,6 +130,43 @@ func (c *Client) Snapshots(ctx context.Context, since uint64, css chan<- Snapsho
 	return nil
 }
 
+func (c *Client) Events(ctx context.Context, since uint64, css chan<- SnapshotStreamItem) error {
+	client, err := c.newGrpcClient()
+	if err != nil {
+		return err
+	}
+
+	stream, err := client.GetSnapshots(ctx, &pb.GetSnapshotsRequest{
+		Since: since,
+	})
+	if err != nil {
+		return err
+	}
+
+	for {
+		response, err := stream.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return err
+		}
+
+		snapshotspb := response.GetSnapshots()
+		snapshots, err := snapshot.FromArrayPB(snapshotspb)
+		if err != nil {
+			return err
+		}
+
+		css <- SnapshotStreamItem{
+			NextSeqN:  response.GetNext(),
+			Snapshots: snapshots,
+		}
+	}
+
+	return nil
+}
+
 func (c *Client) SystemInfo(ctx context.Context) (*SystemInfo, error) {
 	client, err := c.newGrpcClient()
 	if err != nil {

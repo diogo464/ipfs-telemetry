@@ -31,23 +31,46 @@ func (s *TelemetryService) GetSystemInfo(context.Context, *emptypb.Empty) (*pb.S
 }
 
 func (s *TelemetryService) GetSnapshots(req *pb.GetSnapshotsRequest, stream pb.Telemetry_GetSnapshotsServer) error {
-	since := req.GetSince()
-	for {
-		result := s.snapshots.Fetch(since, FETCH_BLOCK_SIZE)
-		since = result.FirstSeqN + uint64(len(result.Snapshots))
-		if len(result.Snapshots) == 0 {
-			break
-		}
+	{ //snapshots
+		since := req.GetSince()
+		for {
+			result := s.snapshots.Fetch(since, FETCH_BLOCK_SIZE)
+			since = result.FirstSeqN + uint64(len(result.Snapshots))
+			if len(result.Snapshots) == 0 {
+				break
+			}
 
-		err := stream.Send(&pb.GetSnapshotsResponse{
-			Next:      since,
-			Snapshots: result.Snapshots,
-		})
-		if err != nil {
-			return err
+			err := stream.Send(&pb.GetSnapshotsResponse{
+				Next:      since,
+				Snapshots: result.Snapshots,
+			})
+			if err != nil {
+				return err
+			}
 		}
 	}
+	return nil
+}
 
+func (s *TelemetryService) GetEvents(req *pb.GetEventsRequest, stream pb.Telemetry_GetEventsServer) error {
+	{ //events
+		since := req.GetSince()
+		for {
+			result := s.events.Fetch(since, FETCH_BLOCK_SIZE)
+			since = result.FirstSeqN + uint64(len(result.Snapshots))
+			if len(result.Snapshots) == 0 {
+				break
+			}
+
+			err := stream.Send(&pb.GetEventsResponse{
+				Next:   since,
+				Events: result.Snapshots,
+			})
+			if err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }
 

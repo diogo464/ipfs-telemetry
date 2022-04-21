@@ -184,6 +184,10 @@ func (s *Monitor) tryCollectTelemetry(state *peerState) error {
 	if err != nil {
 		return err
 	}
+	err = client.Events(context.Background(), since, stream)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

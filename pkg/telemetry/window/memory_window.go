@@ -18,9 +18,14 @@ type MemoryWindow struct {
 	duration time.Duration
 	items    *vecdeque[windowItem]
 	stats    *Stats
+	max      int
 }
 
 func NewMemoryWindow(duration time.Duration) *MemoryWindow {
+	return NewMemoryWindowWithMax(duration, math.MaxInt)
+}
+
+func NewMemoryWindowWithMax(duration time.Duration, max int) *MemoryWindow {
 	return &MemoryWindow{
 		mu:       sync.Mutex{},
 		duration: duration,
@@ -29,6 +34,7 @@ func NewMemoryWindow(duration time.Duration) *MemoryWindow {
 			Count:  map[string]uint32{},
 			Memory: map[string]uint32{},
 		},
+		max: max,
 	}
 }
 
@@ -101,7 +107,7 @@ func (w *MemoryWindow) Stats(out *Stats) {
 }
 
 func (w *MemoryWindow) clean() {
-	for !w.items.IsEmpty() && time.Since(w.items.Front().timestamp) > w.duration {
+	for (!w.items.IsEmpty() && time.Since(w.items.Front().timestamp) > w.duration) || (w.items.Len() > w.max) {
 		item := w.items.PopFront()
 		w.stats.Count[item.name] -= 1
 		w.stats.Memory[item.name] -= item.size

@@ -29,6 +29,7 @@ type TelemetryService struct {
 	grpc_server *grpc.Server
 	boot_time   time.Time
 	snapshots   window.Window
+	events      window.Window
 	collectors  []collector.Collector
 }
 
@@ -54,6 +55,7 @@ func NewTelemetryService(n *core.IpfsNode, conf config.Config, opts ...Option) (
 		cancel:     cancel,
 		boot_time:  time.Now().UTC(),
 		snapshots:  window.NewMemoryWindow(o.windowDuration),
+		events:     window.NewMemoryWindowWithMax(o.windowDuration, 128*1024),
 		collectors: make([]collector.Collector, 0),
 	}
 	h.SetStreamHandler(ID_UPLOAD, t.uploadHandler)
@@ -77,6 +79,7 @@ func NewTelemetryService(n *core.IpfsNode, conf config.Config, opts ...Option) (
 	}()
 
 	t.startCollectors()
+	t.startEventCollector()
 
 	go metricsTask(t.snapshots)
 
@@ -150,4 +153,8 @@ func (s *TelemetryService) startCollectors() {
 	windowCollector := collector.NewWindowCollector(s.opts.windowDuration, s.snapshots)
 	collector.RunCollector(s.ctx, config.SecondsToDuration(s.conf.Window.Interval, time.Second*5), s.snapshots, windowCollector)
 	s.deferCollectorClose(windowCollector)
+}
+
+func (s *TelemetryService) startEventCollector() {
+	collector.StartKademliaEventCollector(s.ctx, s.events)
 }

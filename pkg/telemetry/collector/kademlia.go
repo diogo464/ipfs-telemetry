@@ -13,19 +13,6 @@ import (
 var _ Collector = (*kademliaCollector)(nil)
 var _ measurements.Kademlia = (*kademliaCollector)(nil)
 
-type kademliaQueryTiming struct {
-	p peer.ID
-	t snapshot.KademliaMessageType
-	d time.Duration
-}
-
-type kademliaHandlerTiming struct {
-	p peer.ID
-	t snapshot.KademliaMessageType
-	h time.Duration
-	w time.Duration
-}
-
 type kademliaCollector struct {
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -75,20 +62,6 @@ func (c *kademliaCollector) eventLoop() {
 LOOP:
 	for {
 		select {
-		case <-c.cquery:
-			//sink.Push(&snapshot.KademliaQuery{
-			//	Timestamp: snapshot.NewTimestamp(),
-			//	Peer:      timing.p,
-			//	QueryType: timing.t,
-			//	Duration:  timing.d,
-			//})
-		case <-c.chandler:
-			//sink.Push(&snapshot.KademliaHandler{
-			//	Timestamp:       snapshot.NewTimestamp(),
-			//	HandlerType:     timing.t,
-			//	HandlerDuration: timing.h,
-			//	WriteDuration:   timing.w,
-			//})
 		case t := <-c.cmsgin:
 			c.messages_mu.Lock()
 			defer c.messages_mu.Unlock()
