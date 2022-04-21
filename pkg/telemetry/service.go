@@ -7,6 +7,7 @@ import (
 
 	"git.d464.sh/adc/telemetry/pkg/collector"
 	pb "git.d464.sh/adc/telemetry/pkg/proto/telemetry"
+	"git.d464.sh/adc/telemetry/pkg/telemetry/config"
 	"git.d464.sh/adc/telemetry/pkg/telemetry/window"
 	"github.com/ipfs/go-ipfs/core"
 	gostream "github.com/libp2p/go-libp2p-gostream"
@@ -28,7 +29,7 @@ type TelemetryService struct {
 	snapshots window.Window
 }
 
-func NewTelemetryService(n *core.IpfsNode, opts ...Option) (*TelemetryService, error) {
+func NewTelemetryService(n *core.IpfsNode, conf config.Config, opts ...Option) (*TelemetryService, error) {
 	o := new(options)
 	defaults(o)
 
@@ -70,42 +71,42 @@ func NewTelemetryService(n *core.IpfsNode, opts ...Option) (*TelemetryService, e
 	}()
 
 	go collector.RunPingCollector(ctx, t.node.PeerHost, t.snapshots, collector.PingOptions{
-		PingCount: 5,
-		Interval:  time.Second * 5,
-		Timeout:   time.Second * 10,
+		PingCount: conf.Ping.Count,
+		Interval:  config.SecondsToDuration(conf.Ping.Interval, time.Second*5),
+		Timeout:   config.SecondsToDuration(conf.Ping.Timeout, time.Second*10),
 	})
 
 	go collector.RunNetworkCollector(ctx, t.node, t.snapshots, collector.NetworkOptions{
-		Interval:                time.Second * 30,
-		BandwidthByPeerInterval: time.Minute * 5,
+		Interval:                config.SecondsToDuration(conf.NetworkCollector.Interval, time.Second*30),
+		BandwidthByPeerInterval: config.SecondsToDuration(conf.NetworkCollector.BandwidthByPeerInterval, time.Minute*5),
 	})
 
 	go collector.RunRoutingTableCollector(ctx, t.node, t.snapshots, collector.RoutingTableOptions{
-		Interval: time.Second * 60,
+		Interval: config.SecondsToDuration(conf.RoutingTable.Interval, time.Second*60),
 	})
 
 	go collector.RunResourcesCollector(ctx, t.snapshots, collector.ResourcesOptions{
-		Interval: time.Second * 10,
+		Interval: config.SecondsToDuration(conf.Resources.Interval, time.Second*10),
 	})
 
 	go collector.RunBitswapCollector(ctx, t.node, t.snapshots, collector.BitswapOptions{
-		Interval: time.Second * 30,
+		Interval: config.SecondsToDuration(conf.Bitswap.Interval, time.Second*30),
 	})
 
 	go collector.RunStorageCollector(ctx, t.node, t.snapshots, collector.StorageOptions{
-		Interval: time.Second * 60,
+		Interval: config.SecondsToDuration(conf.Storage.Interval, time.Second*60),
 	})
 
 	go collector.RunKademliaCollector(ctx, t.snapshots, collector.KademliaOptions{
-		Interval: time.Second * 30,
+		Interval: config.SecondsToDuration(conf.Kademlia.Interval, time.Second*30),
 	})
 
 	go collector.RunTraceRouteCollector(ctx, h, t.snapshots, collector.TraceRouteOptions{
-		Interval: time.Second * 5,
+		Interval: config.SecondsToDuration(conf.TraceRoute.Interval, time.Second*5),
 	})
 
 	go collector.RunWindowCollector(ctx, o.windowDuration, t.snapshots, t.snapshots, collector.StorageOptions{
-		Interval: time.Second * 5,
+		Interval: config.SecondsToDuration(conf.Window.Interval, time.Second*5),
 	})
 
 	go metricsTask(t.snapshots)

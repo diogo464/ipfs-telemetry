@@ -13,6 +13,7 @@ require (
 	github.com/libp2p/go-libp2p-core v0.11.0
 	github.com/libp2p/go-libp2p-gostream v0.3.0
 	github.com/libp2p/go-libp2p-kad-dht v0.15.0
+	github.com/libp2p/go-libp2p-kbucket v0.4.7
 	github.com/libp2p/go-msgio v0.1.0
 	github.com/mmcloughlin/geohash v0.10.0
 	github.com/multiformats/go-multiaddr v0.4.1
@@ -120,7 +121,6 @@ require (
 	github.com/libp2p/go-libp2p-autonat v0.6.0 // indirect
 	github.com/libp2p/go-libp2p-blankhost v0.2.0 // indirect
 	github.com/libp2p/go-libp2p-discovery v0.6.0 // indirect
-	github.com/libp2p/go-libp2p-kbucket v0.4.7 // indirect
 	github.com/libp2p/go-libp2p-loggables v0.1.0 // indirect
 	github.com/libp2p/go-libp2p-mplex v0.4.1 // indirect
 	github.com/libp2p/go-libp2p-nat v0.1.0 // indirect

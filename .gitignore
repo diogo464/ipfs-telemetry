@@ -1,7 +1,6 @@
 /bin/
 /*.sh
 /*.json
-!/set-target.sh
 
 # /third_party
 
