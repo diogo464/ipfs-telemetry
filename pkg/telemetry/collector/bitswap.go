@@ -11,15 +11,15 @@ import (
 	"go.uber.org/atomic"
 )
 
+var _ Collector = (*bitswapCollector)(nil)
+var _ measurements.Bitswap = (*bitswapCollector)(nil)
+
 type BitswapOptions struct {
 	Interval time.Duration
 }
 
 type bitswapCollector struct {
-	ctx  context.Context
-	opts BitswapOptions
-	sink snapshot.Sink
-	bs   *bitswap.Bitswap
+	bs *bitswap.Bitswap
 
 	discovery_successes *atomic.Uint32
 	discovery_failures  *atomic.Uint32
@@ -27,44 +27,36 @@ type bitswapCollector struct {
 	messages_out        uint64
 }
 
-func RunBitswapCollector(ctx context.Context, n *core.IpfsNode, sink snapshot.Sink, opts BitswapOptions) {
+func NewBitswapCollector(n *core.IpfsNode) Collector {
 	bs := n.Exchange.(*bitswap.Bitswap)
-	c := &bitswapCollector{
-		ctx:  ctx,
-		opts: opts,
-		sink: sink,
-		bs:   bs,
-
-		discovery_successes: atomic.NewUint32(0),
-		discovery_failures:  atomic.NewUint32(0),
+	return &bitswapCollector{
+		bs:                  bs,
+		discovery_successes: &atomic.Uint32{},
+		discovery_failures:  &atomic.Uint32{},
 		messages_in:         0,
 		messages_out:        0,
 	}
-	measurements.BitswapRegister(c)
-	c.Run()
 }
 
-func (c *bitswapCollector) Run() {
-	ticker := time.NewTicker(c.opts.Interval)
-
-LOOP:
-	for {
-		select {
-		case <-ticker.C:
-			nstats := c.bs.NetworkStat()
-			c.sink.Push(&snapshot.Bitswap{
-				Timestamp:          snapshot.NewTimestamp(),
-				DiscoverySucceeded: c.discovery_successes.Load(),
-				DiscoveryFailed:    c.discovery_failures.Load(),
-				MessagesIn:         nstats.MessagesRecvd,
-				MessagesOut:        nstats.MessagesSent,
-			})
-		case <-c.ctx.Done():
-			break LOOP
-		}
-	}
+// Close implements Collector
+func (c *bitswapCollector) Close() {
+	// TODO: measurements unregister
 }
 
-// measurements.Bitswap impl
-func (c *bitswapCollector) IncDiscoverySuccess() { c.discovery_successes.Inc() }
+// Collect implements Collector
+func (c *bitswapCollector) Collect(ctx context.Context, sink snapshot.Sink) {
+	nstats := c.bs.NetworkStat()
+	sink.Push(&snapshot.Bitswap{
+		Timestamp:          snapshot.NewTimestamp(),
+		DiscoverySucceeded: c.discovery_successes.Load(),
+		DiscoveryFailed:    c.discovery_failures.Load(),
+		MessagesIn:         nstats.MessagesRecvd,
+		MessagesOut:        nstats.MessagesSent,
+	})
+}
+
+// IncDiscoveryFailure implements measurements.Bitswap
 func (c *bitswapCollector) IncDiscoveryFailure() { c.discovery_failures.Inc() }
+
+// IncDiscoverySuccess implements measurements.Bitswap
+func (c *bitswapCollector) IncDiscoverySuccess() { c.discovery_successes.Inc() }

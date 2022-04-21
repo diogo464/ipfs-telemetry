@@ -2,7 +2,6 @@ package collector
 
 import (
 	"context"
-	"time"
 
 	"git.d464.sh/adc/telemetry/pkg/telemetry/snapshot"
 	"git.d464.sh/adc/telemetry/pkg/traceroute"
@@ -11,43 +10,34 @@ import (
 	"github.com/libp2p/go-libp2p-core/peer"
 )
 
-type TraceRouteOptions struct {
-	Interval time.Duration
+var _ Collector = (*tracerouteCollector)(nil)
+
+type tracerouteCollector struct {
+	h      host.Host
+	picker *peerPicker
 }
 
-type traceRouteCollector struct {
-	ctx  context.Context
-	opts TraceRouteOptions
-	sink snapshot.Sink
-	h    host.Host
+func NewTracerouteCollector(h host.Host) Collector {
+	return &tracerouteCollector{
+		h:      h,
+		picker: newPeerPicker(h),
+	}
 }
 
-func RunTraceRouteCollector(ctx context.Context, h host.Host, sink snapshot.Sink, opts TraceRouteOptions) {
-	c := &traceRouteCollector{ctx, opts, sink, h}
-	c.Run()
+// Close implements Collector
+func (*tracerouteCollector) Close() {
 }
 
-func (c *traceRouteCollector) Run() {
-	ticker := time.NewTicker(c.opts.Interval)
-	picker := newPeerPicker(c.h)
-	defer picker.close()
-
-LOOP:
-	for {
-		select {
-		case <-ticker.C:
-			if p, ok := picker.pick(); ok {
-				if s, err := c.trace(p); err == nil {
-					c.sink.Push(s)
-				}
-			}
-		case <-c.ctx.Done():
-			break LOOP
+// Collect implements Collector
+func (c *tracerouteCollector) Collect(ctx context.Context, sink snapshot.Sink) {
+	if p, ok := c.picker.pick(); ok {
+		if s, err := c.trace(ctx, p); err == nil {
+			sink.Push(s)
 		}
 	}
 }
 
-func (c *traceRouteCollector) trace(p peer.ID) (*snapshot.TraceRoute, error) {
+func (c *tracerouteCollector) trace(ctx context.Context, p peer.ID) (*snapshot.TraceRoute, error) {
 	ip, err := utils.GetFirstPublicAddressFromMultiaddrs(c.h.Peerstore().Addrs(p))
 	if err != nil {
 		return nil, err

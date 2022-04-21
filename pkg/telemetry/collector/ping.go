@@ -11,51 +11,42 @@ import (
 	"github.com/libp2p/go-libp2p/p2p/protocol/ping"
 )
 
+var _ Collector = (*pingCollector)(nil)
+
 type PingOptions struct {
 	PingCount int
-	Interval  time.Duration
 	Timeout   time.Duration
 }
 
 type pingCollector struct {
-	ctx  context.Context
-	opts PingOptions
-	h    host.Host
-	sink snapshot.Sink
+	opts   PingOptions
+	h      host.Host
+	picker *peerPicker
 }
 
-func RunPingCollector(ctx context.Context, h host.Host, sink snapshot.Sink, opts PingOptions) {
-	c := &pingCollector{
-		ctx:  ctx,
-		opts: opts,
-		h:    h,
-		sink: sink,
+func NewPingCollector(h host.Host, opts PingOptions) Collector {
+	return &pingCollector{
+		opts:   opts,
+		h:      h,
+		picker: newPeerPicker(h),
 	}
-	c.Run()
 }
 
-func (c *pingCollector) Run() {
-	ticker := time.NewTicker(c.opts.Interval)
-	picker := newPeerPicker(c.h)
-	defer picker.close()
+// Close implements Collector
+func (*pingCollector) Close() {
+}
 
-LOOP:
-	for {
-		select {
-		case <-ticker.C:
-			if p, ok := picker.pick(); ok {
-				if ps, err := c.ping(p); err == nil {
-					c.sink.Push(ps)
-				}
-			}
-		case <-c.ctx.Done():
-			break LOOP
+// Collect implements Collector
+func (c *pingCollector) Collect(ctx context.Context, sink snapshot.Sink) {
+	if p, ok := c.picker.pick(); ok {
+		if ps, err := c.ping(ctx, p); err == nil {
+			sink.Push(ps)
 		}
 	}
 }
 
-func (c *pingCollector) ping(p peer.ID) (*snapshot.Ping, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), c.opts.Timeout)
+func (c *pingCollector) ping(ctx context.Context, p peer.ID) (*snapshot.Ping, error) {
+	ctx, cancel := context.WithTimeout(ctx, c.opts.Timeout)
 	defer cancel()
 
 	if c.h.Network().Connectedness(p) != network.Connected {

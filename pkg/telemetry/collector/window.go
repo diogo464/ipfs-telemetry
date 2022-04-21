@@ -8,25 +8,32 @@ import (
 	"git.d464.sh/adc/telemetry/pkg/telemetry/window"
 )
 
-type WindowOptions struct {
-	Interval time.Duration
+var _ Collector = (*windowCollector)(nil)
+
+type windowCollector struct {
+	wnd      window.Window
+	stats    *window.Stats
+	duration time.Duration
 }
 
-func RunWindowCollector(ctx context.Context, d time.Duration, w window.Window, sink snapshot.Sink, opts StorageOptions) {
-	ticker := time.NewTicker(opts.Interval)
-	stats := new(window.Stats)
-
-	for {
-		select {
-		case <-ticker.C:
-			w.Stats(stats)
-			sink.Push(&snapshot.Window{
-				Timestamp:      snapshot.NewTimestamp(),
-				WindowDuration: d,
-				SnapshotCount:  stats.Count,
-				SnapshotMemory: stats.Memory,
-			})
-		case <-ctx.Done():
-		}
+func NewWindowCollector(d time.Duration, wnd window.Window) Collector {
+	return &windowCollector{
+		wnd:   wnd,
+		stats: new(window.Stats),
 	}
+}
+
+// Close implements Collector
+func (*windowCollector) Close() {
+}
+
+// Collect implements Collector
+func (c *windowCollector) Collect(ctx context.Context, sink snapshot.Sink) {
+	c.wnd.Stats(c.stats)
+	sink.Push(&snapshot.Window{
+		Timestamp:      snapshot.NewTimestamp(),
+		WindowDuration: c.duration,
+		SnapshotCount:  c.stats.Count,
+		SnapshotMemory: c.stats.Memory,
+	})
 }

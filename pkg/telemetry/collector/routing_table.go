@@ -2,40 +2,31 @@ package collector
 
 import (
 	"context"
-	"time"
 
 	"git.d464.sh/adc/telemetry/pkg/telemetry/snapshot"
 	"github.com/ipfs/go-ipfs/core"
 )
 
-type RoutingTableOptions struct {
-	Interval time.Duration
-}
+var _ Collector = (*routingTableCollector)(nil)
 
 type routingTableCollector struct {
-	ctx  context.Context
-	opts RoutingTableOptions
-	sink snapshot.Sink
 	node *core.IpfsNode
 }
 
-func RunRoutingTableCollector(ctx context.Context, n *core.IpfsNode, sink snapshot.Sink, opts RoutingTableOptions) {
-	c := &routingTableCollector{ctx: ctx, opts: opts, sink: sink, node: n}
-	c.Run()
+func NewRoutingTableCollector(n *core.IpfsNode) Collector {
+	return &routingTableCollector{
+		node: n,
+	}
 }
 
-func (c *routingTableCollector) Run() {
-	ticker := time.NewTicker(c.opts.Interval)
-LOOP:
-	for {
-		select {
-		case <-ticker.C:
-			routing_table := newRoutingTableFromNode(c.node)
-			c.sink.Push(routing_table)
-		case <-c.ctx.Done():
-			break LOOP
-		}
-	}
+// Close implements Collector
+func (*routingTableCollector) Close() {
+}
+
+// Collect implements Collector
+func (c *routingTableCollector) Collect(ctx context.Context, sink snapshot.Sink) {
+	routing_table := newRoutingTableFromNode(c.node)
+	sink.Push(routing_table)
 }
 
 func newRoutingTableFromNode(n *core.IpfsNode) *snapshot.RoutingTable {

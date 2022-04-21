@@ -11,42 +11,39 @@ import (
 	"github.com/libp2p/go-libp2p-core/peer"
 )
 
+var _ Collector = (*networkCollector)(nil)
+
 type NetworkOptions struct {
-	Interval                time.Duration
 	BandwidthByPeerInterval time.Duration
 }
 
 type networkCollector struct {
-	ctx  context.Context
-	opts NetworkOptions
-	sink snapshot.Sink
-	node *core.IpfsNode
+	opts                   NetworkOptions
+	node                   *core.IpfsNode
+	last_bandwidth_by_peer time.Time
 }
 
-func RunNetworkCollector(ctx context.Context, n *core.IpfsNode, sink snapshot.Sink, opts NetworkOptions) {
-	c := &networkCollector{ctx: ctx, opts: opts, sink: sink, node: n}
-	c.Run()
-}
-
-func (c *networkCollector) Run() {
-	ticker := time.NewTicker(c.opts.Interval)
-	last_bandwidth_by_peer := time.Now()
-
-LOOP:
-	for {
-		select {
-		case <-ticker.C:
-			collectBandwidthByPeer := false
-			if time.Since(last_bandwidth_by_peer) > c.opts.BandwidthByPeerInterval {
-				collectBandwidthByPeer = true
-				last_bandwidth_by_peer = time.Now()
-			}
-			network := newNetworkFromNode(c.node, collectBandwidthByPeer)
-			c.sink.Push(network)
-		case <-c.ctx.Done():
-			break LOOP
-		}
+func NewNetworkCollector(n *core.IpfsNode, opts NetworkOptions) Collector {
+	return &networkCollector{
+		opts:                   opts,
+		node:                   n,
+		last_bandwidth_by_peer: time.Now(),
 	}
+}
+
+// Close implements Collector
+func (*networkCollector) Close() {
+}
+
+// Collect implements Collector
+func (c *networkCollector) Collect(ctx context.Context, sink snapshot.Sink) {
+	collectBandwidthByPeer := false
+	if time.Since(c.last_bandwidth_by_peer) > c.opts.BandwidthByPeerInterval {
+		collectBandwidthByPeer = true
+		c.last_bandwidth_by_peer = time.Now()
+	}
+	network := newNetworkFromNode(c.node, collectBandwidthByPeer)
+	sink.Push(network)
 }
 
 func newNetworkFromNode(n *core.IpfsNode, collectBandwidthByPeer bool) *snapshot.Network {

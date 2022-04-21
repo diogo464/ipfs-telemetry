@@ -11,6 +11,7 @@ type Result struct {
 	Output   []byte
 }
 
+// TODO: add context
 func Trace(destination string) (*Result, error) {
 	return platformTrace(destination)
 }

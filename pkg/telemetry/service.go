@@ -21,12 +21,15 @@ type TelemetryService struct {
 	// the node we are collecting telemetry from
 	node *core.IpfsNode
 	// read-only options
-	opts        *options
+	opts *options
+	conf config.Config
+
+	ctx         context.Context
 	cancel      context.CancelFunc
 	grpc_server *grpc.Server
 	boot_time   time.Time
-
-	snapshots window.Window
+	snapshots   window.Window
+	collectors  []collector.Collector
 }
 
 func NewTelemetryService(n *core.IpfsNode, conf config.Config, opts ...Option) (*TelemetryService, error) {
@@ -43,12 +46,15 @@ func NewTelemetryService(n *core.IpfsNode, conf config.Config, opts ...Option) (
 	ctx, cancel := context.WithCancel(context.Background())
 	session := RandomSession()
 	t := &TelemetryService{
-		session:   session,
-		node:      n,
-		opts:      o,
-		cancel:    cancel,
-		boot_time: time.Now().UTC(),
-		snapshots: window.NewMemoryWindow(o.windowDuration),
+		session:    session,
+		node:       n,
+		opts:       o,
+		conf:       conf,
+		ctx:        ctx,
+		cancel:     cancel,
+		boot_time:  time.Now().UTC(),
+		snapshots:  window.NewMemoryWindow(o.windowDuration),
+		collectors: make([]collector.Collector, 0),
 	}
 	h.SetStreamHandler(ID_UPLOAD, t.uploadHandler)
 	h.SetStreamHandler(ID_DOWNLOAD, t.downloadHandler)
@@ -70,44 +76,7 @@ func NewTelemetryService(n *core.IpfsNode, conf config.Config, opts ...Option) (
 		fmt.Println("GRPC server stopped")
 	}()
 
-	go collector.RunPingCollector(ctx, t.node.PeerHost, t.snapshots, collector.PingOptions{
-		PingCount: conf.Ping.Count,
-		Interval:  config.SecondsToDuration(conf.Ping.Interval, time.Second*5),
-		Timeout:   config.SecondsToDuration(conf.Ping.Timeout, time.Second*10),
-	})
-
-	go collector.RunNetworkCollector(ctx, t.node, t.snapshots, collector.NetworkOptions{
-		Interval:                config.SecondsToDuration(conf.NetworkCollector.Interval, time.Second*30),
-		BandwidthByPeerInterval: config.SecondsToDuration(conf.NetworkCollector.BandwidthByPeerInterval, time.Minute*5),
-	})
-
-	go collector.RunRoutingTableCollector(ctx, t.node, t.snapshots, collector.RoutingTableOptions{
-		Interval: config.SecondsToDuration(conf.RoutingTable.Interval, time.Second*60),
-	})
-
-	go collector.RunResourcesCollector(ctx, t.snapshots, collector.ResourcesOptions{
-		Interval: config.SecondsToDuration(conf.Resources.Interval, time.Second*10),
-	})
-
-	go collector.RunBitswapCollector(ctx, t.node, t.snapshots, collector.BitswapOptions{
-		Interval: config.SecondsToDuration(conf.Bitswap.Interval, time.Second*30),
-	})
-
-	go collector.RunStorageCollector(ctx, t.node, t.snapshots, collector.StorageOptions{
-		Interval: config.SecondsToDuration(conf.Storage.Interval, time.Second*60),
-	})
-
-	go collector.RunKademliaCollector(ctx, t.snapshots, collector.KademliaOptions{
-		Interval: config.SecondsToDuration(conf.Kademlia.Interval, time.Second*30),
-	})
-
-	go collector.RunTraceRouteCollector(ctx, h, t.snapshots, collector.TraceRouteOptions{
-		Interval: config.SecondsToDuration(conf.TraceRoute.Interval, time.Second*5),
-	})
-
-	go collector.RunWindowCollector(ctx, o.windowDuration, t.snapshots, t.snapshots, collector.StorageOptions{
-		Interval: config.SecondsToDuration(conf.Window.Interval, time.Second*5),
-	})
+	t.startCollectors()
 
 	go metricsTask(t.snapshots)
 
@@ -117,4 +86,68 @@ func NewTelemetryService(n *core.IpfsNode, conf config.Config, opts ...Option) (
 func (s *TelemetryService) Close() {
 	s.grpc_server.GracefulStop()
 	s.cancel()
+
+	for _, c := range s.collectors {
+		c.Close()
+	}
+}
+
+func (s *TelemetryService) deferCollectorClose(c collector.Collector) {
+	s.collectors = append(s.collectors, c)
+}
+
+func (s *TelemetryService) startCollectors() {
+	// ping
+	pingCount := s.conf.Ping.Count
+	if pingCount == 0 {
+		pingCount = 5
+	}
+	pingCollector := collector.NewPingCollector(s.node.PeerHost, collector.PingOptions{
+		PingCount: pingCount,
+		Timeout:   config.SecondsToDuration(s.conf.Ping.Timeout, time.Second*10),
+	})
+	collector.RunCollector(s.ctx, config.SecondsToDuration(s.conf.Ping.Interval, time.Second*5), s.snapshots, pingCollector)
+	s.deferCollectorClose(pingCollector)
+
+	// network
+	networkCollector := collector.NewNetworkCollector(s.node, collector.NetworkOptions{
+		BandwidthByPeerInterval: config.SecondsToDuration(s.conf.NetworkCollector.BandwidthByPeerInterval, time.Minute*5),
+	})
+	collector.RunCollector(s.ctx, config.SecondsToDuration(s.conf.NetworkCollector.Interval, time.Second*30), s.snapshots, networkCollector)
+	s.deferCollectorClose(networkCollector)
+
+	// routing table
+	routingTableCollector := collector.NewRoutingTableCollector(s.node)
+	collector.RunCollector(s.ctx, config.SecondsToDuration(s.conf.RoutingTable.Interval, time.Second*60), s.snapshots, routingTableCollector)
+	s.deferCollectorClose(routingTableCollector)
+
+	// resources
+	resourcesCollector := collector.NewResourcesCollector()
+	collector.RunCollector(s.ctx, config.SecondsToDuration(s.conf.Resources.Interval, time.Second*10), s.snapshots, resourcesCollector)
+	s.deferCollectorClose(resourcesCollector)
+
+	// bitswap
+	bitswapCollector := collector.NewBitswapCollector(s.node)
+	collector.RunCollector(s.ctx, config.SecondsToDuration(s.conf.Bitswap.Interval, time.Second*30), s.snapshots, bitswapCollector)
+	s.deferCollectorClose(bitswapCollector)
+
+	// storage
+	storageCollector := collector.NewStorageCollector(s.node)
+	collector.RunCollector(s.ctx, config.SecondsToDuration(s.conf.Storage.Interval, time.Second*60), s.snapshots, storageCollector)
+	s.deferCollectorClose(storageCollector)
+
+	// kademlia
+	kademliaCollector := collector.NewKademliaCollector()
+	collector.RunCollector(s.ctx, config.SecondsToDuration(s.conf.Kademlia.Interval, time.Second*30), s.snapshots, kademliaCollector)
+	s.deferCollectorClose(kademliaCollector)
+
+	// traceroute
+	tracerouteCollector := collector.NewTracerouteCollector(s.node.PeerHost)
+	collector.RunCollector(s.ctx, config.SecondsToDuration(s.conf.TraceRoute.Interval, time.Second*5), s.snapshots, tracerouteCollector)
+	s.deferCollectorClose(tracerouteCollector)
+
+	// window
+	windowCollector := collector.NewWindowCollector(s.opts.windowDuration, s.snapshots)
+	collector.RunCollector(s.ctx, config.SecondsToDuration(s.conf.Window.Interval, time.Second*5), s.snapshots, windowCollector)
+	s.deferCollectorClose(windowCollector)
 }
