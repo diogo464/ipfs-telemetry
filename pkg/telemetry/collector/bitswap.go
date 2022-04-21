@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"git.d464.sh/adc/telemetry/pkg/measurements"
-	"git.d464.sh/adc/telemetry/pkg/snapshot"
+	"git.d464.sh/adc/telemetry/pkg/telemetry/measurements"
+	"git.d464.sh/adc/telemetry/pkg/telemetry/snapshot"
 	"github.com/ipfs/go-bitswap"
 	"github.com/ipfs/go-ipfs/core"
 	"go.uber.org/atomic"

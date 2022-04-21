@@ -1,7 +1,7 @@
 package monitor
 
 import (
-	"git.d464.sh/adc/telemetry/pkg/snapshot"
+	"git.d464.sh/adc/telemetry/pkg/telemetry/snapshot"
 	"git.d464.sh/adc/telemetry/pkg/telemetry"
 	"github.com/libp2p/go-libp2p-core/peer"
 )

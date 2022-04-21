@@ -3,7 +3,7 @@ package snapshot
 import (
 	"time"
 
-	"git.d464.sh/adc/telemetry/pkg/pbutils"
+	"git.d464.sh/adc/telemetry/pkg/telemetry/pbutils"
 	pb "git.d464.sh/adc/telemetry/pkg/proto/snapshot"
 	"github.com/libp2p/go-libp2p-core/metrics"
 	"github.com/libp2p/go-libp2p-core/peer"

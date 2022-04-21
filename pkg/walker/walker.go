@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"git.d464.sh/adc/telemetry/pkg/preimage"
+	"git.d464.sh/adc/telemetry/pkg/walker/preimage"
 	"github.com/libp2p/go-libp2p-core/host"
 	"github.com/libp2p/go-libp2p-core/peer"
 	pb "github.com/libp2p/go-libp2p-kad-dht/pb"

@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"git.d464.sh/adc/telemetry/pkg/collector"
 	pb "git.d464.sh/adc/telemetry/pkg/proto/telemetry"
+	"git.d464.sh/adc/telemetry/pkg/telemetry/collector"
 	"git.d464.sh/adc/telemetry/pkg/telemetry/config"
 	"git.d464.sh/adc/telemetry/pkg/telemetry/window"
 	"github.com/ipfs/go-ipfs/core"

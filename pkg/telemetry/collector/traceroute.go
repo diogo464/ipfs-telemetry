@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"git.d464.sh/adc/telemetry/pkg/snapshot"
+	"git.d464.sh/adc/telemetry/pkg/telemetry/snapshot"
 	"git.d464.sh/adc/telemetry/pkg/traceroute"
 	"git.d464.sh/adc/telemetry/pkg/utils"
 	"github.com/libp2p/go-libp2p-core/host"

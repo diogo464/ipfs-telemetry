@@ -4,7 +4,7 @@ import (
 	"strconv"
 
 	"git.d464.sh/adc/telemetry/pkg/monitor"
-	"git.d464.sh/adc/telemetry/pkg/snapshot"
+	"git.d464.sh/adc/telemetry/pkg/telemetry/snapshot"
 	"git.d464.sh/adc/telemetry/pkg/telemetry"
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/influxdata/influxdb-client-go/v2/api"

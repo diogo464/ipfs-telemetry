@@ -4,7 +4,7 @@ import (
 	"time"
 
 	pb "git.d464.sh/adc/telemetry/pkg/proto/snapshot"
-	"git.d464.sh/adc/telemetry/pkg/snapshot"
+	"git.d464.sh/adc/telemetry/pkg/telemetry/snapshot"
 )
 
 type Stats struct {
