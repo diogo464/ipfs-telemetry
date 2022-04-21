@@ -33,7 +33,8 @@ func NewPingCollector(h host.Host, opts PingOptions) Collector {
 }
 
 // Close implements Collector
-func (*pingCollector) Close() {
+func (c *pingCollector) Close() {
+	c.picker.close()
 }
 
 // Collect implements Collector

@@ -25,7 +25,8 @@ func NewTracerouteCollector(h host.Host) Collector {
 }
 
 // Close implements Collector
-func (*tracerouteCollector) Close() {
+func (c *tracerouteCollector) Close() {
+	c.picker.close()
 }
 
 // Collect implements Collector
