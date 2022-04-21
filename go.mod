@@ -21,6 +21,7 @@ require (
 	github.com/oschwald/geoip2-golang v1.7.0
 	github.com/prometheus/client_golang v1.12.1
 	github.com/shirou/gopsutil v2.21.11+incompatible
+	github.com/sirupsen/logrus v1.6.0
 	github.com/urfave/cli/v2 v2.0.0
 	go.uber.org/atomic v1.9.0
 	go.uber.org/zap v1.21.0
@@ -109,6 +110,7 @@ require (
 	github.com/jbenet/goprocess v0.1.4 // indirect
 	github.com/klauspost/compress v1.11.7 // indirect
 	github.com/klauspost/cpuid/v2 v2.0.9 // indirect
+	github.com/konsorten/go-windows-terminal-sequences v1.0.3 // indirect
 	github.com/koron/go-ssdp v0.0.2 // indirect
 	github.com/libp2p/go-addr-util v0.1.0 // indirect
 	github.com/libp2p/go-buffer-pool v0.0.2 // indirect

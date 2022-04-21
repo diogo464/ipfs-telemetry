@@ -12,8 +12,8 @@ import (
 	pb "git.d464.sh/adc/telemetry/pkg/proto/monitor"
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )
 
@@ -34,11 +34,8 @@ func main() {
 		},
 	}
 
-	logger, err := zap.NewDevelopment()
-	if err != nil {
-		panic(err)
-	}
-	zap.ReplaceGlobals(logger)
+	logrus.SetOutput(os.Stdout)
+	logrus.SetLevel(logrus.DebugLevel)
 
 	if err := app.Run(os.Args); err != nil {
 		panic(err)

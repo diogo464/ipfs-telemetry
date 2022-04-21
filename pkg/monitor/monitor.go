@@ -9,7 +9,7 @@ import (
 	"git.d464.sh/adc/telemetry/pkg/waker"
 	"github.com/libp2p/go-libp2p-core/host"
 	"github.com/libp2p/go-libp2p-core/peer"
-	"go.uber.org/zap"
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -83,16 +83,16 @@ LOOP:
 		case action := <-s.actions.Receive():
 			switch action.kind {
 			case ActionDiscover:
-				zap.S().Debugw("discover", "peer", action.pid)
+				logrus.WithField("peer", action.pid).Debug("action discovery")
 				s.onActionDiscover(action.pid)
 			case ActionTelemetry:
-				zap.S().Debugw("telemetry", "peer", action.pid)
+				logrus.WithField("peer", action.pid).Debug("action telemetry")
 				s.onActionTelemetry(action.pid)
 			case ActionBandwidth:
-				zap.S().Debugw("bandwidth", "peer", action.pid)
+				logrus.WithField("peer", action.pid).Debug("action bandwidth")
 				s.onActionBandwidth(action.pid)
 			case ActionRemovePeer:
-				zap.S().Debugw("removing", "peer", action.pid)
+				logrus.WithField("peer", action.pid).Debug("action remove peer")
 				delete(s.peers, action.pid)
 			}
 		case <-ctx.Done():
@@ -152,14 +152,14 @@ func (s *Monitor) collectTelemetry(state *peerState) {
 func (s *Monitor) tryCollectTelemetry(state *peerState) error {
 	ctx := context.Background()
 
-	zap.S().Debug("creating client")
+	logrus.WithField("peer", state.id).Debug("creating client")
 	client, err := telemetry.NewClient(s.h, state.id)
 	if err != nil {
 		return err
 	}
 	defer client.Close()
 
-	zap.S().Debug("getting session info")
+	logrus.WithField("peer", state.id).Debug("getting session info")
 	session, err := client.SessionInfo(ctx)
 	if err != nil {
 		return err
@@ -171,12 +171,11 @@ func (s *Monitor) tryCollectTelemetry(state *peerState) error {
 		state.lastSession = session.Session
 	}
 
-	zap.S().Debug("streaming snapshots")
 	stream := make(chan telemetry.SnapshotStreamItem)
 	go func() {
 		for item := range stream {
 			state.lastSeqN = item.NextSeqN
-			zap.S().Debug("exporting ", len(item.Snapshots), " snapshots")
+			logrus.WithField("peer", state.id).Debug("exporting ", len(item.Snapshots), " snapshots")
 			s.exporter.ExportSnapshots(state.id, session.Session, item.Snapshots)
 		}
 	}()
@@ -228,7 +227,7 @@ func (s *Monitor) tryCollectBandwidth(state *peerState) error {
 
 // must be holding the state's lock
 func (s *Monitor) peerError(state *peerState, err error) {
-	zap.S().Error("peer error", err, state.id)
+	logrus.WithField("peer", state.id).Debug("peer error: ", err)
 	state.failedAttemps += 1
 	if state.failedAttemps > s.opts.MaxFailedAttemps {
 		s.actions.PushNow(&action{
