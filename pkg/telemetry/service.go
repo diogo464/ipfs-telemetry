@@ -28,8 +28,7 @@ type TelemetryService struct {
 	cancel      context.CancelFunc
 	grpc_server *grpc.Server
 	boot_time   time.Time
-	snapshots   window.Window
-	events      window.Window
+	twindow     window.Window
 	collectors  []collector.Collector
 }
 
@@ -54,8 +53,7 @@ func NewTelemetryService(n *core.IpfsNode, conf config.Config, opts ...Option) (
 		ctx:        ctx,
 		cancel:     cancel,
 		boot_time:  time.Now().UTC(),
-		snapshots:  window.NewMemoryWindow(o.windowDuration),
-		events:     window.NewMemoryWindowWithMax(o.windowDuration, 128*1024),
+		twindow:    window.NewMemoryWindow(o.windowDuration, 128*1024),
 		collectors: make([]collector.Collector, 0),
 	}
 	h.SetStreamHandler(ID_UPLOAD, t.uploadHandler)
@@ -81,7 +79,7 @@ func NewTelemetryService(n *core.IpfsNode, conf config.Config, opts ...Option) (
 	t.startCollectors()
 	t.startEventCollector()
 
-	go metricsTask(t.snapshots)
+	go metricsTask(t.twindow)
 
 	return t, nil
 }
@@ -100,6 +98,8 @@ func (s *TelemetryService) deferCollectorClose(c collector.Collector) {
 }
 
 func (s *TelemetryService) startCollectors() {
+	ssink := window.SnapshotSink(s.twindow)
+
 	// ping
 	pingCount := s.conf.Ping.Count
 	if pingCount == 0 {
@@ -109,52 +109,54 @@ func (s *TelemetryService) startCollectors() {
 		PingCount: pingCount,
 		Timeout:   config.SecondsToDuration(s.conf.Ping.Timeout, time.Second*10),
 	})
-	collector.RunCollector(s.ctx, config.SecondsToDuration(s.conf.Ping.Interval, time.Second*5), s.snapshots, pingCollector)
+	collector.RunCollector(s.ctx, config.SecondsToDuration(s.conf.Ping.Interval, time.Second*5), ssink, pingCollector)
 	s.deferCollectorClose(pingCollector)
 
 	// network
 	networkCollector := collector.NewNetworkCollector(s.node, collector.NetworkOptions{
 		BandwidthByPeerInterval: config.SecondsToDuration(s.conf.NetworkCollector.BandwidthByPeerInterval, time.Minute*5),
 	})
-	collector.RunCollector(s.ctx, config.SecondsToDuration(s.conf.NetworkCollector.Interval, time.Second*30), s.snapshots, networkCollector)
+	collector.RunCollector(s.ctx, config.SecondsToDuration(s.conf.NetworkCollector.Interval, time.Second*30), ssink, networkCollector)
 	s.deferCollectorClose(networkCollector)
 
 	// routing table
 	routingTableCollector := collector.NewRoutingTableCollector(s.node)
-	collector.RunCollector(s.ctx, config.SecondsToDuration(s.conf.RoutingTable.Interval, time.Second*60), s.snapshots, routingTableCollector)
+	collector.RunCollector(s.ctx, config.SecondsToDuration(s.conf.RoutingTable.Interval, time.Second*60), ssink, routingTableCollector)
 	s.deferCollectorClose(routingTableCollector)
 
 	// resources
 	resourcesCollector := collector.NewResourcesCollector()
-	collector.RunCollector(s.ctx, config.SecondsToDuration(s.conf.Resources.Interval, time.Second*10), s.snapshots, resourcesCollector)
+	collector.RunCollector(s.ctx, config.SecondsToDuration(s.conf.Resources.Interval, time.Second*10), ssink, resourcesCollector)
 	s.deferCollectorClose(resourcesCollector)
 
 	// bitswap
 	bitswapCollector := collector.NewBitswapCollector(s.node)
-	collector.RunCollector(s.ctx, config.SecondsToDuration(s.conf.Bitswap.Interval, time.Second*30), s.snapshots, bitswapCollector)
+	collector.RunCollector(s.ctx, config.SecondsToDuration(s.conf.Bitswap.Interval, time.Second*30), ssink, bitswapCollector)
 	s.deferCollectorClose(bitswapCollector)
 
 	// storage
 	storageCollector := collector.NewStorageCollector(s.node)
-	collector.RunCollector(s.ctx, config.SecondsToDuration(s.conf.Storage.Interval, time.Second*60), s.snapshots, storageCollector)
+	collector.RunCollector(s.ctx, config.SecondsToDuration(s.conf.Storage.Interval, time.Second*60), ssink, storageCollector)
 	s.deferCollectorClose(storageCollector)
 
 	// kademlia
 	kademliaCollector := collector.NewKademliaCollector()
-	collector.RunCollector(s.ctx, config.SecondsToDuration(s.conf.Kademlia.Interval, time.Second*30), s.snapshots, kademliaCollector)
+	collector.RunCollector(s.ctx, config.SecondsToDuration(s.conf.Kademlia.Interval, time.Second*30), ssink, kademliaCollector)
 	s.deferCollectorClose(kademliaCollector)
 
 	// traceroute
 	tracerouteCollector := collector.NewTracerouteCollector(s.node.PeerHost)
-	collector.RunCollector(s.ctx, config.SecondsToDuration(s.conf.TraceRoute.Interval, time.Second*5), s.snapshots, tracerouteCollector)
+	collector.RunCollector(s.ctx, config.SecondsToDuration(s.conf.TraceRoute.Interval, time.Second*5), ssink, tracerouteCollector)
 	s.deferCollectorClose(tracerouteCollector)
 
 	// window
-	windowCollector := collector.NewWindowCollector(s.opts.windowDuration, s.snapshots)
-	collector.RunCollector(s.ctx, config.SecondsToDuration(s.conf.Window.Interval, time.Second*5), s.snapshots, windowCollector)
+	windowCollector := collector.NewWindowCollector(s.opts.windowDuration, s.twindow)
+	collector.RunCollector(s.ctx, config.SecondsToDuration(s.conf.Window.Interval, time.Second*5), ssink, windowCollector)
 	s.deferCollectorClose(windowCollector)
 }
 
 func (s *TelemetryService) startEventCollector() {
-	collector.StartKademliaEventCollector(s.ctx, s.events)
+	esink := window.EventSink(s.twindow)
+
+	collector.StartKademliaEventCollector(s.ctx, esink)
 }

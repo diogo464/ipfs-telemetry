@@ -33,8 +33,7 @@ type peerState struct {
 	// consecutive failed attempts
 	failedAttemps int
 	lastSession   telemetry.Session
-	lastSeqN      uint64
-	lastSeqNEvent uint64
+	nextSeqN      uint64
 }
 
 type Monitor struct {
@@ -153,8 +152,7 @@ func (s *Monitor) setupPeer(p peer.ID) error {
 		id:            p,
 		failedAttemps: 0,
 		lastSession:   telemetry.InvalidSession,
-		lastSeqN:      0,
-		lastSeqNEvent: 0,
+		nextSeqN:      0,
 	}
 	return nil
 }
@@ -176,45 +174,26 @@ func (s *Monitor) collectTelemetry(state *peerState) error {
 		return err
 	}
 
-	since := state.lastSeqN
+	since := state.nextSeqN
 	if session.Session != state.lastSession {
 		since = 0
 		state.lastSession = session.Session
 	}
 
-	{ // snapshots
-		stream := make(chan telemetry.SnapshotStreamItem)
-		go func() {
-			for item := range stream {
-				state.lastSeqN = item.NextSeqN
-				logrus.WithField("peer", state.id).Debug("exporting ", len(item.Snapshots), " snapshots")
-				s.exporter.ExportSnapshots(state.id, session.Session, item.Snapshots)
-			}
-		}()
-
-		err = client.Snapshots(context.Background(), since, stream)
-		if err != nil {
-			return err
+	stream := make(chan telemetry.SnapshotStreamItem)
+	go func() {
+		for item := range stream {
+			state.nextSeqN = item.NextSeqN
+			logrus.WithField("peer", state.id).Debug("exporting ", len(item.Snapshots), " snapshots")
+			s.exporter.ExportSnapshots(state.id, session.Session, item.Snapshots)
 		}
-		close(stream)
-	}
+	}()
 
-	{ // events
-		stream := make(chan telemetry.SnapshotStreamItem)
-		go func() {
-			for item := range stream {
-				state.lastSeqNEvent = item.NextSeqN
-				logrus.WithField("peer", state.id).Debug("exporting ", len(item.Snapshots), " events")
-				s.exporter.ExportSnapshots(state.id, session.Session, item.Snapshots)
-			}
-		}()
-
-		err = client.Events(context.Background(), since, stream)
-		if err != nil {
-			return err
-		}
-		close(stream)
+	err = client.Snapshots(context.Background(), since, stream)
+	if err != nil {
+		return err
 	}
+	close(stream)
 
 	return nil
 }

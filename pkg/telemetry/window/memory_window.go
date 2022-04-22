@@ -2,7 +2,6 @@ package window
 
 import (
 	"math"
-	"sort"
 	"sync"
 	"time"
 
@@ -14,79 +13,68 @@ import (
 var _ Window = (*MemoryWindow)(nil)
 
 type MemoryWindow struct {
-	mu       sync.Mutex
-	duration time.Duration
-	items    *vecdeque[windowItem]
-	stats    *Stats
-	max      int
+	mu        sync.Mutex
+	duration  time.Duration
+	maxEvents int
+
+	nextSeqN  uint64
+	snapshots *vecdeque[windowItem]
+	events    *vecdeque[windowItem]
+	stats     *Stats
 }
 
-func NewMemoryWindow(duration time.Duration) *MemoryWindow {
-	return NewMemoryWindowWithMax(duration, math.MaxInt)
-}
-
-func NewMemoryWindowWithMax(duration time.Duration, max int) *MemoryWindow {
+func NewMemoryWindow(duration time.Duration, maxEvents int) *MemoryWindow {
 	return &MemoryWindow{
-		mu:       sync.Mutex{},
-		duration: duration,
-		items:    newVecDeque[windowItem](),
+		mu:        sync.Mutex{},
+		duration:  duration,
+		maxEvents: maxEvents,
+
+		nextSeqN:  0,
+		snapshots: newVecDeque[windowItem](),
+		events:    newVecDeque[windowItem](),
 		stats: &Stats{
-			Count:  map[string]uint32{},
-			Memory: map[string]uint32{},
+			Count:  make(map[string]uint32),
+			Memory: make(map[string]uint32),
 		},
-		max: max,
 	}
-}
-
-// Push implements Window
-func (w *MemoryWindow) Push(s snapshot.Snapshot) {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-	name := s.GetName()
-	size := s.GetSizeEstimate()
-	w.stats.Count[name] += 1
-	w.stats.Memory[name] += size
-
-	w.items.PushBack(windowItem{
-		seqn:      nextSeqN(w.items),
-		snapshot:  s.ToPB(),
-		timestamp: s.GetTimestamp(),
-		size:      size,
-		name:      name,
-	})
-	w.clean()
 }
 
 // Fetch implements Window
-func (w *MemoryWindow) Fetch(since uint64, n int) FetchResult {
+func (w *MemoryWindow) Fetch(since uint64, n uint64) FetchResult {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
-	if n == 0 || w.items.IsEmpty() || since > w.items.Back().seqn {
-		return FetchResult{
-			FirstSeqN: nextSeqN(w.items),
-			Snapshots: []*pb.Snapshot{},
-		}
-	}
+	datapoints := make([]*pb.Snapshot, 0)
+	until := since + n
+	datapoints = copySinceSeqN(w.snapshots, since, until, datapoints)
+	datapoints = copySinceSeqN(w.events, since, until, datapoints)
 
-	start := sort.Search(w.items.Len(), func(i int) bool {
-		return w.items.Get(i).seqn >= since
-	})
-	end := utils.Min(start+n, w.items.Len())
-	snapshots := make([]*pb.Snapshot, 0, end-start)
-	for i := start; i < end; i++ {
-		snapshots = append(snapshots, w.items.Get(i).snapshot)
-	}
 	return FetchResult{
-		FirstSeqN: w.items.Get(start).seqn,
-		Snapshots: snapshots,
+		NextSeqN:  utils.Min(until, w.nextSeqN),
+		Snapshots: datapoints,
 	}
 }
 
+// FetchAll implements Window
 func (w *MemoryWindow) FetchAll() FetchResult {
-	return w.Fetch(0, math.MaxInt)
+	return w.Fetch(0, math.MaxUint64)
 }
 
+// PushEvent implements Window
+func (w *MemoryWindow) PushEvent(s snapshot.Snapshot) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	w.pushToVec(s, w.events)
+}
+
+// PushSnapshot implements Window
+func (w *MemoryWindow) PushSnapshot(s snapshot.Snapshot) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	w.pushToVec(s, w.snapshots)
+}
+
+// Stats implements Window
 func (w *MemoryWindow) Stats(out *Stats) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
@@ -106,9 +94,34 @@ func (w *MemoryWindow) Stats(out *Stats) {
 	}
 }
 
+func (w *MemoryWindow) pushToVec(s snapshot.Snapshot, v *vecdeque[windowItem]) {
+	w.clean()
+
+	name := s.GetName()
+	size := s.GetSizeEstimate()
+	w.stats.Count[name] += 1
+	w.stats.Memory[name] += size
+
+	seqn := w.nextSeqN
+	w.nextSeqN += 1
+	v.PushBack(windowItem{
+		seqn:      seqn,
+		snapshot:  s.ToPB(),
+		timestamp: time.Now(),
+		size:      size,
+		name:      name,
+	})
+}
+
 func (w *MemoryWindow) clean() {
-	for (!w.items.IsEmpty() && time.Since(w.items.Front().timestamp) > w.duration) || (w.items.Len() > w.max) {
-		item := w.items.PopFront()
+	for (!w.events.IsEmpty() && time.Since(w.events.Front().timestamp) > w.duration) || (w.events.Len() > w.maxEvents) {
+		item := w.events.PopFront()
+		w.stats.Count[item.name] -= 1
+		w.stats.Memory[item.name] -= item.size
+	}
+
+	for !w.snapshots.IsEmpty() && time.Since(w.snapshots.Front().timestamp) > w.duration {
+		item := w.snapshots.PopFront()
 		w.stats.Count[item.name] -= 1
 		w.stats.Memory[item.name] -= item.size
 	}

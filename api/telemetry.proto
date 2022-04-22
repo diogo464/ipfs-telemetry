@@ -17,7 +17,6 @@ service Telemetry {
     rpc GetSessionInfo(google.protobuf.Empty) returns (GetSessionInfoResponse);
     rpc GetSystemInfo(google.protobuf.Empty) returns (SystemInfo);
     rpc GetSnapshots(GetSnapshotsRequest) returns (stream GetSnapshotsResponse);
-    rpc GetEvents(GetEventsRequest) returns (stream GetEventsResponse);
 }
 
 message GetSessionInfoResponse  {
@@ -32,13 +31,4 @@ message GetSnapshotsRequest {
 message GetSnapshotsResponse {
     uint64 next                             = 1;
     repeated snapshot.Snapshot snapshots    = 2;
-}
-
-message GetEventsRequest {
-    uint64 since    = 1;
-}
-
-message GetEventsResponse {
-    uint64 next                             = 1;
-    repeated snapshot.Snapshot events       = 2;
 }
