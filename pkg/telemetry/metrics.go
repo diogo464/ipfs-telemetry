@@ -9,32 +9,32 @@ import (
 )
 
 func metricsTask(w window.Window) {
-	snapshotMemory := make(map[string]prometheus.Gauge)
-	snapshotCounts := make(map[string]prometheus.Gauge)
+	datapointMemory := make(map[string]prometheus.Gauge)
+	datapointCounts := make(map[string]prometheus.Gauge)
 	stats := new(window.Stats)
 
 	for {
 		w.Stats(stats)
 
 		for n, mem := range stats.Memory {
-			if _, ok := snapshotMemory[n]; !ok {
-				snapshotMemory[n] = promauto.NewGauge(prometheus.GaugeOpts{
-					Name:        "telemetry_snapshot_memory",
-					Help:        "Memory used by snapshots",
+			if _, ok := datapointMemory[n]; !ok {
+				datapointMemory[n] = promauto.NewGauge(prometheus.GaugeOpts{
+					Name:        "telemetry_datapoint_memory",
+					Help:        "Memory used by datapoints",
 					ConstLabels: map[string]string{"kind": n},
 				})
 			}
-			snapshotMemory[n].Set(float64(mem))
+			datapointMemory[n].Set(float64(mem))
 		}
 		for n, count := range stats.Count {
-			if _, ok := snapshotCounts[n]; !ok {
-				snapshotCounts[n] = promauto.NewGauge(prometheus.GaugeOpts{
-					Name:        "telemetry_snapshot_count",
-					Help:        "Count of snapshots",
+			if _, ok := datapointCounts[n]; !ok {
+				datapointCounts[n] = promauto.NewGauge(prometheus.GaugeOpts{
+					Name:        "telemetry_datapoint_count",
+					Help:        "Count of datapoints",
 					ConstLabels: map[string]string{"kind": n},
 				})
 			}
-			snapshotCounts[n].Set(float64(count))
+			datapointCounts[n].Set(float64(count))
 		}
 
 		time.Sleep(time.Second * 4)

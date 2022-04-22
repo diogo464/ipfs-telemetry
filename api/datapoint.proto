@@ -1,11 +1,11 @@
 syntax = "proto3";
-package telemetry.snapshot;
+package telemetry.datapoint;
 
 import "common.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/duration.proto";
 
-option go_package = "git.d464.sh/adc/telemetry/pkg/proto/snapshot";
+option go_package = "git.d464.sh/adc/telemetry/pkg/proto/datapoint";
 
 message Ping {
     google.protobuf.Timestamp timestamp         = 1;
@@ -116,13 +116,13 @@ message Storage {
 message Window {
     google.protobuf.Timestamp timestamp         = 1;
     google.protobuf.Duration window_duration    = 2;
-    // maps snapshot name to its count
-    map<string, uint32> snapshot_count          = 3;
-    // maps snapshot name to its estimate memory usage
-    map<string, uint32> snapshot_memory         = 4;
+    // maps datapoint name to its count
+    map<string, uint32> datapoint_count         = 3;
+    // maps datapoint name to its estimate memory usage
+    map<string, uint32> datapoint_memory        = 4;
 }
 
-message Snapshot  {
+message Datapoint  {
     oneof body {
         Ping ping                       = 1; 
         RoutingTable routing_table      = 2;

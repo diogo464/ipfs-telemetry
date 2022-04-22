@@ -1,13 +1,13 @@
-package snapshot
+package datapoint
 
 import (
 	"time"
 
-	pb "git.d464.sh/adc/telemetry/pkg/proto/snapshot"
+	pb "git.d464.sh/adc/telemetry/pkg/proto/datapoint"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-var _ Snapshot = (*Storage)(nil)
+var _ Datapoint = (*Storage)(nil)
 
 const StorageName = "storage"
 
@@ -24,9 +24,9 @@ func (s *Storage) GetTimestamp() time.Time { return s.Timestamp }
 func (s *Storage) GetSizeEstimate() uint32 {
 	return estimateTimestampSize + 3*8
 }
-func (s *Storage) ToPB() *pb.Snapshot {
-	return &pb.Snapshot{
-		Body: &pb.Snapshot_Storage{
+func (s *Storage) ToPB() *pb.Datapoint {
+	return &pb.Datapoint{
+		Body: &pb.Datapoint_Storage{
 			Storage: StorageToPB(s),
 		},
 	}

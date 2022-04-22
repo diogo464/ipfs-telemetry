@@ -30,18 +30,18 @@ func (s *TelemetryService) GetSystemInfo(context.Context, *emptypb.Empty) (*pb.S
 	return response, nil
 }
 
-func (s *TelemetryService) GetSnapshots(req *pb.GetSnapshotsRequest, stream pb.Telemetry_GetSnapshotsServer) error {
+func (s *TelemetryService) GetDatapoints(req *pb.GetDatapointsRequest, stream pb.Telemetry_GetDatapointsServer) error {
 	since := req.GetSince()
 	for {
 		result := s.twindow.Fetch(since, FETCH_BLOCK_SIZE)
-		if len(result.Snapshots) == 0 {
+		if len(result.Datapoints) == 0 {
 			break
 		}
 		since = result.NextSeqN
 
-		err := stream.Send(&pb.GetSnapshotsResponse{
-			Next:      result.NextSeqN,
-			Snapshots: result.Snapshots,
+		err := stream.Send(&pb.GetDatapointsResponse{
+			Next:       result.NextSeqN,
+			Datapoints: result.Datapoints,
 		})
 		if err != nil {
 			return err

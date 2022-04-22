@@ -44,7 +44,7 @@ clean:
 .PHONY: proto
 proto:
 	protoc $(PROTO_FLAGS) api/common.proto
-	protoc $(PROTO_FLAGS) api/snapshot.proto
+	protoc $(PROTO_FLAGS) api/datapoint.proto
 	protoc $(PROTO_FLAGS) api/telemetry.proto
 	protoc $(PROTO_FLAGS) api/monitor.proto
 	protoc $(PROTO_FLAGS) api/crawler.proto

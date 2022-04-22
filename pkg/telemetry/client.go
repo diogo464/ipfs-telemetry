@@ -7,7 +7,7 @@ import (
 	"net"
 
 	pb "git.d464.sh/adc/telemetry/pkg/proto/telemetry"
-	"git.d464.sh/adc/telemetry/pkg/telemetry/snapshot"
+	"git.d464.sh/adc/telemetry/pkg/telemetry/datapoint"
 	"git.d464.sh/adc/telemetry/pkg/utils"
 	"github.com/libp2p/go-libp2p-core/host"
 	"github.com/libp2p/go-libp2p-core/peer"
@@ -18,9 +18,9 @@ import (
 
 var ErrInvalidResponse = fmt.Errorf("invalid response")
 
-type SnapshotStreamItem struct {
-	NextSeqN  uint64
-	Snapshots []snapshot.Snapshot
+type DatapointStreamItem struct {
+	NextSeqN   uint64
+	Datapoints []datapoint.Datapoint
 }
 
 type Client struct {
@@ -93,13 +93,13 @@ func (c *Client) SessionInfo(ctx context.Context) (*SessionInfo, error) {
 	}, nil
 }
 
-func (c *Client) Snapshots(ctx context.Context, since uint64, css chan<- SnapshotStreamItem) error {
+func (c *Client) Datapoints(ctx context.Context, since uint64, css chan<- DatapointStreamItem) error {
 	client, err := c.newGrpcClient()
 	if err != nil {
 		return err
 	}
 
-	stream, err := client.GetSnapshots(ctx, &pb.GetSnapshotsRequest{
+	stream, err := client.GetDatapoints(ctx, &pb.GetDatapointsRequest{
 		Since: since,
 	})
 	if err != nil {
@@ -115,15 +115,15 @@ func (c *Client) Snapshots(ctx context.Context, since uint64, css chan<- Snapsho
 			return err
 		}
 
-		snapshotspb := response.GetSnapshots()
-		snapshots, err := snapshot.FromArrayPB(snapshotspb)
+		datapointspb := response.GetDatapoints()
+		datapoints, err := datapoint.FromArrayPB(datapointspb)
 		if err != nil {
 			return err
 		}
 
-		css <- SnapshotStreamItem{
-			NextSeqN:  response.GetNext(),
-			Snapshots: snapshots,
+		css <- DatapointStreamItem{
+			NextSeqN:   response.GetNext(),
+			Datapoints: datapoints,
 		}
 	}
 

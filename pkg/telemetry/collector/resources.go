@@ -4,7 +4,7 @@ import (
 	"context"
 	"runtime"
 
-	"git.d464.sh/adc/telemetry/pkg/telemetry/snapshot"
+	"git.d464.sh/adc/telemetry/pkg/telemetry/datapoint"
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/mem"
 )
@@ -29,7 +29,7 @@ func (*resourcesCollector) Close() {
 }
 
 // Collect implements Collector
-func (c *resourcesCollector) Collect(ctx context.Context, sink snapshot.Sink) {
+func (c *resourcesCollector) Collect(ctx context.Context, sink datapoint.Sink) {
 	var usage float64 = INVALID_CPU_USAGE
 	usagearr, err := cpu.Percent(0, false)
 	if err == nil {
@@ -45,8 +45,8 @@ func (c *resourcesCollector) Collect(ctx context.Context, sink snapshot.Sink) {
 	}
 
 	runtime.ReadMemStats(c.stats)
-	sink.Push(&snapshot.Resources{
-		Timestamp:   snapshot.NewTimestamp(),
+	sink.Push(&datapoint.Resources{
+		Timestamp:   datapoint.NewTimestamp(),
 		CpuUsage:    float32(usage),
 		MemoryUsed:  c.stats.HeapAlloc,
 		MemoryFree:  mem_free,

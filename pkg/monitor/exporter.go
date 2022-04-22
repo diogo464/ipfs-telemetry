@@ -2,7 +2,7 @@ package monitor
 
 import (
 	"git.d464.sh/adc/telemetry/pkg/telemetry"
-	"git.d464.sh/adc/telemetry/pkg/telemetry/snapshot"
+	"git.d464.sh/adc/telemetry/pkg/telemetry/datapoint"
 	"github.com/libp2p/go-libp2p-core/peer"
 )
 
@@ -11,22 +11,22 @@ var _ Exporter = (*NullExporter)(nil)
 type Exporter interface {
 	ExportSessionInfo(peer.ID, telemetry.SessionInfo)
 	ExportSystemInfo(peer.ID, telemetry.Session, telemetry.SystemInfo)
-	ExportSnapshots(peer.ID, telemetry.Session, []snapshot.Snapshot)
+	ExportDatapoints(peer.ID, telemetry.Session, []datapoint.Datapoint)
 	ExportBandwidth(peer.ID, telemetry.Session, telemetry.Bandwidth)
 }
 
 type fnExporter struct {
-	fn func(peer.ID, telemetry.Session, []snapshot.Snapshot)
+	fn func(peer.ID, telemetry.Session, []datapoint.Datapoint)
 }
 
 func (e *fnExporter) ExportSessionInfo(peer.ID, telemetry.SessionInfo)                  {}
 func (e *fnExporter) ExportSystemInfo(peer.ID, telemetry.Session, telemetry.SystemInfo) {}
-func (e *fnExporter) ExportSnapshots(peer peer.ID, session telemetry.Session, snapshots []snapshot.Snapshot) {
-	e.fn(peer, session, snapshots)
+func (e *fnExporter) ExportDatapoints(peer peer.ID, session telemetry.Session, datapoints []datapoint.Datapoint) {
+	e.fn(peer, session, datapoints)
 }
 func (e *fnExporter) ExportBandwidth(peer.ID, telemetry.Session, telemetry.Bandwidth) {}
 
-func NewExporterFn(fn func(peer.ID, telemetry.Session, []snapshot.Snapshot)) Exporter {
+func NewExporterFn(fn func(peer.ID, telemetry.Session, []datapoint.Datapoint)) Exporter {
 	return &fnExporter{fn}
 }
 
@@ -40,8 +40,8 @@ func (*NullExporter) ExportBandwidth(peer.ID, telemetry.Session, telemetry.Bandw
 func (*NullExporter) ExportSessionInfo(peer.ID, telemetry.SessionInfo) {
 }
 
-// ExportSnapshots implements Exporter
-func (*NullExporter) ExportSnapshots(peer.ID, telemetry.Session, []snapshot.Snapshot) {
+// ExportDatapoints implements Exporter
+func (*NullExporter) ExportDatapoints(peer.ID, telemetry.Session, []datapoint.Datapoint) {
 }
 
 // ExportSystemInfo implements Exporter

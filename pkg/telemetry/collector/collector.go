@@ -4,15 +4,15 @@ import (
 	"context"
 	"time"
 
-	"git.d464.sh/adc/telemetry/pkg/telemetry/snapshot"
+	"git.d464.sh/adc/telemetry/pkg/telemetry/datapoint"
 )
 
 type Collector interface {
-	Collect(context.Context, snapshot.Sink)
+	Collect(context.Context, datapoint.Sink)
 	Close()
 }
 
-func RunCollector(ctx context.Context, interval time.Duration, sink snapshot.Sink, collector Collector) {
+func RunCollector(ctx context.Context, interval time.Duration, sink datapoint.Sink, collector Collector) {
 	go func() {
 		ticker := time.NewTicker(interval)
 

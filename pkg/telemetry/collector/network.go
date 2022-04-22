@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"git.d464.sh/adc/telemetry/pkg/telemetry/snapshot"
+	"git.d464.sh/adc/telemetry/pkg/telemetry/datapoint"
 	"github.com/ipfs/go-ipfs/core"
 	connmgr "github.com/libp2p/go-libp2p-connmgr"
 	"github.com/libp2p/go-libp2p-core/metrics"
@@ -36,7 +36,7 @@ func (*networkCollector) Close() {
 }
 
 // Collect implements Collector
-func (c *networkCollector) Collect(ctx context.Context, sink snapshot.Sink) {
+func (c *networkCollector) Collect(ctx context.Context, sink datapoint.Sink) {
 	collectBandwidthByPeer := false
 	if time.Since(c.last_bandwidth_by_peer) > c.opts.BandwidthByPeerInterval {
 		collectBandwidthByPeer = true
@@ -46,7 +46,7 @@ func (c *networkCollector) Collect(ctx context.Context, sink snapshot.Sink) {
 	sink.Push(network)
 }
 
-func newNetworkFromNode(n *core.IpfsNode, collectBandwidthByPeer bool) *snapshot.Network {
+func newNetworkFromNode(n *core.IpfsNode, collectBandwidthByPeer bool) *datapoint.Network {
 	reporter := n.Reporter
 	cmgr := n.PeerHost.ConnManager().(*connmgr.BasicConnMgr)
 	info := cmgr.GetInfo()
@@ -54,8 +54,8 @@ func newNetworkFromNode(n *core.IpfsNode, collectBandwidthByPeer bool) *snapshot
 	if collectBandwidthByPeer {
 		bandwidthByPeer = reporter.GetBandwidthByPeer()
 	}
-	return &snapshot.Network{
-		Timestamp:       snapshot.NewTimestamp(),
+	return &datapoint.Network{
+		Timestamp:       datapoint.NewTimestamp(),
 		Addresses:       n.PeerHost.Addrs(),
 		Overall:         reporter.GetBandwidthTotals(),
 		StatsByProtocol: reporter.GetBandwidthByProtocol(),

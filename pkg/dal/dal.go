@@ -18,15 +18,15 @@ package dal
 //	return sess.SessionID, nil
 //}
 //
-//func RoutingTable(ctx context.Context, exec boil.ContextExecutor, sessionID int, snapshot *telemetry.RoutingTableSnapshot) error {
-//	buckets := make([]int64, 0, len(snapshot.Buckets))
-//	for _, b := range snapshot.Buckets {
+//func RoutingTable(ctx context.Context, exec boil.ContextExecutor, sessionID int, datapoint.*telemetry.RoutingTableSnapshot) error {
+//	buckets := make([]int64, 0, len(datapoint.Buckets))
+//	for _, b := range datapoint.Buckets {
 //		buckets = append(buckets, int64(b))
 //	}
 //
 //	rt := models.SnapshotsRT{
 //		SessionID:    sessionID,
-//		SnapshotTime: snapshot.Header.Time,
+//		SnapshotTime: datapoint.Header.Time,
 //		Buckets:      buckets,
 //	}
 //	return rt.Insert(ctx, exec, boil.Infer())

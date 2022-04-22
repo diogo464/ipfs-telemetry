@@ -1,10 +1,10 @@
-package snapshot
+package datapoint
 
 import (
 	"time"
 
+	pb "git.d464.sh/adc/telemetry/pkg/proto/datapoint"
 	"git.d464.sh/adc/telemetry/pkg/telemetry/pbutils"
-	pb "git.d464.sh/adc/telemetry/pkg/proto/snapshot"
 	"github.com/libp2p/go-libp2p-core/metrics"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/libp2p/go-libp2p-core/protocol"
@@ -12,7 +12,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-var _ Snapshot = (*Network)(nil)
+var _ Datapoint = (*Network)(nil)
 
 const NetworkName = "network"
 
@@ -37,9 +37,9 @@ func (n *Network) GetSizeEstimate() uint32 {
 		uint32(len(n.StatsByPeer)) + (estimatePeerIdSize + estimateMetricsStatsSize) +
 		3*4
 }
-func (n *Network) ToPB() *pb.Snapshot {
-	return &pb.Snapshot{
-		Body: &pb.Snapshot_Network{
+func (n *Network) ToPB() *pb.Datapoint {
+	return &pb.Datapoint{
+		Body: &pb.Datapoint_Network{
 			Network: NetworkToPB(n),
 		},
 	}

@@ -26,9 +26,9 @@ func actionWatch(c *cli.Context) error {
 	}
 	defer client.Close()
 
-	snapshotTypes := strings.Split(c.String(FLAG_TYPE.Name), ",")
-	if snapshotTypes[0] == "" {
-		snapshotTypes = []string{}
+	datapointTypes := strings.Split(c.String(FLAG_TYPE.Name), ",")
+	if datapointTypes[0] == "" {
+		datapointTypes = []string{}
 	}
 
 	var since uint64 = 0
@@ -37,12 +37,12 @@ LOOP:
 	for {
 		select {
 		case <-ticker.C:
-			csnapshots := make(chan telemetry.SnapshotStreamItem)
+			cdatapoints := make(chan telemetry.DatapointStreamItem)
 			go func() {
-				for item := range csnapshots {
-					for _, s := range item.Snapshots {
+				for item := range cdatapoints {
+					for _, s := range item.Datapoints {
 						since = item.NextSeqN
-						if len(snapshotTypes) == 0 || utils.SliceAny(snapshotTypes, func(t string) bool {
+						if len(datapointTypes) == 0 || utils.SliceAny(datapointTypes, func(t string) bool {
 							return t == s.GetName()
 						}) {
 							printAsJson(s)
@@ -50,7 +50,7 @@ LOOP:
 					}
 				}
 			}()
-			err := client.Snapshots(c.Context, since, csnapshots)
+			err := client.Datapoints(c.Context, since, cdatapoints)
 			if err != nil {
 				return err
 			}

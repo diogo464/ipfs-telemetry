@@ -1,15 +1,15 @@
-package snapshot
+package datapoint
 
 import (
 	"time"
 
+	pb "git.d464.sh/adc/telemetry/pkg/proto/datapoint"
 	"git.d464.sh/adc/telemetry/pkg/telemetry/pbutils"
-	pb "git.d464.sh/adc/telemetry/pkg/proto/snapshot"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-var _ Snapshot = (*Ping)(nil)
+var _ Datapoint = (*Ping)(nil)
 
 const PingName = "ping"
 
@@ -26,9 +26,9 @@ func (p *Ping) GetTimestamp() time.Time { return p.Timestamp }
 func (p *Ping) GetSizeEstimate() uint32 {
 	return estimateTimestampSize + 2*estimatePeerAddrInfoSize + uint32(len(p.Durations))*estimateDurationSize
 }
-func (p *Ping) ToPB() *pb.Snapshot {
-	return &pb.Snapshot{
-		Body: &pb.Snapshot_Ping{
+func (p *Ping) ToPB() *pb.Datapoint {
+	return &pb.Datapoint{
+		Body: &pb.Datapoint_Ping{
 			Ping: PingToPB(p),
 		},
 	}

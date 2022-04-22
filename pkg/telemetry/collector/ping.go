@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"git.d464.sh/adc/telemetry/pkg/telemetry/snapshot"
+	"git.d464.sh/adc/telemetry/pkg/telemetry/datapoint"
 	"github.com/libp2p/go-libp2p-core/host"
 	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/libp2p/go-libp2p-core/peer"
@@ -38,7 +38,7 @@ func (c *pingCollector) Close() {
 }
 
 // Collect implements Collector
-func (c *pingCollector) Collect(ctx context.Context, sink snapshot.Sink) {
+func (c *pingCollector) Collect(ctx context.Context, sink datapoint.Sink) {
 	if p, ok := c.picker.pick(); ok {
 		if ps, err := c.ping(ctx, p); err == nil {
 			sink.Push(ps)
@@ -46,7 +46,7 @@ func (c *pingCollector) Collect(ctx context.Context, sink snapshot.Sink) {
 	}
 }
 
-func (c *pingCollector) ping(ctx context.Context, p peer.ID) (*snapshot.Ping, error) {
+func (c *pingCollector) ping(ctx context.Context, p peer.ID) (*datapoint.Ping, error) {
 	ctx, cancel := context.WithTimeout(ctx, c.opts.Timeout)
 	defer cancel()
 
@@ -76,8 +76,8 @@ func (c *pingCollector) ping(ctx context.Context, p peer.ID) (*snapshot.Ping, er
 	}
 	destination := c.h.Peerstore().PeerInfo(p)
 
-	return &snapshot.Ping{
-		Timestamp:   snapshot.NewTimestamp(),
+	return &datapoint.Ping{
+		Timestamp:   datapoint.NewTimestamp(),
 		Source:      source,
 		Destination: destination,
 		Durations:   durations,

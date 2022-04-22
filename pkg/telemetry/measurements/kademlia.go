@@ -3,7 +3,7 @@ package measurements
 import (
 	"time"
 
-	"git.d464.sh/adc/telemetry/pkg/telemetry/snapshot"
+	"git.d464.sh/adc/telemetry/pkg/telemetry/datapoint"
 	"github.com/libp2p/go-libp2p-core/peer"
 	pb "github.com/libp2p/go-libp2p-kad-dht/pb"
 )
@@ -13,26 +13,26 @@ var kademlia Kademlia = nil
 type KademliaQueryTypeKey struct{}
 
 type Kademlia interface {
-	IncMessageIn(snapshot.KademliaMessageType)
-	IncMessageOut(snapshot.KademliaMessageType)
-	PushQuery(peer.ID, snapshot.KademliaMessageType, time.Duration)
-	PushHandler(p peer.ID, m snapshot.KademliaMessageType, handler time.Duration, write time.Duration)
+	IncMessageIn(datapoint.KademliaMessageType)
+	IncMessageOut(datapoint.KademliaMessageType)
+	PushQuery(peer.ID, datapoint.KademliaMessageType, time.Duration)
+	PushHandler(p peer.ID, m datapoint.KademliaMessageType, handler time.Duration, write time.Duration)
 }
 
-func ConvertKademliaMessageType(in pb.Message_MessageType) snapshot.KademliaMessageType {
+func ConvertKademliaMessageType(in pb.Message_MessageType) datapoint.KademliaMessageType {
 	switch in {
 	case pb.Message_PUT_VALUE:
-		return snapshot.KademliaMessageTypePutValue
+		return datapoint.KademliaMessageTypePutValue
 	case pb.Message_GET_VALUE:
-		return snapshot.KademliaMessageTypeGetValue
+		return datapoint.KademliaMessageTypeGetValue
 	case pb.Message_ADD_PROVIDER:
-		return snapshot.KademliaMessageTypeAddProvider
+		return datapoint.KademliaMessageTypeAddProvider
 	case pb.Message_GET_PROVIDERS:
-		return snapshot.KademliaMessageTypeGetProviders
+		return datapoint.KademliaMessageTypeGetProviders
 	case pb.Message_FIND_NODE:
-		return snapshot.KademliaMessageTypeFindNode
+		return datapoint.KademliaMessageTypeFindNode
 	case pb.Message_PING:
-		return snapshot.KademliaMessageTypePing
+		return datapoint.KademliaMessageTypePing
 	default:
 		panic("unimplemented")
 	}

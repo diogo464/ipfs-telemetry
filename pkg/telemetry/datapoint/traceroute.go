@@ -1,15 +1,15 @@
-package snapshot
+package datapoint
 
 import (
 	"time"
 
+	pb "git.d464.sh/adc/telemetry/pkg/proto/datapoint"
 	"git.d464.sh/adc/telemetry/pkg/telemetry/pbutils"
-	pb "git.d464.sh/adc/telemetry/pkg/proto/snapshot"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-var _ Snapshot = (*TraceRoute)(nil)
+var _ Datapoint = (*TraceRoute)(nil)
 
 const TraceRouteName = "traceroute"
 
@@ -27,9 +27,9 @@ func (t *TraceRoute) GetTimestamp() time.Time { return t.Timestamp }
 func (t *TraceRoute) GetSizeEstimate() uint32 {
 	return estimateTimestampSize + 2*estimatePeerAddrInfoSize + uint32(len(t.Provider)) + uint32(len(t.Output))
 }
-func (t *TraceRoute) ToPB() *pb.Snapshot {
-	return &pb.Snapshot{
-		Body: &pb.Snapshot_Traceroute{
+func (t *TraceRoute) ToPB() *pb.Datapoint {
+	return &pb.Datapoint{
+		Body: &pb.Datapoint_Traceroute{
 			Traceroute: TraceRouteToPB(t),
 		},
 	}

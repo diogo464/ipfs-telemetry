@@ -1,16 +1,16 @@
-package snapshot
+package datapoint
 
 import (
 	"time"
 
-	pb "git.d464.sh/adc/telemetry/pkg/proto/snapshot"
+	pb "git.d464.sh/adc/telemetry/pkg/proto/datapoint"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-var _ Snapshot = (*Kademlia)(nil)
-var _ Snapshot = (*KademliaQuery)(nil)
+var _ Datapoint = (*Kademlia)(nil)
+var _ Datapoint = (*KademliaQuery)(nil)
 
 const KademliaName = "kademlia"
 const KademliaQueryName = "kademliaquery"
@@ -48,9 +48,9 @@ func (p *Kademlia) GetTimestamp() time.Time { return p.Timestamp }
 func (p *Kademlia) GetSizeEstimate() uint32 {
 	return estimateTimestampSize + uint32(len(p.MessagesIn))*(4+8) + uint32(len(p.MessagesOut))*(4+8)
 }
-func (p *Kademlia) ToPB() *pb.Snapshot {
-	return &pb.Snapshot{
-		Body: &pb.Snapshot_Kademlia{
+func (p *Kademlia) ToPB() *pb.Datapoint {
+	return &pb.Datapoint{
+		Body: &pb.Datapoint_Kademlia{
 			Kademlia: KademliaToPB(p),
 		},
 	}
@@ -85,9 +85,9 @@ func (p *KademliaQuery) GetTimestamp() time.Time { return p.Timestamp }
 func (p *KademliaQuery) GetSizeEstimate() uint32 {
 	return estimateTimestampSize + estimatePeerIdSize + 4 + estimateDurationSize
 }
-func (p *KademliaQuery) ToPB() *pb.Snapshot {
-	return &pb.Snapshot{
-		Body: &pb.Snapshot_KademliaQuery{
+func (p *KademliaQuery) ToPB() *pb.Datapoint {
+	return &pb.Datapoint{
+		Body: &pb.Datapoint_KademliaQuery{
 			KademliaQuery: KademliaQueryToPB(p),
 		},
 	}
@@ -128,9 +128,9 @@ func (p *KademliaHandler) GetTimestamp() time.Time { return p.Timestamp }
 func (p *KademliaHandler) GetSizeEstimate() uint32 {
 	return estimateTimestampSize + 4 + 2*estimateDurationSize
 }
-func (p *KademliaHandler) ToPB() *pb.Snapshot {
-	return &pb.Snapshot{
-		Body: &pb.Snapshot_KademliaHandler{
+func (p *KademliaHandler) ToPB() *pb.Datapoint {
+	return &pb.Datapoint{
+		Body: &pb.Datapoint_KademliaHandler{
 			KademliaHandler: KademliaHandlerToPB(p),
 		},
 	}

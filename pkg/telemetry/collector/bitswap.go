@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"git.d464.sh/adc/telemetry/pkg/telemetry/measurements"
-	"git.d464.sh/adc/telemetry/pkg/telemetry/snapshot"
+	"git.d464.sh/adc/telemetry/pkg/telemetry/datapoint"
 	"github.com/ipfs/go-bitswap"
 	"github.com/ipfs/go-ipfs/core"
 	"go.uber.org/atomic"
@@ -44,10 +44,10 @@ func (c *bitswapCollector) Close() {
 }
 
 // Collect implements Collector
-func (c *bitswapCollector) Collect(ctx context.Context, sink snapshot.Sink) {
+func (c *bitswapCollector) Collect(ctx context.Context, sink datapoint.Sink) {
 	nstats := c.bs.NetworkStat()
-	sink.Push(&snapshot.Bitswap{
-		Timestamp:          snapshot.NewTimestamp(),
+	sink.Push(&datapoint.Bitswap{
+		Timestamp:          datapoint.NewTimestamp(),
 		DiscoverySucceeded: c.discovery_successes.Load(),
 		DiscoveryFailed:    c.discovery_failures.Load(),
 		MessagesIn:         nstats.MessagesRecvd,

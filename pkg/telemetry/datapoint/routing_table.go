@@ -1,14 +1,14 @@
-package snapshot
+package datapoint
 
 import (
 	"time"
 
-	pb "git.d464.sh/adc/telemetry/pkg/proto/snapshot"
+	pb "git.d464.sh/adc/telemetry/pkg/proto/datapoint"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-var _ Snapshot = (*RoutingTable)(nil)
+var _ Datapoint = (*RoutingTable)(nil)
 
 const RoutingTableName = "routingtable"
 
@@ -27,9 +27,9 @@ func (r *RoutingTable) GetSizeEstimate() uint32 {
 	}
 	return estimateTimestampSize + totalPeers*estimatePeerIdSize
 }
-func (r *RoutingTable) ToPB() *pb.Snapshot {
-	return &pb.Snapshot{
-		Body: &pb.Snapshot_RoutingTable{
+func (r *RoutingTable) ToPB() *pb.Datapoint {
+	return &pb.Datapoint{
+		Body: &pb.Datapoint_RoutingTable{
 			RoutingTable: RoutingTableToPB(r),
 		},
 	}

@@ -180,16 +180,16 @@ func (s *Monitor) collectTelemetry(state *peerState) error {
 		state.lastSession = session.Session
 	}
 
-	stream := make(chan telemetry.SnapshotStreamItem)
+	stream := make(chan telemetry.DatapointStreamItem)
 	go func() {
 		for item := range stream {
 			state.nextSeqN = item.NextSeqN
-			logrus.WithField("peer", state.id).Debug("exporting ", len(item.Snapshots), " snapshots")
-			s.exporter.ExportSnapshots(state.id, session.Session, item.Snapshots)
+			logrus.WithField("peer", state.id).Debug("exporting ", len(item.Datapoints), " datapoint.")
+			s.exporter.ExportDatapoints(state.id, session.Session, item.Datapoints)
 		}
 	}()
 
-	err = client.Snapshots(context.Background(), since, stream)
+	err = client.Datapoints(context.Background(), since, stream)
 	if err != nil {
 		return err
 	}

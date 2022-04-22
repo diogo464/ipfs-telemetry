@@ -3,7 +3,7 @@ package collector
 import (
 	"context"
 
-	"git.d464.sh/adc/telemetry/pkg/telemetry/snapshot"
+	"git.d464.sh/adc/telemetry/pkg/telemetry/datapoint"
 	"git.d464.sh/adc/telemetry/pkg/traceroute"
 	"git.d464.sh/adc/telemetry/pkg/utils"
 	"github.com/libp2p/go-libp2p-core/host"
@@ -30,7 +30,7 @@ func (c *tracerouteCollector) Close() {
 }
 
 // Collect implements Collector
-func (c *tracerouteCollector) Collect(ctx context.Context, sink snapshot.Sink) {
+func (c *tracerouteCollector) Collect(ctx context.Context, sink datapoint.Sink) {
 	if p, ok := c.picker.pick(); ok {
 		if s, err := c.trace(ctx, p); err == nil {
 			sink.Push(s)
@@ -38,7 +38,7 @@ func (c *tracerouteCollector) Collect(ctx context.Context, sink snapshot.Sink) {
 	}
 }
 
-func (c *tracerouteCollector) trace(ctx context.Context, p peer.ID) (*snapshot.TraceRoute, error) {
+func (c *tracerouteCollector) trace(ctx context.Context, p peer.ID) (*datapoint.TraceRoute, error) {
 	ip, err := utils.GetFirstPublicAddressFromMultiaddrs(c.h.Peerstore().Addrs(p))
 	if err != nil {
 		return nil, err
@@ -50,8 +50,8 @@ func (c *tracerouteCollector) trace(ctx context.Context, p peer.ID) (*snapshot.T
 	origin := peer.AddrInfo{ID: c.h.ID(), Addrs: c.h.Addrs()}
 	destination := c.h.Peerstore().PeerInfo(p)
 
-	return &snapshot.TraceRoute{
-		Timestamp:   snapshot.NewTimestamp(),
+	return &datapoint.TraceRoute{
+		Timestamp:   datapoint.NewTimestamp(),
 		Origin:      origin,
 		Destination: destination,
 		Provider:    result.Provider,

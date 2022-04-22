@@ -3,7 +3,7 @@ package collector
 import (
 	"context"
 
-	"git.d464.sh/adc/telemetry/pkg/telemetry/snapshot"
+	"git.d464.sh/adc/telemetry/pkg/telemetry/datapoint"
 	"github.com/ipfs/go-ipfs/core"
 	"github.com/ipfs/go-ipfs/core/corerepo"
 )
@@ -25,10 +25,10 @@ func (*storageCollector) Close() {
 }
 
 // Collect implements Collector
-func (c *storageCollector) Collect(ctx context.Context, sink snapshot.Sink) {
+func (c *storageCollector) Collect(ctx context.Context, sink datapoint.Sink) {
 	if stat, err := corerepo.RepoStat(ctx, c.node); err == nil {
-		sink.Push(&snapshot.Storage{
-			Timestamp:    snapshot.NewTimestamp(),
+		sink.Push(&datapoint.Storage{
+			Timestamp:    datapoint.NewTimestamp(),
 			StorageUsed:  stat.RepoSize,
 			StorageTotal: stat.SizeStat.StorageMax,
 			NumObjects:   stat.NumObjects,

@@ -5,7 +5,7 @@ import (
 	"time"
 
 	pbc "git.d464.sh/adc/telemetry/pkg/proto/common"
-	pbs "git.d464.sh/adc/telemetry/pkg/proto/snapshot"
+	pbs "git.d464.sh/adc/telemetry/pkg/proto/datapoint"
 	"git.d464.sh/adc/telemetry/pkg/rle"
 	"github.com/libp2p/go-libp2p-core/metrics"
 	"github.com/libp2p/go-libp2p-core/peer"

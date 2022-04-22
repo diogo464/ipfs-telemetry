@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"git.d464.sh/adc/telemetry/pkg/telemetry/measurements"
-	"git.d464.sh/adc/telemetry/pkg/telemetry/snapshot"
+	"git.d464.sh/adc/telemetry/pkg/telemetry/datapoint"
 	"github.com/libp2p/go-libp2p-core/peer"
 )
 
@@ -18,13 +18,13 @@ type kademliaCollector struct {
 	cancel context.CancelFunc
 
 	messages_mu  sync.Mutex
-	messages_in  map[snapshot.KademliaMessageType]uint64
-	messages_out map[snapshot.KademliaMessageType]uint64
+	messages_in  map[datapoint.KademliaMessageType]uint64
+	messages_out map[datapoint.KademliaMessageType]uint64
 
 	cquery   chan kademliaQueryTiming
 	chandler chan kademliaHandlerTiming
-	cmsgin   chan snapshot.KademliaMessageType
-	cmsgout  chan snapshot.KademliaMessageType
+	cmsgin   chan datapoint.KademliaMessageType
+	cmsgout  chan datapoint.KademliaMessageType
 }
 
 func NewKademliaCollector() Collector {
@@ -33,8 +33,8 @@ func NewKademliaCollector() Collector {
 		ctx:    ctx,
 		cancel: cancel,
 
-		messages_in:  make(map[snapshot.KademliaMessageType]uint64),
-		messages_out: make(map[snapshot.KademliaMessageType]uint64),
+		messages_in:  make(map[datapoint.KademliaMessageType]uint64),
+		messages_out: make(map[datapoint.KademliaMessageType]uint64),
 	}
 	go c.eventLoop()
 	return c
@@ -47,12 +47,12 @@ func (c *kademliaCollector) Close() {
 }
 
 // Collect implements Collector
-func (c *kademliaCollector) Collect(ctx context.Context, sink snapshot.Sink) {
+func (c *kademliaCollector) Collect(ctx context.Context, sink datapoint.Sink) {
 	c.messages_mu.Lock()
 	defer c.messages_mu.Unlock()
 	// TODO: clone map
-	sink.Push(&snapshot.Kademlia{
-		Timestamp:   snapshot.NewTimestamp(),
+	sink.Push(&datapoint.Kademlia{
+		Timestamp:   datapoint.NewTimestamp(),
 		MessagesIn:  c.messages_in,
 		MessagesOut: c.messages_out,
 	})
@@ -77,17 +77,17 @@ LOOP:
 }
 
 // IncMessageIn implements measurements.Kademlia
-func (c *kademliaCollector) IncMessageIn(t snapshot.KademliaMessageType) {
+func (c *kademliaCollector) IncMessageIn(t datapoint.KademliaMessageType) {
 	c.cmsgin <- t
 }
 
 // IncMessageOut implements measurements.Kademlia
-func (c *kademliaCollector) IncMessageOut(t snapshot.KademliaMessageType) {
+func (c *kademliaCollector) IncMessageOut(t datapoint.KademliaMessageType) {
 	c.cmsgout <- t
 }
 
 // PushHandler implements measurements.Kademlia
-func (c *kademliaCollector) PushHandler(p peer.ID, m snapshot.KademliaMessageType, handler time.Duration, write time.Duration) {
+func (c *kademliaCollector) PushHandler(p peer.ID, m datapoint.KademliaMessageType, handler time.Duration, write time.Duration) {
 	c.chandler <- kademliaHandlerTiming{
 		p: p,
 		t: m,
@@ -97,7 +97,7 @@ func (c *kademliaCollector) PushHandler(p peer.ID, m snapshot.KademliaMessageTyp
 }
 
 // PushQuery implements measurements.Kademlia
-func (c *kademliaCollector) PushQuery(p peer.ID, t snapshot.KademliaMessageType, d time.Duration) {
+func (c *kademliaCollector) PushQuery(p peer.ID, t datapoint.KademliaMessageType, d time.Duration) {
 	c.cquery <- kademliaQueryTiming{
 		p: p,
 		t: t,

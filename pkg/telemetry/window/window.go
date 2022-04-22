@@ -4,13 +4,13 @@ import (
 	"sort"
 	"time"
 
-	pb "git.d464.sh/adc/telemetry/pkg/proto/snapshot"
-	"git.d464.sh/adc/telemetry/pkg/telemetry/snapshot"
+	pb "git.d464.sh/adc/telemetry/pkg/proto/datapoint"
+	"git.d464.sh/adc/telemetry/pkg/telemetry/datapoint"
 )
 
 type FetchResult struct {
-	NextSeqN  uint64
-	Snapshots []*pb.Snapshot
+	NextSeqN   uint64
+	Datapoints []*pb.Datapoint
 }
 
 type Stats struct {
@@ -19,9 +19,9 @@ type Stats struct {
 }
 
 type Window interface {
-	PushSnapshot(snapshot.Snapshot)
-	PushEvent(snapshot.Snapshot)
-	// Fetch snapshots from range [since, since + n)
+	PushSnapshot(datapoint.Datapoint)
+	PushEvent(datapoint.Datapoint)
+	// Fetch datapoint. from range [since, since + n)
 	// If `since` is not in the window then it is moved forward until it is
 	Fetch(since uint64, n uint64) FetchResult
 	FetchAll() FetchResult
@@ -30,34 +30,34 @@ type Window interface {
 
 type SnapshotSinkAdaptor struct{ w Window }
 
-func (s SnapshotSinkAdaptor) Push(snap snapshot.Snapshot) {
+func (s SnapshotSinkAdaptor) Push(snap datapoint.Datapoint) {
 	s.w.PushSnapshot(snap)
 }
 
-func SnapshotSink(w Window) snapshot.Sink {
+func SnapshotSink(w Window) datapoint.Sink {
 	return SnapshotSinkAdaptor{w}
 }
 
 type EventSinkAdapator struct{ w Window }
 
-func (s EventSinkAdapator) Push(snap snapshot.Snapshot) {
+func (s EventSinkAdapator) Push(snap datapoint.Datapoint) {
 	s.w.PushEvent(snap)
 }
 
-func EventSink(w Window) snapshot.Sink {
+func EventSink(w Window) datapoint.Sink {
 	return EventSinkAdapator{w}
 }
 
 type windowItem struct {
-	seqn      uint64
-	snapshot  *pb.Snapshot
-	timestamp time.Time
-	size      uint32
-	name      string
+	seqn        uint64
+	datapointpb *pb.Datapoint
+	timestamp   time.Time
+	size        uint32
+	name        string
 }
 
 // copy [since, until)
-func copySinceSeqN(v *vecdeque[windowItem], since uint64, until uint64, out []*pb.Snapshot) []*pb.Snapshot {
+func copySinceSeqN(v *vecdeque[windowItem], since uint64, until uint64, out []*pb.Datapoint) []*pb.Datapoint {
 	start := sort.Search(v.Len(), func(i int) bool {
 		return v.Get(i).seqn >= since
 	})
@@ -66,7 +66,7 @@ func copySinceSeqN(v *vecdeque[windowItem], since uint64, until uint64, out []*p
 		if item.seqn >= until {
 			break
 		}
-		out = append(out, item.snapshot)
+		out = append(out, item.datapointpb)
 	}
 	return out
 }

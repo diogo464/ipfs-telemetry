@@ -5,8 +5,8 @@ import (
 	"sync"
 	"time"
 
-	pb "git.d464.sh/adc/telemetry/pkg/proto/snapshot"
-	"git.d464.sh/adc/telemetry/pkg/telemetry/snapshot"
+	pb "git.d464.sh/adc/telemetry/pkg/proto/datapoint"
+	"git.d464.sh/adc/telemetry/pkg/telemetry/datapoint"
 	"git.d464.sh/adc/telemetry/pkg/utils"
 )
 
@@ -17,10 +17,10 @@ type MemoryWindow struct {
 	duration  time.Duration
 	maxEvents int
 
-	nextSeqN  uint64
-	snapshots *vecdeque[windowItem]
-	events    *vecdeque[windowItem]
-	stats     *Stats
+	nextSeqN   uint64
+	datapoints *vecdeque[windowItem]
+	events     *vecdeque[windowItem]
+	stats      *Stats
 }
 
 func NewMemoryWindow(duration time.Duration, maxEvents int) *MemoryWindow {
@@ -29,9 +29,9 @@ func NewMemoryWindow(duration time.Duration, maxEvents int) *MemoryWindow {
 		duration:  duration,
 		maxEvents: maxEvents,
 
-		nextSeqN:  0,
-		snapshots: newVecDeque[windowItem](),
-		events:    newVecDeque[windowItem](),
+		nextSeqN:   0,
+		datapoints: newVecDeque[windowItem](),
+		events:     newVecDeque[windowItem](),
 		stats: &Stats{
 			Count:  make(map[string]uint32),
 			Memory: make(map[string]uint32),
@@ -44,14 +44,14 @@ func (w *MemoryWindow) Fetch(since uint64, n uint64) FetchResult {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
-	datapoints := make([]*pb.Snapshot, 0)
+	datapoints := make([]*pb.Datapoint, 0)
 	until := since + n
-	datapoints = copySinceSeqN(w.snapshots, since, until, datapoints)
+	datapoints = copySinceSeqN(w.datapoints, since, until, datapoints)
 	datapoints = copySinceSeqN(w.events, since, until, datapoints)
 
 	return FetchResult{
-		NextSeqN:  utils.Min(until, w.nextSeqN),
-		Snapshots: datapoints,
+		NextSeqN:   utils.Min(until, w.nextSeqN),
+		Datapoints: datapoints,
 	}
 }
 
@@ -61,17 +61,17 @@ func (w *MemoryWindow) FetchAll() FetchResult {
 }
 
 // PushEvent implements Window
-func (w *MemoryWindow) PushEvent(s snapshot.Snapshot) {
+func (w *MemoryWindow) PushEvent(s datapoint.Datapoint) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	w.pushToVec(s, w.events)
 }
 
 // PushSnapshot implements Window
-func (w *MemoryWindow) PushSnapshot(s snapshot.Snapshot) {
+func (w *MemoryWindow) PushSnapshot(s datapoint.Datapoint) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	w.pushToVec(s, w.snapshots)
+	w.pushToVec(s, w.datapoints)
 }
 
 // Stats implements Window
@@ -94,7 +94,7 @@ func (w *MemoryWindow) Stats(out *Stats) {
 	}
 }
 
-func (w *MemoryWindow) pushToVec(s snapshot.Snapshot, v *vecdeque[windowItem]) {
+func (w *MemoryWindow) pushToVec(s datapoint.Datapoint, v *vecdeque[windowItem]) {
 	w.clean()
 
 	name := s.GetName()
@@ -105,11 +105,11 @@ func (w *MemoryWindow) pushToVec(s snapshot.Snapshot, v *vecdeque[windowItem]) {
 	seqn := w.nextSeqN
 	w.nextSeqN += 1
 	v.PushBack(windowItem{
-		seqn:      seqn,
-		snapshot:  s.ToPB(),
-		timestamp: time.Now(),
-		size:      size,
-		name:      name,
+		seqn:        seqn,
+		datapointpb: s.ToPB(),
+		timestamp:   time.Now(),
+		size:        size,
+		name:        name,
 	})
 }
 
@@ -120,8 +120,8 @@ func (w *MemoryWindow) clean() {
 		w.stats.Memory[item.name] -= item.size
 	}
 
-	for !w.snapshots.IsEmpty() && time.Since(w.snapshots.Front().timestamp) > w.duration {
-		item := w.snapshots.PopFront()
+	for !w.datapoints.IsEmpty() && time.Since(w.datapoints.Front().timestamp) > w.duration {
+		item := w.datapoints.PopFront()
 		w.stats.Count[item.name] -= 1
 		w.stats.Memory[item.name] -= item.size
 	}

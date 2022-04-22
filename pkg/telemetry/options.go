@@ -5,7 +5,7 @@ import "time"
 type Option func(*options) error
 
 type options struct {
-	// a string defining the how long snapshots are kept.
+	// a string defining the how long datapoint. are kept.
 	// format is the same one used by time.ParseDuration
 	windowDuration time.Duration
 }

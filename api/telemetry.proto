@@ -1,7 +1,7 @@
 syntax = "proto3";
 package telemetry;
 
-import "snapshot.proto";
+import "datapoint.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 
@@ -16,7 +16,7 @@ message SystemInfo {
 service Telemetry {
     rpc GetSessionInfo(google.protobuf.Empty) returns (GetSessionInfoResponse);
     rpc GetSystemInfo(google.protobuf.Empty) returns (SystemInfo);
-    rpc GetSnapshots(GetSnapshotsRequest) returns (stream GetSnapshotsResponse);
+    rpc GetDatapoints(GetDatapointsRequest) returns (stream GetDatapointsResponse);
 }
 
 message GetSessionInfoResponse  {
@@ -24,11 +24,11 @@ message GetSessionInfoResponse  {
     google.protobuf.Timestamp boot_time = 2;
 }
 
-message GetSnapshotsRequest {
+message GetDatapointsRequest {
     uint64 since    = 1;
 }
 
-message GetSnapshotsResponse {
+message GetDatapointsResponse {
     uint64 next                             = 1;
-    repeated snapshot.Snapshot snapshots    = 2;
+    repeated datapoint.Datapoint datapoints = 2;
 }

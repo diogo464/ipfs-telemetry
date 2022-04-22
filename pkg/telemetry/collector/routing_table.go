@@ -3,7 +3,7 @@ package collector
 import (
 	"context"
 
-	"git.d464.sh/adc/telemetry/pkg/telemetry/snapshot"
+	"git.d464.sh/adc/telemetry/pkg/telemetry/datapoint"
 	"github.com/ipfs/go-ipfs/core"
 )
 
@@ -24,16 +24,16 @@ func (*routingTableCollector) Close() {
 }
 
 // Collect implements Collector
-func (c *routingTableCollector) Collect(ctx context.Context, sink snapshot.Sink) {
+func (c *routingTableCollector) Collect(ctx context.Context, sink datapoint.Sink) {
 	routing_table := newRoutingTableFromNode(c.node)
 	sink.Push(routing_table)
 }
 
-func newRoutingTableFromNode(n *core.IpfsNode) *snapshot.RoutingTable {
+func newRoutingTableFromNode(n *core.IpfsNode) *datapoint.RoutingTable {
 	rt := n.DHT.WAN.RoutingTable()
 	buckets := rt.DumpBuckets()
-	return &snapshot.RoutingTable{
-		Timestamp: snapshot.NewTimestamp(),
+	return &datapoint.RoutingTable{
+		Timestamp: datapoint.NewTimestamp(),
 		Buckets:   buckets,
 	}
 }
