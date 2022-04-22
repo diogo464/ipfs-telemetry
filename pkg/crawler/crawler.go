@@ -6,6 +6,7 @@ import (
 
 	pb "git.d464.sh/adc/telemetry/pkg/proto/crawler"
 	"git.d464.sh/adc/telemetry/pkg/telemetry"
+	"git.d464.sh/adc/telemetry/pkg/utils"
 	"git.d464.sh/adc/telemetry/pkg/walker"
 	"github.com/libp2p/go-libp2p-core/host"
 	"github.com/libp2p/go-libp2p-core/peer"
@@ -50,7 +51,7 @@ func NewCrawler(h host.Host, o ...Option) (*Crawler, error) {
 		subscribers: make(map[chan<- peer.ID]struct{}),
 	}
 
-	w, err := walker.New(h, walker.WithObserver(walker.NewMultiObserver(c, opts.observer)))
+	w, err := walker.New(h, walker.WithObserver(walker.NewMultiObserver(c, opts.observer)), walker.WithConcurrency(uint(opts.concurrency)))
 	if err != nil {
 		return nil, err
 	}
@@ -87,10 +88,7 @@ func (c *Crawler) Run(ctx context.Context) error {
 
 // ObservePeer implements walker.Observer
 func (c *Crawler) ObservePeer(p *walker.Peer) {
-	hasTelemetry, err := c.peerHasTelemetry(p.ID)
-	if err != nil { // dont stop the crawl, just ignore this peer
-		return
-	}
+	hasTelemetry := utils.SliceAny(p.Protocols, func(t string) bool { return t == telemetry.ID_TELEMETRY })
 
 	c.peers_mu.Lock()
 	{

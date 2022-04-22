@@ -21,7 +21,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 1,
+  "id": 2,
   "links": [],
   "liveNow": false,
   "panels": [
@@ -109,6 +109,111 @@
             "mode": "thresholds"
           },
           "custom": {
+            "align": "auto",
+            "displayMode": "auto"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "peer"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 499
+              },
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Show details",
+                    "url": "/d/NkRv8RQnk/peer?orgId=1&var-peer=${__data.fields.peer}"
+                  }
+                ]
+              },
+              {
+                "id": "displayName",
+                "value": "PeerID"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "_time"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 229
+              },
+              {
+                "id": "displayName",
+                "value": "Last Seen"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 19,
+        "w": 10,
+        "x": 6,
+        "y": 0
+      },
+      "id": 20,
+      "options": {
+        "footer": {
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": []
+      },
+      "pluginVersion": "8.4.4",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "P951FEA4DE68E13C5"
+          },
+          "query": "import \"influxdata/influxdb/schema\"\nfrom(bucket: \"crawler\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"location\")\n  |> schema.fieldsAsCols()\n  |> filter(fn: (r) => r[\"telemetry\"] == \"yes\")\n  |> drop(columns: [\"telemetry\"])\n  |> group(columns:[\"peer\"])\n  |> last(column: \"peer\")\n  |> keep(columns: [\"peer\", \"geohash\", \"_time\"])\n  |> group()",
+          "refId": "A"
+        }
+      ],
+      "title": "Peers",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "P951FEA4DE68E13C5"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
             "hideFrom": {
               "legend": false,
               "tooltip": false,
@@ -134,8 +239,8 @@
       },
       "gridPos": {
         "h": 19,
-        "w": 18,
-        "x": 6,
+        "w": 8,
+        "x": 16,
         "y": 0
       },
       "id": 16,
@@ -155,13 +260,16 @@
         "layers": [
           {
             "config": {
-              "blur": 15,
-              "radius": 5,
+              "blur": 2,
+              "radius": 1,
               "weight": {
                 "fixed": 1,
                 "max": 1,
                 "min": 0
               }
+            },
+            "location": {
+              "mode": "geohash"
             },
             "name": "Layer 1",
             "tooltip": true,
@@ -182,7 +290,7 @@
             "type": "influxdb",
             "uid": "P951FEA4DE68E13C5"
           },
-          "query": "from(bucket: \"crawler\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"location\" and r[\"_value\"] != \"s00000000000\")",
+          "query": "import \"influxdata/influxdb/schema\"\nfrom(bucket: \"crawler\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"location\")\n  |> schema.fieldsAsCols()\n  |> drop(columns: [\"peer\"])\n  |> limit(n:13000)\n",
           "refId": "A"
         }
       ],
@@ -577,7 +685,7 @@
       "type": "timeseries"
     }
   ],
-  "refresh": "5s",
+  "refresh": "30s",
   "schemaVersion": 35,
   "style": "dark",
   "tags": [],
@@ -585,13 +693,13 @@
     "list": []
   },
   "time": {
-    "from": "now-15m",
+    "from": "now-30m",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "",
   "title": "Overview",
   "uid": "8Yp3dt8nz",
-  "version": 1,
+  "version": 2,
   "weekStart": ""
 }

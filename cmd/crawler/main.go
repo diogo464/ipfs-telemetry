@@ -9,6 +9,7 @@ import (
 
 	"git.d464.sh/adc/telemetry/pkg/crawler"
 	pb "git.d464.sh/adc/telemetry/pkg/proto/crawler"
+	"git.d464.sh/adc/telemetry/pkg/telemetry"
 	"git.d464.sh/adc/telemetry/pkg/utils"
 	"git.d464.sh/adc/telemetry/pkg/walker"
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
@@ -39,6 +40,7 @@ func main() {
 			FLAG_INFLUXDB_ORG,
 			FLAG_INFLUXDB_BUCKET,
 			FLAG_ADDRESS,
+			FLAG_CONCURRENCY,
 		},
 	}
 
@@ -66,8 +68,16 @@ func testObserver(p *walker.Peer) {
 		fmt.Println(err)
 	}
 
+	var hasTelemetry string = "no"
+	if utils.SliceAny(p.Protocols, func(t string) bool { return t == telemetry.ID_TELEMETRY }) {
+		hasTelemetry = "yes"
+	}
 	gh := geohash.Encode(city.Location.Latitude, city.Location.Longitude)
-	writer.WritePoint(influxdb2.NewPointWithMeasurement("location").AddField("geohash", gh))
+	point := influxdb2.NewPointWithMeasurement("location").
+		AddTag("peer", p.ID.Pretty()).
+		AddField("geohash", gh).
+		AddField("telemetry", hasTelemetry)
+	writer.WritePoint(point)
 }
 
 func mainAction(c *cli.Context) error {
@@ -93,7 +103,13 @@ func mainAction(c *cli.Context) error {
 		return err
 	}
 
-	crlwr, err := crawler.NewCrawler(h, crawler.WithObserver(walker.NewPeerObserverFn(testObserver)))
+	concurrency := c.Int(FLAG_CONCURRENCY.Name)
+	fmt.Println("Crawler concurrency: ", concurrency)
+	crlwr, err := crawler.NewCrawler(
+		h,
+		crawler.WithObserver(walker.NewPeerObserverFn(testObserver)),
+		crawler.WithConcurrency(concurrency),
+	)
 	if err != nil {
 		return err
 	}

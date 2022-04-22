@@ -46,4 +46,11 @@ var (
 		EnvVars: []string{"CRAWLER_ADDRESS"},
 		Value:   "localhost:4641",
 	}
+
+	FLAG_CONCURRENCY = &cli.IntFlag{
+		Name:        "concurrency",
+		EnvVars:     []string{"CRAWLER_CONCURRENCY"},
+		Value:       128,
+		Destination: new(int),
+	}
 )

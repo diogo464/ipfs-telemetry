@@ -5,12 +5,20 @@ import "git.d464.sh/adc/telemetry/pkg/walker"
 type Option func(*options) error
 
 type options struct {
-	observer walker.Observer
+	observer    walker.Observer
+	concurrency int
 }
 
 func WithObserver(observer walker.Observer) Option {
 	return func(o *options) error {
 		o.observer = observer
+		return nil
+	}
+}
+
+func WithConcurrency(concurrency int) Option {
+	return func(o *options) error {
+		o.concurrency = concurrency
 		return nil
 	}
 }

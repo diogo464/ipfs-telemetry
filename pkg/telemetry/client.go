@@ -136,7 +136,7 @@ func (c *Client) Events(ctx context.Context, since uint64, css chan<- SnapshotSt
 		return err
 	}
 
-	stream, err := client.GetSnapshots(ctx, &pb.GetSnapshotsRequest{
+	stream, err := client.GetEvents(ctx, &pb.GetEventsRequest{
 		Since: since,
 	})
 	if err != nil {
@@ -152,7 +152,7 @@ func (c *Client) Events(ctx context.Context, since uint64, css chan<- SnapshotSt
 			return err
 		}
 
-		snapshotspb := response.GetSnapshots()
+		snapshotspb := response.GetEvents()
 		snapshots, err := snapshot.FromArrayPB(snapshotspb)
 		if err != nil {
 			return err

@@ -1,8 +1,6 @@
 services:
   crawler:
-    build:
-      context: ../
-      dockerfile: deploy/Dockerfile
+    image: ghcr.io/diogo464/telemetry:latest
     command: crawler
     environment:
       CRAWLER_PROMETHEUS_ADDRESS: ":9090"
@@ -11,13 +9,12 @@ services:
       CRAWLER_INFLUXDB_ORG: "adc"
       CRAWLER_INFLUXDB_BUCKET: "crawler"
       CRAWLER_ADDRESS: ":5600"
+      CRAWLER_CONCURRENCY: 192
     depends_on:
       - influxdb
       - prometheus
   monitor:
-    build:
-      context: ../
-      dockerfile: deploy/Dockerfile
+    image: ghcr.io/diogo464/telemetry:latest
     command: monitor
     environment:
       MONITOR_PROMETHEUS_ADDRESS: ":9090"
@@ -30,9 +27,7 @@ services:
       - influxdb
       - prometheus
   link:
-    build:
-      context: ../
-      dockerfile: deploy/Dockerfile
+    image: ghcr.io/diogo464/telemetry:latest
     command: link
     environment:
       LINK_CRAWLER: "crawler:5600"
