@@ -31,7 +31,7 @@ link:
 build: monitor crawler telemetry ipfs link
 
 docker: build
-	podman build -t ghcr.io/diogo464/telemetry:latest -f deploy/fast-build.dockerfile .
+	podman build -t ghcr.io/diogo464/telemetry:latest -f deploy/telemetry/fast-build.dockerfile .
 
 install: ipfs-install
 
