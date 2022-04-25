@@ -137,7 +137,7 @@ func (s *Monitor) executePeerAction(p peer.ID, a int, t time.Duration, fn action
 
 func (s *Monitor) onActionDiscover(p peer.ID) {
 	if err := s.setupPeer(p); err == nil {
-		logrus.WithField("peer", p).Error("peer setup")
+		logrus.WithField("peer", p).Debug("peer setup")
 		s.caction <- actionqueue.Now(&action{
 			kind: ActionTelemetry,
 			pid:  p,
