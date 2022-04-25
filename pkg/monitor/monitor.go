@@ -5,9 +5,9 @@ import (
 	"sync"
 	"time"
 
+	"git.d464.sh/adc/telemetry/pkg/actionqueue"
 	pb "git.d464.sh/adc/telemetry/pkg/proto/monitor"
 	"git.d464.sh/adc/telemetry/pkg/telemetry"
-	"git.d464.sh/adc/telemetry/pkg/waker"
 	"github.com/libp2p/go-libp2p-core/host"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/sirupsen/logrus"
@@ -40,9 +40,11 @@ type Monitor struct {
 	pb.UnimplementedMonitorServer
 	h        host.Host
 	opts     *options
-	actions  *waker.Waker[action]
 	peers    map[peer.ID]*peerState
 	exporter Exporter
+
+	actions *actionqueue.Queue[action]
+	caction chan actionqueue.Action[action]
 }
 
 func NewMonitor(ctx context.Context, exporter Exporter, o ...Option) (*Monitor, error) {
@@ -62,19 +64,20 @@ func NewMonitor(ctx context.Context, exporter Exporter, o ...Option) (*Monitor, 
 	return &Monitor{
 		h:        opts.Host,
 		opts:     opts,
-		actions:  waker.NewWaker[action](),
 		peers:    make(map[peer.ID]*peerState),
 		exporter: exporter,
+
+		actions: actionqueue.NewQueue[action](),
+		caction: make(chan actionqueue.Action[action], 8),
 	}, nil
 }
 
 func (s *Monitor) Close() {
-	s.actions.Close()
 	s.h.Close()
 }
 
 func (s *Monitor) PeerDiscovered(p peer.ID) {
-	s.actions.PushNow(&action{
+	s.caction <- actionqueue.Now(&action{
 		kind: ActionDiscover,
 		pid:  p,
 	})
@@ -83,8 +86,11 @@ func (s *Monitor) PeerDiscovered(p peer.ID) {
 func (s *Monitor) Run(ctx context.Context) {
 LOOP:
 	for {
+		logrus.Debug("Monitor main loop")
+		actionTimer := s.actions.TimerUntilAction()
 		select {
-		case action := <-s.actions.Receive():
+		case <-actionTimer.C:
+			action := s.actions.Pop()
 			switch action.kind {
 			case ActionDiscover:
 				logrus.WithField("peer", action.pid).Debug("action discovery")
@@ -99,6 +105,8 @@ LOOP:
 				logrus.WithField("peer", action.pid).Debug("action remove peer")
 				delete(s.peers, action.pid)
 			}
+		case action := <-s.caction:
+			s.actions.Push(action)
 		case <-ctx.Done():
 			break LOOP
 		}
@@ -119,7 +127,7 @@ func (s *Monitor) executePeerAction(p peer.ID, a int, t time.Duration, fn action
 				delay = time.Second * 10
 			}
 
-			s.actions.Push(&action{
+			s.caction <- actionqueue.After(&action{
 				kind: a,
 				pid:  p,
 			}, delay)
@@ -130,11 +138,11 @@ func (s *Monitor) executePeerAction(p peer.ID, a int, t time.Duration, fn action
 func (s *Monitor) onActionDiscover(p peer.ID) {
 	if err := s.setupPeer(p); err == nil {
 		logrus.WithField("peer", p).Error("peer setup")
-		s.actions.PushNow(&action{
+		s.caction <- actionqueue.Now(&action{
 			kind: ActionTelemetry,
 			pid:  p,
 		})
-		s.actions.PushNow(&action{
+		s.caction <- actionqueue.Now(&action{
 			kind: ActionBandwidth,
 			pid:  p,
 		})
@@ -227,7 +235,7 @@ func (s *Monitor) peerError(state *peerState, err error) {
 	logrus.WithField("peer", state.id).Debug("peer error: ", err)
 	state.failedAttemps += 1
 	if state.failedAttemps > s.opts.MaxFailedAttemps {
-		s.actions.PushNow(&action{
+		s.caction <- actionqueue.Now(&action{
 			kind: ActionRemovePeer,
 			pid:  state.id,
 		})
