@@ -1,12 +1,16 @@
 package utils
 
 import (
+	"crypto/rand"
+	"crypto/sha256"
 	"encoding/binary"
 	"fmt"
 	"io"
 	"net"
 
+	"github.com/ipfs/go-cid"
 	"github.com/multiformats/go-multiaddr"
+	"github.com/multiformats/go-multihash"
 )
 
 type Number interface {
@@ -100,4 +104,20 @@ func GetPublicAddressesFromMultiaddrs(in []multiaddr.Multiaddr) []net.IP {
 		}
 	}
 	return public
+}
+
+func RandomCID() (cid.Cid, error) {
+	buf := make([]byte, 128)
+	_, err := rand.Read(buf)
+	if err != nil {
+		return cid.Cid{}, err
+	}
+
+	digest := sha256.Sum256(buf)
+	hash, err := multihash.Encode(digest[:], multihash.SHA2_256)
+	if err != nil {
+		return cid.Cid{}, err
+	}
+
+	return cid.NewCidV0(hash), nil
 }
