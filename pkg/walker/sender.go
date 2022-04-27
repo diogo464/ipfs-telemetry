@@ -11,11 +11,15 @@ import (
 	"github.com/libp2p/go-msgio/protoio"
 )
 
-type messageSender struct {
+type MessageSender struct {
 	h host.Host
 }
 
-func (ms *messageSender) SendRequest(ctx context.Context, p peer.ID, pmes *pb.Message) (*pb.Message, error) {
+func NewMessageSender(h host.Host) *MessageSender {
+	return &MessageSender{h}
+}
+
+func (ms *MessageSender) SendRequest(ctx context.Context, p peer.ID, pmes *pb.Message) (*pb.Message, error) {
 	stream, err := ms.h.NewStream(ctx, p, dht.DefaultProtocols...)
 	if err != nil {
 		return nil, err
@@ -36,7 +40,7 @@ func (ms *messageSender) SendRequest(ctx context.Context, p peer.ID, pmes *pb.Me
 	return msg, nil
 }
 
-func (ms *messageSender) SendMessage(ctx context.Context, p peer.ID, pmes *pb.Message) error {
+func (ms *MessageSender) SendMessage(ctx context.Context, p peer.ID, pmes *pb.Message) error {
 	stream, err := ms.h.NewStream(ctx, p, dht.DefaultProtocols...)
 	if err != nil {
 		return err

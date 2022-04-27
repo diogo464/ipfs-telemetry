@@ -1,0 +1,168 @@
+package orchestrator
+
+import (
+	"context"
+	"net"
+	"time"
+
+	"git.d464.sh/adc/telemetry/pkg/probe"
+	"git.d464.sh/adc/telemetry/pkg/utils"
+	"github.com/ipfs/go-cid"
+	"github.com/ipfs/go-datastore"
+	"github.com/libp2p/go-libp2p"
+	"github.com/libp2p/go-libp2p-core/host"
+	dht "github.com/libp2p/go-libp2p-kad-dht"
+	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc"
+)
+
+type Exporter interface {
+	Export(probeName string, result *probe.ProbeResult)
+}
+
+type namedResult struct {
+	probeName string
+	result    *probe.ProbeResult
+}
+
+type OrchestratorServer struct {
+	h        host.Host
+	kad      *dht.IpfsDHT
+	exporter Exporter
+
+	cids   []cid.Cid
+	probes []*probe.Client
+
+	cresult chan namedResult
+}
+
+func NewOrchestratorServer(ctx context.Context, probeAddrs []net.Addr, exporter Exporter) (*OrchestratorServer, error) {
+	h, err := libp2p.New(libp2p.NoListenAddrs)
+	if err != nil {
+		return nil, err
+	}
+
+	kad, err := createDHT(ctx, h)
+	if err != nil {
+		return nil, err
+	}
+
+	cids, err := createRandomCIDs(16)
+	if err != nil {
+		return nil, err
+	}
+
+	probes := make([]*probe.Client, 0)
+	for _, addr := range probeAddrs {
+		conn, err := grpc.Dial(addr.String(), grpc.WithInsecure())
+		if err != nil {
+			return nil, err
+		}
+		client := probe.NewClient(conn)
+		probes = append(probes, client)
+	}
+
+	return &OrchestratorServer{
+		h:        h,
+		kad:      kad,
+		exporter: exporter,
+
+		cids:   cids,
+		probes: probes,
+
+		cresult: make(chan namedResult),
+	}, nil
+}
+
+func (s *OrchestratorServer) Run(ctx context.Context) error {
+	logrus.Debug("providing ", len(s.cids), " cids")
+	for _, c := range s.cids {
+		err := s.kad.Provide(ctx, c, false)
+		if err != nil {
+			return err
+		}
+	}
+
+	logrus.Debug("setting up probes")
+	for _, client := range s.probes {
+		err := client.ProbeSetCids(ctx, s.cids)
+		if err != nil {
+			return err
+		}
+		name, err := client.GetName(ctx)
+		if err != nil {
+			return err
+		}
+
+		go func(c *probe.Client, n string) {
+			cunamedresult := make(chan *probe.ProbeResult)
+			go func() {
+				for r := range cunamedresult {
+					s.cresult <- namedResult{
+						probeName: n,
+						result:    r,
+					}
+				}
+			}()
+
+			if err := c.ProbeResults(ctx, cunamedresult); err != nil {
+				logrus.Error(err)
+			}
+		}(client, name)
+	}
+
+	logrus.Debug("starting main loop")
+	for {
+		select {
+		case r := <-s.cresult:
+			s.receivedResult(r)
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}
+}
+
+func (s *OrchestratorServer) receivedResult(r namedResult) {
+	logrus.WithFields(logrus.Fields{
+		"start time": r.result.RequestStart,
+		"duration":   r.result.RequestDuration,
+		"error":      r.result.Error,
+	}).Debug("received probe result")
+	s.exporter.Export(r.probeName, r.result)
+}
+
+func createDHT(ctx context.Context, h host.Host) (*dht.IpfsDHT, error) {
+	client := dht.NewDHTClient(ctx, h, datastore.NewMapDatastore())
+	if err := client.Bootstrap(ctx); err != nil {
+		return nil, err
+	}
+
+	var err error = nil
+	var success bool = false
+	for _, bootstrap := range dht.GetDefaultBootstrapPeerAddrInfos() {
+		err = h.Connect(ctx, bootstrap)
+		if err == nil {
+			success = true
+		}
+	}
+
+	if success {
+		client.RefreshRoutingTable()
+		time.Sleep(time.Second * 2)
+		return client, nil
+	} else {
+		return nil, err
+	}
+}
+
+func createRandomCIDs(n int) ([]cid.Cid, error) {
+	cids := make([]cid.Cid, 0, n)
+	for i := 0; i < n; i++ {
+		c, err := utils.RandomCID()
+		if err != nil {
+			return nil, err
+		}
+		cids = append(cids, c)
+	}
+	return cids, nil
+}

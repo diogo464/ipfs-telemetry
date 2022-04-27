@@ -1,6 +1,5 @@
 FROM docker.io/fedora:latest
 
 WORKDIR /usr/local/app
-COPY GeoLite2-City.mmdb .
-COPY bin/* .
+COPY bin/probe bin/orchestrator .
 ENV PATH="/usr/local/app:${PATH}"

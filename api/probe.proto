@@ -1,0 +1,31 @@
+syntax = "proto3";
+package probing;
+
+// import "common.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+
+option go_package = "git.d464.sh/adc/telemetry/pkg/proto/probe";
+
+service Probe {
+    rpc ProbeGetName(google.protobuf.Empty) returns (ProbeGetNameResponse);
+    rpc ProbeSetCids(ProbeSetCidsRequest) returns (google.protobuf.Empty);
+    rpc ProbeResults(google.protobuf.Empty) returns (stream ProbeResultResponse);
+}
+
+message ProbeGetNameResponse {
+    string name = 1;
+}
+
+message ProbeSetCidsRequest {
+    repeated string cids = 1;
+}
+
+message ProbeResultResponse {
+    google.protobuf.Timestamp request_start     = 1; 
+    google.protobuf.Duration request_duration   = 2;
+    string peer                                 = 3;
+    // error message, if there was an error
+    string error                                = 4;
+}

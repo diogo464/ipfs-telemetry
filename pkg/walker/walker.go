@@ -43,7 +43,7 @@ func newImplWalker(h host.Host, opts ...Option) (*implWalker, error) {
 		return nil, err
 	}
 
-	messenger, err := pb.NewProtocolMessenger(&messageSender{
+	messenger, err := pb.NewProtocolMessenger(&MessageSender{
 		h: h,
 	})
 	if err != nil {

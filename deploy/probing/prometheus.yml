@@ -1,0 +1,11 @@
+scrape_configs:
+  - job_name: monitor
+    scrape_interval: 5s
+    static_configs:
+      - targets:
+        - probe:9090
+  - job_name: crawler
+    scrape_interval: 5s
+    static_configs:
+      - targets:
+        - orchestrator:9090

@@ -28,10 +28,25 @@ telemetry:
 link:
 	$(GOCC) build -o bin/link cmd/link/*
 
-build: monitor crawler telemetry ipfs link
+orchestrator:
+	$(GOCC) build -o bin/orchestrator cmd/orchestrator/*
 
-docker: build
+probe:
+	$(GOCC) build -o bin/probe cmd/probe/*
+
+build-telemetry: monitor crawler telemetry ipfs link
+
+build-probing: orchestrator probe
+
+build: build-telemetry build-probing
+
+docker-telemetry: build-telemetry
 	podman build -t ghcr.io/diogo464/telemetry:latest -f deploy/telemetry/fast-build.dockerfile .
+
+docker-probing: build-probing
+	podman build -t ghcr.io/diogo464/probing:latest -f deploy/probing/Dockerfile .
+
+docker: docker-telemetry docker-probing
 
 install: ipfs-install
 
@@ -48,6 +63,7 @@ proto:
 	protoc $(PROTO_FLAGS) api/telemetry.proto
 	protoc $(PROTO_FLAGS) api/monitor.proto
 	protoc $(PROTO_FLAGS) api/crawler.proto
+	protoc $(PROTO_FLAGS) api/probe.proto
 
 generate:
 	sqlboiler --wipe psql
