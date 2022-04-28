@@ -22,7 +22,7 @@
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
   "id": 1,
-  "iteration": 1651055862029,
+  "iteration": 1651080272097,
   "links": [],
   "liveNow": false,
   "panels": [
@@ -174,7 +174,7 @@
       "type": "table"
     }
   ],
-  "refresh": "5m",
+  "refresh": "30s",
   "schemaVersion": 35,
   "style": "dark",
   "tags": [],
@@ -183,32 +183,32 @@
       {
         "current": {
           "selected": false,
-          "text": "QmSobdER6oX1EwVR3R2WtdvPxCPEpiUDBTQqBmqUSYduep",
-          "value": "QmSobdER6oX1EwVR3R2WtdvPxCPEpiUDBTQqBmqUSYduep"
+          "text": "",
+          "value": ""
         },
         "hide": 0,
         "name": "peer",
         "options": [
           {
             "selected": true,
-            "text": "QmSobdER6oX1EwVR3R2WtdvPxCPEpiUDBTQqBmqUSYduep",
-            "value": "QmSobdER6oX1EwVR3R2WtdvPxCPEpiUDBTQqBmqUSYduep"
+            "text": "",
+            "value": ""
           }
         ],
-        "query": "QmSobdER6oX1EwVR3R2WtdvPxCPEpiUDBTQqBmqUSYduep",
+        "query": "",
         "skipUrlSync": false,
         "type": "textbox"
       }
     ]
   },
   "time": {
-    "from": "now-24h",
+    "from": "now-5m",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "",
   "title": "Overview",
   "uid": "oyxU9ywnk",
-  "version": 2,
+  "version": 1,
   "weekStart": ""
 }

@@ -3,6 +3,14 @@ package main
 import "github.com/urfave/cli/v2"
 
 var (
+	FLAG_PROMETHEUS_ADDRESS = &cli.StringFlag{
+		Name:    "prometheus-address",
+		Aliases: []string{"prometheus"},
+		Usage:   "listen address for prometheus",
+		EnvVars: []string{"PROBE_PROMETHEUS_ADDRESS"},
+		Value:   "localhost:9090",
+	}
+
 	FLAG_ADDRESS = &cli.StringFlag{
 		Name:    "address",
 		Aliases: []string{"addr"},

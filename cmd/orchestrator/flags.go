@@ -9,6 +9,12 @@ var (
 		EnvVars: []string{"ORCHESTRATOR_PROBES"},
 	}
 
+	FLAG_NUM_CIDS = &cli.IntFlag{
+		Name:    "num-cids",
+		EnvVars: []string{"ORCHESTRATOR_NUM_CIDS"},
+		Value:   16,
+	}
+
 	FLAG_INFLUXDB_ADDRESS = &cli.StringFlag{
 		Name:    "influxdb-address",
 		Usage:   "address for influxdb",

@@ -39,6 +39,7 @@ func main() {
 		Commands: []*cli.Command{},
 		Flags: []cli.Flag{
 			FLAG_PROBES,
+			FLAG_NUM_CIDS,
 			FLAG_INFLUXDB_ADDRESS,
 			FLAG_INFLUXDB_TOKEN,
 			FLAG_INFLUXDB_ORG,
@@ -56,6 +57,9 @@ func main() {
 }
 
 func mainAction(c *cli.Context) error {
+	numCids := c.Int(FLAG_NUM_CIDS.Name)
+	logrus.Debug("num cids = ", numCids)
+
 	probes := make([]net.Addr, 0)
 	for _, paddr := range strings.Split(c.String(FLAG_PROBES.Name), ",") {
 		addr, err := net.ResolveTCPAddr("tcp", paddr)
@@ -71,7 +75,12 @@ func mainAction(c *cli.Context) error {
 	exporter := &influxExporter{writeAPI}
 	defer writeAPI.Flush()
 
-	server, err := orchestrator.NewOrchestratorServer(c.Context, probes, exporter)
+	server, err := orchestrator.NewOrchestratorServer(
+		c.Context,
+		orchestrator.WithExporter(exporter),
+		orchestrator.WithProbes(probes),
+		orchestrator.WithNumCids(numCids),
+	)
 	if err != nil {
 		return err
 	}

@@ -2,7 +2,6 @@ package orchestrator
 
 import (
 	"context"
-	"net"
 	"time"
 
 	"git.d464.sh/adc/telemetry/pkg/probe"
@@ -16,19 +15,15 @@ import (
 	"google.golang.org/grpc"
 )
 
-type Exporter interface {
-	Export(probeName string, result *probe.ProbeResult)
-}
-
 type namedResult struct {
 	probeName string
 	result    *probe.ProbeResult
 }
 
 type OrchestratorServer struct {
-	h        host.Host
-	kad      *dht.IpfsDHT
-	exporter Exporter
+	h    host.Host
+	kad  *dht.IpfsDHT
+	opts *options
 
 	cids   []cid.Cid
 	probes []*probe.Client
@@ -36,7 +31,13 @@ type OrchestratorServer struct {
 	cresult chan namedResult
 }
 
-func NewOrchestratorServer(ctx context.Context, probeAddrs []net.Addr, exporter Exporter) (*OrchestratorServer, error) {
+func NewOrchestratorServer(ctx context.Context, o ...Option) (*OrchestratorServer, error) {
+	opts := defaults()
+	err := apply(opts, o...)
+	if err != nil {
+		return nil, err
+	}
+
 	h, err := libp2p.New(libp2p.NoListenAddrs)
 	if err != nil {
 		return nil, err
@@ -47,13 +48,13 @@ func NewOrchestratorServer(ctx context.Context, probeAddrs []net.Addr, exporter 
 		return nil, err
 	}
 
-	cids, err := createRandomCIDs(16)
+	cids, err := createRandomCIDs(opts.numCids)
 	if err != nil {
 		return nil, err
 	}
 
 	probes := make([]*probe.Client, 0)
-	for _, addr := range probeAddrs {
+	for _, addr := range opts.probeAddrs {
 		conn, err := grpc.Dial(addr.String(), grpc.WithInsecure())
 		if err != nil {
 			return nil, err
@@ -63,9 +64,9 @@ func NewOrchestratorServer(ctx context.Context, probeAddrs []net.Addr, exporter 
 	}
 
 	return &OrchestratorServer{
-		h:        h,
-		kad:      kad,
-		exporter: exporter,
+		h:    h,
+		kad:  kad,
+		opts: opts,
 
 		cids:   cids,
 		probes: probes,
@@ -104,9 +105,17 @@ func (s *OrchestratorServer) Run(ctx context.Context) error {
 					}
 				}
 			}()
-
-			if err := c.ProbeResults(ctx, cunamedresult); err != nil {
-				logrus.Error(err)
+		LOOP:
+			for {
+				if err := c.ProbeResults(ctx, cunamedresult); err != nil {
+					logrus.Error(err)
+				}
+				select {
+				case <-ctx.Done():
+					break LOOP
+				default:
+				}
+				time.Sleep(time.Second)
 			}
 		}(client, name)
 	}
@@ -128,7 +137,7 @@ func (s *OrchestratorServer) receivedResult(r namedResult) {
 		"duration":   r.result.RequestDuration,
 		"error":      r.result.Error,
 	}).Debug("received probe result")
-	s.exporter.Export(r.probeName, r.result)
+	s.opts.exporter.Export(r.probeName, r.result)
 }
 
 func createDHT(ctx context.Context, h host.Host) (*dht.IpfsDHT, error) {

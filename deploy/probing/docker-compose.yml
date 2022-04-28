@@ -1,12 +1,17 @@
 services:
   probe:
-    image: ghcr.io/diogo464/telemetry:latest
+    image: ghcr.io/diogo464/probing:latest
     command: probe
+    environment:
+      PROBE_PROMETHEUS_ADDRESS: "0.0.0.0:9090"
+      PROBE_NAME: "portugal"
+    ports:
+      - "4640:4640"
   orchestrator:
-    image: ghcr.io/diogo464/telemetry:latest
+    image: ghcr.io/diogo464/probing:latest
     command: orchestrator
     environment:
-      ORCHESTRATOR_PROMETHEUS_ADDRESS: ":9090"
+      ORCHESTRATOR_PROMETHEUS_ADDRESS: "0.0.0.0:9090"
       ORCHESTRATOR_INFLUXDB_ADDRESS: "http://influxdb:8086"
       ORCHESTRATOR_INFLUXDB_TOKEN: "token"
       ORCHESTRATOR_INFLUXDB_ORG: "adc"
@@ -47,6 +52,8 @@ services:
     image: docker.io/prom/prometheus:latest
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:Z
+    ports:
+      - "9090:9090"
 volumes:
   telemetry-grafana: {}
   telemetry-influxdb: {}

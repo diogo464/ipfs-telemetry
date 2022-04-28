@@ -2,11 +2,14 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net"
+	"net/http"
 	"os"
 
 	"git.d464.sh/adc/telemetry/pkg/probe"
 	pb "git.d464.sh/adc/telemetry/pkg/proto/probe"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 	"google.golang.org/grpc"
@@ -17,6 +20,7 @@ func main() {
 		Name:     "probe",
 		Commands: []*cli.Command{},
 		Flags: []cli.Flag{
+			FLAG_PROMETHEUS_ADDRESS,
 			FLAG_ADDRESS,
 			FLAG_NAME,
 		},
@@ -54,6 +58,12 @@ func mainAction(c *cli.Context) error {
 		if err != nil {
 			fmt.Println(err)
 		}
+	}()
+
+	go func() {
+		http.Handle("/metrics", promhttp.Handler())
+		logrus.Debug("starting prometheus on ", c.String(FLAG_PROMETHEUS_ADDRESS.Name))
+		log.Fatal(http.ListenAndServe(c.String(FLAG_PROMETHEUS_ADDRESS.Name), nil))
 	}()
 
 	return probeServer.Run(c.Context)

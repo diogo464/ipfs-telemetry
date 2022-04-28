@@ -4,10 +4,11 @@ import "time"
 
 const (
 	DEFAULT_PROBE_NAME                    string        = "probe"
-	DEFAULT_PROBE_NEW_SESSION_INTERVAL    time.Duration = time.Second * 10
+	DEFAULT_PROBE_NEW_SESSION_INTERVAL    time.Duration = time.Second * 30
 	DEFAULT_PROBE_SESSION_PROVIDERS_LIMIT int           = 64
-	DEFAULT_PROBE_SESSION_LIFETIME_LIMIT  time.Duration = time.Minute * 5
-	DEFAULT_PROBE_MAX_ONGOING             int           = 128
+	DEFAULT_PROBE_SESSION_LIFETIME_LIMIT  time.Duration = time.Second * 20
+	DEFAULT_PROBE_MAX_ONGOING             int           = 128 + 64
+	DEFAULT_PROBE_NEW_PROBE_INTERVAL      time.Duration = time.Millisecond * 150
 )
 
 type Option func(*options) error
@@ -18,6 +19,7 @@ type options struct {
 	probeSessionProvidersLimit int
 	probeSessionLifetimeLimit  time.Duration
 	probeMaxOngoing            int
+	probeNewProbeInterval      time.Duration
 }
 
 func defaults() *options {
@@ -27,6 +29,7 @@ func defaults() *options {
 		probeSessionProvidersLimit: DEFAULT_PROBE_SESSION_PROVIDERS_LIMIT,
 		probeSessionLifetimeLimit:  DEFAULT_PROBE_SESSION_LIFETIME_LIMIT,
 		probeMaxOngoing:            DEFAULT_PROBE_MAX_ONGOING,
+		probeNewProbeInterval:      DEFAULT_PROBE_NEW_PROBE_INTERVAL,
 	}
 }
 

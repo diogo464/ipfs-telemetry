@@ -7,6 +7,7 @@ import (
 
 	pb "git.d464.sh/adc/telemetry/pkg/proto/probe"
 	"git.d464.sh/adc/telemetry/pkg/walker"
+	"github.com/gammazero/deque"
 	"github.com/ipfs/go-cid"
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p-core/host"
@@ -55,7 +56,7 @@ type ProbeServer struct {
 	nextSessionID probeSessionID
 	sessions      map[probeSessionID]*sessionData
 	ongoingProbes int
-	pendingProbes []discoveredPeer
+	pendingProbes *deque.Deque
 
 	csetcids     chan []cid.Cid
 	observers_mu sync.Mutex
@@ -92,7 +93,7 @@ func NewProbeServer(o ...Option) (*ProbeServer, error) {
 		nextSessionID: 0,
 		sessions:      make(map[probeSessionID]*sessionData),
 		ongoingProbes: 0,
-		pendingProbes: make([]discoveredPeer, 0),
+		pendingProbes: deque.New(),
 
 		csetcids:     make(chan []cid.Cid),
 		observers_mu: sync.Mutex{},
@@ -110,22 +111,25 @@ func (s *ProbeServer) Run(ctx context.Context) error {
 	}()
 
 	newSessionTimer := time.NewTicker(s.opts.probeNewSessionInterval)
+	newProbeTimer := time.NewTicker(s.opts.probeNewProbeInterval)
 
 	logrus.Debug("starting main loop")
 	for {
 		select {
 		case a := <-s.cdiscovered:
-			s.discoveredPeer(ctx, a.session, a.addrInfo)
+			s.discoveredPeer(a.session, a.addrInfo)
 		case p := <-s.ccompleted:
 			s.completedProbe(ctx, p)
 		case c := <-s.csetcids:
 			logrus.Debug("setting ", len(c), " cids")
-			startNewSession := len(s.cids) == 0
+			startNewSession := len(s.cids) != 0
 			s.setCids(c)
 			if startNewSession {
 				newSessionTimer.Reset(s.opts.probeNewSessionInterval)
 				s.startNewProbeSession()
 			}
+		case <-newProbeTimer.C:
+			s.newProbe(ctx)
 		case <-newSessionTimer.C:
 			if s.ongoingProbes < s.opts.probeMaxOngoing {
 				s.startNewProbeSession()
@@ -134,22 +138,32 @@ func (s *ProbeServer) Run(ctx context.Context) error {
 		case <-ctx.Done():
 			return ctx.Err()
 		}
+
+		OngoingProbes.Set(float64(s.ongoingProbes))
+		Sessions.Set(float64(len(s.sessions)))
 	}
 }
 
-func (s *ProbeServer) discoveredPeer(ctx context.Context, sessionID probeSessionID, addrInfo peer.AddrInfo) {
-	if s.ongoingProbes < s.opts.probeMaxOngoing {
-		if data, ok := s.sessions[sessionID]; ok {
-			if _, ok := data.probedPeers[addrInfo.ID]; !ok {
+func (s *ProbeServer) discoveredPeer(sessionID probeSessionID, addrInfo peer.AddrInfo) {
+	s.pendingProbes.PushBack(&discoveredPeer{
+		session:  sessionID,
+		addrInfo: addrInfo,
+	})
+}
+
+func (s *ProbeServer) newProbe(ctx context.Context) {
+	for s.pendingProbes.Len() > 0 && s.ongoingProbes < s.opts.probeMaxOngoing {
+		pending := s.pendingProbes.PopFront().(*discoveredPeer)
+		if data, ok := s.sessions[pending.session]; ok {
+			if _, ok := data.probedPeers[pending.addrInfo.ID]; !ok {
+				TotalProbes.Inc()
+
+				data.probedPeers[pending.addrInfo.ID] = struct{}{}
 				s.ongoingProbes += 1
-				go s.probePeerTask(ctx, sessionID, addrInfo, data.sessionCid)
+				go s.probePeerTask(ctx, pending.session, pending.addrInfo, data.sessionCid)
+				break
 			}
 		}
-	} else {
-		s.pendingProbes = append(s.pendingProbes, discoveredPeer{
-			session:  sessionID,
-			addrInfo: addrInfo,
-		})
 	}
 }
 
@@ -186,10 +200,16 @@ func (s *ProbeServer) probePeerTask(ctx context.Context, sessionID probeSessionI
 }
 
 func (s *ProbeServer) completedProbe(ctx context.Context, p *completedPeerProbe) {
+	OngoingProbes.Dec()
+	if p.result.Error == nil {
+		SuccessfulProbes.Inc()
+	} else {
+		FailedProbes.Inc()
+	}
+
 	s.ongoingProbes -= 1
 	if data, ok := s.sessions[p.session]; ok {
 		data.providersFound += p.providers
-		data.probedPeers[p.result.Peer] = struct{}{}
 		if data.providersFound >= s.opts.probeSessionProvidersLimit {
 			logrus.WithFields(logrus.Fields{
 				"session": p.session,
@@ -204,12 +224,6 @@ func (s *ProbeServer) completedProbe(ctx context.Context, p *completedPeerProbe)
 		"providers":  p.providers,
 		"error":      p.result.Error,
 	}).Debug("completed probe")
-
-	for len(s.pendingProbes) > 0 && s.ongoingProbes < s.opts.probeMaxOngoing {
-		pending := s.pendingProbes[len(s.pendingProbes)-1]
-		s.pendingProbes = s.pendingProbes[:len(s.pendingProbes)-1]
-		s.discoveredPeer(ctx, pending.session, pending.addrInfo)
-	}
 
 	s.observers_mu.Lock()
 	for observer := range s.observers {
