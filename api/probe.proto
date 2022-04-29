@@ -6,7 +6,7 @@ import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/duration.proto";
 
-option go_package = "git.d464.sh/adc/telemetry/pkg/proto/probe";
+option go_package = "github.com/diogo464/telemetry/pkg/proto/probe";
 
 service Probe {
     rpc ProbeGetName(google.protobuf.Empty) returns (ProbeGetNameResponse);

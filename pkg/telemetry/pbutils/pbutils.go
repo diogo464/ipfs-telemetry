@@ -4,9 +4,9 @@ import (
 	"io"
 	"time"
 
-	pbc "git.d464.sh/adc/telemetry/pkg/proto/common"
-	pbs "git.d464.sh/adc/telemetry/pkg/proto/datapoint"
-	"git.d464.sh/adc/telemetry/pkg/rle"
+	pbc "github.com/diogo464/telemetry/pkg/proto/common"
+	pbs "github.com/diogo464/telemetry/pkg/proto/datapoint"
+	"github.com/diogo464/telemetry/pkg/rle"
 	"github.com/libp2p/go-libp2p-core/metrics"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/multiformats/go-multiaddr"

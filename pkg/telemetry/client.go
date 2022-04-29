@@ -6,9 +6,9 @@ import (
 	"io"
 	"net"
 
-	pb "git.d464.sh/adc/telemetry/pkg/proto/telemetry"
-	"git.d464.sh/adc/telemetry/pkg/telemetry/datapoint"
-	"git.d464.sh/adc/telemetry/pkg/utils"
+	pb "github.com/diogo464/telemetry/pkg/proto/telemetry"
+	"github.com/diogo464/telemetry/pkg/telemetry/datapoint"
+	"github.com/diogo464/telemetry/pkg/utils"
 	"github.com/libp2p/go-libp2p-core/host"
 	"github.com/libp2p/go-libp2p-core/peer"
 	gostream "github.com/libp2p/go-libp2p-gostream"

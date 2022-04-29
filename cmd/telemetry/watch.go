@@ -4,8 +4,8 @@ import (
 	"strings"
 	"time"
 
-	"git.d464.sh/adc/telemetry/pkg/telemetry"
-	"git.d464.sh/adc/telemetry/pkg/utils"
+	"github.com/diogo464/telemetry/pkg/telemetry"
+	"github.com/diogo464/telemetry/pkg/utils"
 	"github.com/urfave/cli/v2"
 )
 

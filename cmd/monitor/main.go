@@ -8,8 +8,8 @@ import (
 	"os"
 	"time"
 
-	"git.d464.sh/adc/telemetry/pkg/monitor"
-	pb "git.d464.sh/adc/telemetry/pkg/proto/monitor"
+	"github.com/diogo464/telemetry/pkg/monitor"
+	pb "github.com/diogo464/telemetry/pkg/proto/monitor"
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"

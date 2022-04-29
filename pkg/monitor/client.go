@@ -3,7 +3,7 @@ package monitor
 import (
 	"context"
 
-	pb "git.d464.sh/adc/telemetry/pkg/proto/monitor"
+	pb "github.com/diogo464/telemetry/pkg/proto/monitor"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"google.golang.org/grpc"
 )

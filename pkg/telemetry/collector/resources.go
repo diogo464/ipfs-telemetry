@@ -4,7 +4,7 @@ import (
 	"context"
 	"runtime"
 
-	"git.d464.sh/adc/telemetry/pkg/telemetry/datapoint"
+	"github.com/diogo464/telemetry/pkg/telemetry/datapoint"
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/mem"
 )

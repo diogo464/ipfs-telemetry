@@ -3,9 +3,9 @@ package main
 import (
 	"strconv"
 
-	"git.d464.sh/adc/telemetry/pkg/monitor"
-	"git.d464.sh/adc/telemetry/pkg/telemetry"
-	"git.d464.sh/adc/telemetry/pkg/telemetry/datapoint"
+	"github.com/diogo464/telemetry/pkg/monitor"
+	"github.com/diogo464/telemetry/pkg/telemetry"
+	"github.com/diogo464/telemetry/pkg/telemetry/datapoint"
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/influxdata/influxdb-client-go/v2/api"
 	"github.com/influxdata/influxdb-client-go/v2/api/write"

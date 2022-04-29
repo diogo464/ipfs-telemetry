@@ -5,8 +5,8 @@ import (
 	"os"
 	"strings"
 
-	"git.d464.sh/adc/telemetry/pkg/orchestrator"
-	"git.d464.sh/adc/telemetry/pkg/probe"
+	"github.com/diogo464/telemetry/pkg/orchestrator"
+	"github.com/diogo464/telemetry/pkg/probe"
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/influxdata/influxdb-client-go/v2/api"
 	"github.com/sirupsen/logrus"

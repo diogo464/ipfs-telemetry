@@ -7,7 +7,7 @@ DATABASE_URL := postgres://postgres@localhost/postgres?sslmode=disable
 DATABASE_CONTAINER := monitor-db
 DATABASE_IMAGE := docker.io/library/postgres:14
 
-PROTO_FLAGS := --proto_path=api/ --go_out=./ --go-grpc_out=./ --go-grpc_opt=module=git.d464.sh/adc/telemetry --go_opt=module=git.d464.sh/adc/telemetry
+PROTO_FLAGS := --proto_path=api/ --go_out=./ --go-grpc_out=./ --go-grpc_opt=module=github.com/diogo464/telemetry --go_opt=module=github.com/diogo464/telemetry
 
 ipfs:
 	GOCC=$(GOCC) $(MAKE) -B -C third_party/go-ipfs/ build

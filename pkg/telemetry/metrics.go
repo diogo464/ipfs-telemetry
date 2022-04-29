@@ -3,7 +3,7 @@ package telemetry
 import (
 	"time"
 
-	"git.d464.sh/adc/telemetry/pkg/telemetry/window"
+	"github.com/diogo464/telemetry/pkg/telemetry/window"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )

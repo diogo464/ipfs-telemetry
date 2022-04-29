@@ -5,8 +5,8 @@ import (
 	"sync"
 	"time"
 
-	pb "git.d464.sh/adc/telemetry/pkg/proto/probe"
-	"git.d464.sh/adc/telemetry/pkg/walker"
+	pb "github.com/diogo464/telemetry/pkg/proto/probe"
+	"github.com/diogo464/telemetry/pkg/walker"
 	"github.com/gammazero/deque"
 	"github.com/ipfs/go-cid"
 	"github.com/libp2p/go-libp2p"

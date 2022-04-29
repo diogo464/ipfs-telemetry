@@ -5,7 +5,7 @@ import "common.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/duration.proto";
 
-option go_package = "git.d464.sh/adc/telemetry/pkg/proto/datapoint";
+option go_package = "github.com/diogo464/telemetry/pkg/proto/datapoint";
 
 message Ping {
     google.protobuf.Timestamp timestamp         = 1;

@@ -1,8 +1,8 @@
 package monitor
 
 import (
-	"git.d464.sh/adc/telemetry/pkg/telemetry"
-	"git.d464.sh/adc/telemetry/pkg/telemetry/datapoint"
+	"github.com/diogo464/telemetry/pkg/telemetry"
+	"github.com/diogo464/telemetry/pkg/telemetry/datapoint"
 	"github.com/libp2p/go-libp2p-core/peer"
 )
 

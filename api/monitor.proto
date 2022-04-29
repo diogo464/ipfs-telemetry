@@ -2,7 +2,7 @@ syntax = "proto3";
 
 import "google/protobuf/empty.proto";
 
-option go_package = "git.d464.sh/adc/telemetry/pkg/proto/monitor";
+option go_package = "github.com/diogo464/telemetry/pkg/proto/monitor";
 
 service Monitor {
     rpc Discover (DiscoverRequest) returns (google.protobuf.Empty) {}

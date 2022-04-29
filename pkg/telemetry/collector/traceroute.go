@@ -3,9 +3,9 @@ package collector
 import (
 	"context"
 
-	"git.d464.sh/adc/telemetry/pkg/telemetry/datapoint"
-	"git.d464.sh/adc/telemetry/pkg/traceroute"
-	"git.d464.sh/adc/telemetry/pkg/utils"
+	"github.com/diogo464/telemetry/pkg/telemetry/datapoint"
+	"github.com/diogo464/telemetry/pkg/traceroute"
+	"github.com/diogo464/telemetry/pkg/utils"
 	"github.com/libp2p/go-libp2p-core/host"
 	"github.com/libp2p/go-libp2p-core/peer"
 )

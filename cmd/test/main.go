@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"git.d464.sh/adc/telemetry/pkg/telemetry"
+	"github.com/diogo464/telemetry/pkg/telemetry"
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p-core/host"
 	"github.com/libp2p/go-libp2p-core/peer"

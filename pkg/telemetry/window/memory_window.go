@@ -5,9 +5,9 @@ import (
 	"sync"
 	"time"
 
-	pb "git.d464.sh/adc/telemetry/pkg/proto/datapoint"
-	"git.d464.sh/adc/telemetry/pkg/telemetry/datapoint"
-	"git.d464.sh/adc/telemetry/pkg/utils"
+	pb "github.com/diogo464/telemetry/pkg/proto/datapoint"
+	"github.com/diogo464/telemetry/pkg/telemetry/datapoint"
+	"github.com/diogo464/telemetry/pkg/utils"
 )
 
 var _ Window = (*MemoryWindow)(nil)

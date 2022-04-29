@@ -1,6 +1,6 @@
 package crawler
 
-import "git.d464.sh/adc/telemetry/pkg/walker"
+import "github.com/diogo464/telemetry/pkg/walker"
 
 type Option func(*options) error
 

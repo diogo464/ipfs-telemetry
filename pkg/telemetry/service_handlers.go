@@ -6,8 +6,8 @@ import (
 	"runtime"
 	"time"
 
-	pb "git.d464.sh/adc/telemetry/pkg/proto/telemetry"
-	"git.d464.sh/adc/telemetry/pkg/utils"
+	pb "github.com/diogo464/telemetry/pkg/proto/telemetry"
+	"github.com/diogo464/telemetry/pkg/utils"
 	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/multiformats/go-multiaddr"
 	"google.golang.org/protobuf/types/known/emptypb"

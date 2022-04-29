@@ -3,7 +3,7 @@ package collector
 import (
 	"context"
 
-	"git.d464.sh/adc/telemetry/pkg/telemetry/datapoint"
+	"github.com/diogo464/telemetry/pkg/telemetry/datapoint"
 	"github.com/ipfs/go-ipfs/core"
 	"github.com/ipfs/go-ipfs/core/corerepo"
 )

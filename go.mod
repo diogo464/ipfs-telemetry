@@ -1,4 +1,4 @@
-module git.d464.sh/adc/telemetry
+module github.com/diogo464/telemetry
 
 go 1.18
 
@@ -228,6 +228,6 @@ replace github.com/libp2p/go-libp2p-kad-dht => ./third_party/go-libp2p-kad-dht/
 
 replace github.com/libp2p/go-libp2p-kbucket => ./third_party/go-libp2p-kbucket/
 
-replace git.d464.sh/adc/telemetry => ./
+replace github.com/diogo464/telemetry => ./
 
 replace github.com/libp2p/go-libp2p-quic-transport => ./third_party/go-libp2p-quic-transport

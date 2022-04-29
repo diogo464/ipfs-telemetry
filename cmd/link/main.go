@@ -5,8 +5,8 @@ import (
 	"os"
 	"time"
 
-	"git.d464.sh/adc/telemetry/pkg/crawler"
-	"git.d464.sh/adc/telemetry/pkg/monitor"
+	"github.com/diogo464/telemetry/pkg/crawler"
+	"github.com/diogo464/telemetry/pkg/monitor"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/urfave/cli/v2"
 	"google.golang.org/grpc"

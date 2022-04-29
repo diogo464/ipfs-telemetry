@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"os"
 
-	"git.d464.sh/adc/telemetry/pkg/probe"
-	pb "git.d464.sh/adc/telemetry/pkg/proto/probe"
+	"github.com/diogo464/telemetry/pkg/probe"
+	pb "github.com/diogo464/telemetry/pkg/proto/probe"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"

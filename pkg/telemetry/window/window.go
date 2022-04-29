@@ -4,8 +4,8 @@ import (
 	"sort"
 	"time"
 
-	pb "git.d464.sh/adc/telemetry/pkg/proto/datapoint"
-	"git.d464.sh/adc/telemetry/pkg/telemetry/datapoint"
+	pb "github.com/diogo464/telemetry/pkg/proto/datapoint"
+	"github.com/diogo464/telemetry/pkg/telemetry/datapoint"
 )
 
 type FetchResult struct {

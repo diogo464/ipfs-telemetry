@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	pb "git.d464.sh/adc/telemetry/pkg/proto/probe"
+	pb "github.com/diogo464/telemetry/pkg/proto/probe"
 	"github.com/ipfs/go-cid"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"google.golang.org/grpc"

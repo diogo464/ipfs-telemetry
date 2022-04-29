@@ -5,9 +5,9 @@ import (
 	"sync"
 	"time"
 
-	"git.d464.sh/adc/telemetry/pkg/actionqueue"
-	pb "git.d464.sh/adc/telemetry/pkg/proto/monitor"
-	"git.d464.sh/adc/telemetry/pkg/telemetry"
+	"github.com/diogo464/telemetry/pkg/actionqueue"
+	pb "github.com/diogo464/telemetry/pkg/proto/monitor"
+	"github.com/diogo464/telemetry/pkg/telemetry"
 	"github.com/libp2p/go-libp2p-core/host"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/sirupsen/logrus"

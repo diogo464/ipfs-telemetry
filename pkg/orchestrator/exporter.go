@@ -1,6 +1,6 @@
 package orchestrator
 
-import "git.d464.sh/adc/telemetry/pkg/probe"
+import "github.com/diogo464/telemetry/pkg/probe"
 
 var _ (Exporter) = (*NullExporter)(nil)
 

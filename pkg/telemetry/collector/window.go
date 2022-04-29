@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"git.d464.sh/adc/telemetry/pkg/telemetry/datapoint"
-	"git.d464.sh/adc/telemetry/pkg/telemetry/window"
+	"github.com/diogo464/telemetry/pkg/telemetry/datapoint"
+	"github.com/diogo464/telemetry/pkg/telemetry/window"
 )
 
 var _ Collector = (*windowCollector)(nil)

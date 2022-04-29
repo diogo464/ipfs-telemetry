@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"git.d464.sh/adc/telemetry/pkg/traceroute"
+	"github.com/diogo464/telemetry/pkg/traceroute"
 	"github.com/urfave/cli/v2"
 )
 

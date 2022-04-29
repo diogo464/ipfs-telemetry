@@ -3,7 +3,7 @@ package datapoint
 import (
 	"time"
 
-	pb "git.d464.sh/adc/telemetry/pkg/proto/datapoint"
+	pb "github.com/diogo464/telemetry/pkg/proto/datapoint"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
