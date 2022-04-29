@@ -1,6 +1,6 @@
 [submodule "go-ipfs"]
 	path = go-ipfs
-	url = ssh://git@git.d464.sh:2222/adc/go-ipfs.git
+	url = git@github.com:diogo464/go-ipfs.git
 [submodule "third_party/go-ipfs"]
 	path = third_party/go-ipfs
 	url = https://git.d464.sh/adc/go-ipfs
@@ -19,3 +19,11 @@
 [submodule "third_party/go-sumtype"]
 	path = third_party/go-sumtype
 	url = ssh://git@git.d464.sh:2222/adc/go-sumtype.git
+[submodule "go-bitswap/"]
+	url = git@github.com:diogo464/go-bitswap.git
+[submodule "go-libp2p-kad-dht/"]
+	url = git@github.com:libp2p/go-libp2p-kad-dht.git
+[submodule "go-libp2p-quic-transport/"]
+	url = git@github.com:diogo464/go-libp2p-quic-transport.git
+[submodule "go-sumtype/"]
+	url = git@github.com:diogo464/go-sumtype.git

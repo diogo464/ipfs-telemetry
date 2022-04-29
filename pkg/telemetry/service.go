@@ -30,6 +30,9 @@ type TelemetryService struct {
 	boot_time   time.Time
 	twindow     window.Window
 	collectors  []collector.Collector
+
+	throttler_upload   *serviceThrottler
+	throttler_download *serviceThrottler
 }
 
 func NewTelemetryService(n *core.IpfsNode, conf config.Config, opts ...Option) (*TelemetryService, error) {
@@ -46,15 +49,17 @@ func NewTelemetryService(n *core.IpfsNode, conf config.Config, opts ...Option) (
 	ctx, cancel := context.WithCancel(context.Background())
 	session := RandomSession()
 	t := &TelemetryService{
-		session:    session,
-		node:       n,
-		opts:       o,
-		conf:       conf,
-		ctx:        ctx,
-		cancel:     cancel,
-		boot_time:  time.Now().UTC(),
-		twindow:    window.NewMemoryWindow(o.windowDuration, 128*1024),
-		collectors: make([]collector.Collector, 0),
+		session:            session,
+		node:               n,
+		opts:               o,
+		conf:               conf,
+		ctx:                ctx,
+		cancel:             cancel,
+		boot_time:          time.Now().UTC(),
+		twindow:            window.NewMemoryWindow(o.windowDuration, 128*1024),
+		collectors:         make([]collector.Collector, 0),
+		throttler_upload:   newServiceThrottler(),
+		throttler_download: newServiceThrottler(),
 	}
 	h.SetStreamHandler(ID_UPLOAD, t.uploadHandler)
 	h.SetStreamHandler(ID_DOWNLOAD, t.downloadHandler)

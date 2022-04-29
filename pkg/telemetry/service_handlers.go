@@ -9,6 +9,7 @@ import (
 	pb "git.d464.sh/adc/telemetry/pkg/proto/telemetry"
 	"git.d464.sh/adc/telemetry/pkg/utils"
 	"github.com/libp2p/go-libp2p-core/network"
+	"github.com/multiformats/go-multiaddr"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -32,8 +33,10 @@ func (s *TelemetryService) GetSystemInfo(context.Context, *emptypb.Empty) (*pb.S
 
 func (s *TelemetryService) GetDatapoints(req *pb.GetDatapointsRequest, stream pb.Telemetry_GetDatapointsServer) error {
 	since := req.GetSince()
+	sleep := time.Duration((1.0 / (float64(DATAPOINT_UPLOAD_RATE) / float64(DATAPOINT_FETCH_BLOCK_SIZE))) * float64(time.Second))
 	for {
-		result := s.twindow.Fetch(since, FETCH_BLOCK_SIZE)
+		time.Sleep(sleep)
+		result := s.twindow.Fetch(since, DATAPOINT_FETCH_BLOCK_SIZE)
 		if len(result.Datapoints) == 0 {
 			break
 		}
@@ -52,6 +55,15 @@ func (s *TelemetryService) GetDatapoints(req *pb.GetDatapointsRequest, stream pb
 
 func (s *TelemetryService) uploadHandler(stream network.Stream) {
 	defer stream.Close()
+
+	if publicIp, err := utils.GetFirstPublicAddressFromMultiaddrs([]multiaddr.Multiaddr{stream.Conn().RemoteMultiaddr()}); err == nil {
+		if s.throttler_upload.isAllowed(publicIp) {
+			s.throttler_upload.disallow(publicIp, BANDWIDTH_BLOCK_DURATION)
+		} else {
+			utils.WriteU32(stream, 0)
+			return
+		}
+	}
 
 	requested_payload, err := utils.ReadU32(stream)
 	if err != nil || requested_payload > MAX_PAYLOAD_SIZE {
@@ -73,6 +85,14 @@ func (s *TelemetryService) uploadHandler(stream network.Stream) {
 
 func (s *TelemetryService) downloadHandler(stream network.Stream) {
 	defer stream.Close()
+	if publicIp, err := utils.GetFirstPublicAddressFromMultiaddrs([]multiaddr.Multiaddr{stream.Conn().RemoteMultiaddr()}); err == nil {
+		if s.throttler_download.isAllowed(publicIp) {
+			s.throttler_download.disallow(publicIp, BANDWIDTH_BLOCK_DURATION)
+		} else {
+			utils.WriteU32(stream, 0)
+			return
+		}
+	}
 
 	expected_payload, err := utils.ReadU32(stream)
 	if err != nil || expected_payload > MAX_PAYLOAD_SIZE {
