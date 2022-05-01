@@ -6,6 +6,10 @@ jobs:
   build-proto:
     runs-on: ubuntu-latest
     steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: 'recursive'
+
     - name: Set up Go
       uses: actions/setup-go@v3
       with:
