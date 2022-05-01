@@ -82,5 +82,10 @@ jobs:
       uses: actions/download-artifact@v3.0.0
       with:
         name: ipfs-linux
-        path: ipfs
-      
+        path: ipfs-linux
+
+    - name: Release
+      uses: softprops/action-gh-release@v1
+      if: github.ref == 'refs/heads/main'
+      with:
+        files: ipfs-linux
