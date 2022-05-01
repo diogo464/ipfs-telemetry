@@ -3,12 +3,42 @@ name: Go
 on: [push]
 
 jobs:
-  build:
+  build-proto:
     runs-on: ubuntu-latest
+    steps:
+    - name: Set up Go
+      uses: actions/setup-go@v3
+      with:
+        go-version: 1.18
+
+    - name: Setup protoc
+      run: sudo apt install golang-goprotobuf-dev
+    
+    - name: Build tools
+      run: make tools
+
+    - name: Build proto
+      run: make proto
+      
+    - name: Upload proto files
+      uses: actions/upload-artifact@v3.0.0
+      with:
+        name: proto-files
+        path: pkg/proto
+    
+  build-linux:
+    runs-on: ubuntu-latest
+    needs: [build-proto]
     steps:
     - uses: actions/checkout@v3
       with:
         submodules: 'recursive'
+
+    - name: Download proto files
+      uses: actions/download-artifact@v3.0.0
+      with:
+        name: proto-files
+        path: pkg/proto
 
     - name: Docker Login
       uses: docker/login-action@v1.14.1
@@ -22,28 +52,31 @@ jobs:
       with:
         go-version: 1.18
 
-    - name: Setup protoc
-      run: sudo apt install golang-goprotobuf-dev
-
-    - name: Build tools
-      run: make tools
-
-    - name: Build proto
-      run: make proto
-
     - name: Build
-      run: make build
+      run: CGO_ENABLED=0 make build
+      
+    - name: Upload ipfs linux
+      uses: actions/upload-artifact@v3.0.0
+      with:
+        name: ipfs-linux
+        path: bin/ipfs
 
     - name: Build and push container
       uses: docker/build-push-action@v2.10.0
+      if: github.ref == 'refs/heads/main'
       with:
         context: .
         file: deploy/telemetry/Dockerfile
         push: true
         tags: ghcr.io/diogo464/telemetry:latest
-        
-    - name: Upload proto files
-      uses: actions/upload-artifact@v3.0.0
+  
+  release:
+    runs-on: ubuntu-latest
+    needs: [build-linux]
+    steps:
+    - name: Download linux build
+      uses: actions/download-artifact@v3.0.0
       with:
-        name: proto-files
-        path: pkg/proto
+        name: ipfs-linux
+        path: ipfs
+      
