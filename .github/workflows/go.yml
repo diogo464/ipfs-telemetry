@@ -12,9 +12,12 @@ jobs:
       uses: actions/setup-go@v3
       with:
         go-version: 1.18
-        
+
     - name: Setup protoc
-      uses: arduino/setup-protoc@v1.1.2
+      run: apt install golang-goprotobuf-dev
+
+    - name: Build tools
+      run: make tools
 
     - name: Build proto
       run: make proto
