@@ -14,7 +14,7 @@ jobs:
         go-version: 1.18
 
     - name: Setup protoc
-      run: apt install golang-goprotobuf-dev
+      run: sudo apt install golang-goprotobuf-dev
 
     - name: Build tools
       run: make tools
