@@ -9,8 +9,20 @@ DATABASE_IMAGE := docker.io/library/postgres:14
 
 PROTO_FLAGS := --proto_path=api/ --go_out=./ --go-grpc_out=./ --go-grpc_opt=module=github.com/diogo464/telemetry --go_opt=module=github.com/diogo464/telemetry
 
+.PHONY: dist
+dist:
+	mkdir -p dist/
+	GOOS=windows GOARCH=amd64 $(MAKE) -B -C third_party/go-ipfs/ build
+	mv third_party/go-ipfs/cmd/ipfs/ipfs dist/ipfs_windows-amd64.exe
+	GOOS=linux GOARCH=amd64 $(MAKE) -B -C third_party/go-ipfs/ build
+	mv third_party/go-ipfs/cmd/ipfs/ipfs dist/ipfs_linux-amd64
+	GOOS=linux GOARCH=arm64 $(MAKE) -B -C third_party/go-ipfs/ build
+	mv third_party/go-ipfs/cmd/ipfs/ipfs dist/ipfs_linux-arm64
+	GOOS=darwin GOARCH=amd64 $(MAKE) -B -C third_party/go-ipfs/ build
+	mv third_party/go-ipfs/cmd/ipfs/ipfs dist/ipfs_darwin-amd64
+
 ipfs:
-	GOCC=$(GOCC) $(MAKE) -B -C third_party/go-ipfs/ build
+	$(MAKE) -B -C third_party/go-ipfs/ build
 	mkdir -p bin/ && mv third_party/go-ipfs/cmd/ipfs/ipfs bin/
 
 ipfs-install: ipfs
@@ -33,6 +45,9 @@ orchestrator:
 
 probe:
 	$(GOCC) build -o bin/probe cmd/probe/*
+
+windows-test:
+	$(GOCC) build -o bin/test cmd/main.go
 
 build-telemetry: monitor crawler telemetry ipfs link
 

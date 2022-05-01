@@ -27,7 +27,7 @@ var providerTracepath6 = provider{
 }
 
 func platformTrace(destination string) (*Result, error) {
-	return runAndCollectResult(destination,
+	return runAndCollectResults(destination,
 		providerTraceroute,
 		providerTracepath4,
 		providerTracepath6,

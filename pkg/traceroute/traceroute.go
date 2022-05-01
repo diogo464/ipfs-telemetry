@@ -21,7 +21,7 @@ type provider struct {
 	fn   func(destination string) ([]byte, error)
 }
 
-func runAndCollectResult(destination string, providers ...provider) (*Result, error) {
+func runAndCollectResults(destination string, providers ...provider) (*Result, error) {
 	var err error = ErrNoProviderAvailable
 	for _, p := range providers {
 		if output, err := p.fn(destination); err == nil {
