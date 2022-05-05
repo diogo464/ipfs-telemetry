@@ -117,6 +117,10 @@ func (s *TelemetryService) startCollectors() {
 	collector.RunCollector(s.ctx, config.SecondsToDuration(s.conf.Ping.Interval, time.Second*5), ssink, pingCollector)
 	s.deferCollectorClose(pingCollector)
 
+	connectionsCollector := collector.NewConnectionsCollector(s.node.PeerHost)
+	collector.RunCollector(s.ctx, config.SecondsToDuration(s.conf.Connections.Interval, time.Second*60), ssink, connectionsCollector)
+	s.deferCollectorClose(connectionsCollector)
+
 	// network
 	networkCollector := collector.NewNetworkCollector(s.node, collector.NetworkOptions{
 		BandwidthByPeerInterval: config.SecondsToDuration(s.conf.NetworkCollector.BandwidthByPeerInterval, time.Minute*5),

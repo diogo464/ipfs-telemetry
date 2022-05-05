@@ -46,12 +46,12 @@ func (e *InfluxExporter) Close() {
 
 // ExportSessionInfo implements monitor.Exporter
 func (*InfluxExporter) ExportSessionInfo(peer.ID, telemetry.SessionInfo) {
-	panic("unimplemented")
+	// panic("unimplemented")
 }
 
 // ExportSystemInfo implements monitor.Exporter
 func (*InfluxExporter) ExportSystemInfo(peer.ID, telemetry.Session, telemetry.SystemInfo) {
-	panic("unimplemented")
+	// panic("unimplemented")
 }
 
 // Export implements monitor.Exporter
@@ -60,6 +60,8 @@ func (e *InfluxExporter) ExportDatapoints(p peer.ID, sess telemetry.Session, sna
 		switch v := snap.(type) {
 		case *datapoint.Ping:
 			e.exportPing(p, sess, v)
+		case *datapoint.Connections:
+			e.exportConnections(p, sess, v)
 		case *datapoint.RoutingTable:
 			e.exportRoutingTable(p, sess, v)
 		case *datapoint.Network:
@@ -88,6 +90,10 @@ func (e *InfluxExporter) ExportBandwidth(p peer.ID, sess telemetry.Session, bw t
 }
 
 func (e *InfluxExporter) exportPing(p peer.ID, sess telemetry.Session, snap *datapoint.Ping) {
+}
+
+func (e *InfluxExporter) exportConnections(p peer.ID, sess telemetry.Session, snap *datapoint.Connections) {
+
 }
 
 func (e *InfluxExporter) exportRoutingTable(p peer.ID, sess telemetry.Session, snap *datapoint.RoutingTable) {

@@ -34,6 +34,8 @@ func FromPB(v *pb.Datapoint) (Datapoint, error) {
 	switch v.GetBody().(type) {
 	case *pb.Datapoint_Ping:
 		return PingFromPB(v.GetPing())
+	case *pb.Datapoint_Connections:
+		return ConnectionsFromPB(v.GetConnections())
 	case *pb.Datapoint_RoutingTable:
 		return RoutingTableFromPB(v.GetRoutingTable())
 	case *pb.Datapoint_Network:

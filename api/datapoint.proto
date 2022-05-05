@@ -14,6 +14,19 @@ message Ping {
     repeated google.protobuf.Duration durations = 4;
 }
 
+message Connections {
+    message Connection {
+        // remote peer id
+        string peer                         = 1;
+        // remote multiaddr
+        string addr                         = 2; 
+        google.protobuf.Duration latency    = 3;
+    }
+
+    google.protobuf.Timestamp timestamp = 1;
+    repeated Connection connections     = 2;
+}
+
 message RoutingTable {
     message Bucket {
         repeated string peers = 1;
@@ -125,15 +138,16 @@ message Window {
 message Datapoint  {
     oneof body {
         Ping ping                       = 1; 
-        RoutingTable routing_table      = 2;
-        Network network                 = 3;
-        Resources resources             = 4;
-        TraceRoute traceroute           = 5;
-        Kademlia kademlia               = 6;
-        KademliaQuery kademlia_query    = 7;
-        KademliaHandler kademlia_handler= 8;
-        Bitswap bitswap                 = 9;
-        Storage storage                 = 10;
-        Window window                   = 11;
+        Connections connections         = 2;
+        RoutingTable routing_table      = 3;
+        Network network                 = 4;
+        Resources resources             = 5;
+        TraceRoute traceroute           = 6;
+        Kademlia kademlia               = 7;
+        KademliaQuery kademlia_query    = 8;
+        KademliaHandler kademlia_handler= 9;
+        Bitswap bitswap                 = 10;
+        Storage storage                 = 11;
+        Window window                   = 12;
     }
 }

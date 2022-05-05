@@ -4,6 +4,7 @@ import "time"
 
 type Config struct {
 	Ping             Ping
+	Connections      Connections
 	NetworkCollector NetworkCollector
 	RoutingTable     RoutingTable
 	Resources        Resources
@@ -18,6 +19,10 @@ type Ping struct {
 	Interval int
 	Timeout  int
 	Count    int
+}
+
+type Connections struct {
+	Interval int
 }
 
 type NetworkCollector struct {
