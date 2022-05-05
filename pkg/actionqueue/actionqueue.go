@@ -2,9 +2,7 @@ package actionqueue
 
 import (
 	"container/heap"
-	"context"
 	"math"
-	"sync"
 	"time"
 )
 
@@ -33,15 +31,6 @@ func (pq *actionHeap[T]) Pop() any {
 
 type Queue[T any] struct {
 	actions actionHeap[T]
-	cpush   chan Action[T]
-
-	receive_mu sync.Mutex
-	receive    []*T
-	creceive   chan *T
-
-	// task data
-	heap   actionHeap[T]
-	cancel context.CancelFunc
 }
 
 func Now[T any](data *T) Action[T] {
