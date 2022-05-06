@@ -128,7 +128,8 @@ func (e *InfluxExporter) exportNetwork(p peer.ID, sess telemetry.Session, snap *
 
 func (e *InfluxExporter) exportResources(p peer.ID, sess telemetry.Session, snap *datapoint.Resources) {
 	point := influxdb2.NewPointWithMeasurement("resources").
-		AddField("cpu", snap.CpuUsage).
+		AddField("cpu_process", snap.CpuProcess).
+		AddField("cpu_system", snap.CpuSystem).
 		AddField("memory_used", snap.MemoryUsed).
 		AddField("memory_free", snap.MemoryFree).
 		AddField("memory_total", snap.MemoryTotal).

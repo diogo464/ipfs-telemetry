@@ -60,15 +60,16 @@ message Network {
 
 message Resources {
     google.protobuf.Timestamp timestamp     = 1;
-    // percentange cpu usage, can be > 100%
-    float cpu_usage         = 2; 
+    // overall percent cpu usage, 0% <= cpu <= 100%
+    float cpu_process       = 2;
+    float cpu_system        = 3;
     // total memory in use by this process
-    uint64 memory_used      = 3;
+    uint64 memory_used      = 4;
     // total system free memory
-    uint64 memory_free      = 4;
+    uint64 memory_free      = 5;
     // total system memory
-    uint64 memory_total     = 5;
-    uint32 goroutines       = 6;
+    uint64 memory_total     = 6;
+    uint32 goroutines       = 7;
 }
 
 message TraceRoute {

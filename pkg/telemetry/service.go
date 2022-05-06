@@ -81,7 +81,11 @@ func NewTelemetryService(n *core.IpfsNode, conf config.Config, opts ...Option) (
 		fmt.Println("GRPC server stopped")
 	}()
 
-	t.startCollectors()
+	err = t.startCollectors()
+	if err != nil {
+		return nil, err
+	}
+
 	t.startEventCollector()
 
 	go metricsTask(t.twindow)
@@ -102,7 +106,7 @@ func (s *TelemetryService) deferCollectorClose(c collector.Collector) {
 	s.collectors = append(s.collectors, c)
 }
 
-func (s *TelemetryService) startCollectors() {
+func (s *TelemetryService) startCollectors() error {
 	ssink := window.SnapshotSink(s.twindow)
 
 	// ping
@@ -134,7 +138,10 @@ func (s *TelemetryService) startCollectors() {
 	s.deferCollectorClose(routingTableCollector)
 
 	// resources
-	resourcesCollector := collector.NewResourcesCollector()
+	resourcesCollector, err := collector.NewResourcesCollector()
+	if err != nil {
+		return err
+	}
 	collector.RunCollector(s.ctx, config.SecondsToDuration(s.conf.Resources.Interval, time.Second*10), ssink, resourcesCollector)
 	s.deferCollectorClose(resourcesCollector)
 
@@ -162,6 +169,8 @@ func (s *TelemetryService) startCollectors() {
 	windowCollector := collector.NewWindowCollector(s.opts.windowDuration, s.twindow)
 	collector.RunCollector(s.ctx, config.SecondsToDuration(s.conf.Window.Interval, time.Second*5), ssink, windowCollector)
 	s.deferCollectorClose(windowCollector)
+
+	return nil
 }
 
 func (s *TelemetryService) startEventCollector() {

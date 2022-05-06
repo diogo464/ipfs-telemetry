@@ -13,7 +13,8 @@ const ResourceName = "resources"
 
 type Resources struct {
 	Timestamp   time.Time `json:"timestamp"`
-	CpuUsage    float32   `json:"cpu_usage"`
+	CpuProcess  float32   `json:"cpu_process"`
+	CpuSystem   float32   `json:"cpu_system"`
 	MemoryUsed  uint64    `json:"memory_used"`
 	MemoryFree  uint64    `json:"memory_free"`
 	MemoryTotal uint64    `json:"memory_total"`
@@ -24,7 +25,7 @@ func (*Resources) sealed()                   {}
 func (*Resources) GetName() string           { return ResourceName }
 func (r *Resources) GetTimestamp() time.Time { return r.Timestamp }
 func (r *Resources) GetSizeEstimate() uint32 {
-	return estimateTimestampSize + 4 + 3*8 + 4
+	return estimateTimestampSize + 2*4 + 3*8 + 4
 }
 func (r *Resources) ToPB() *pb.Datapoint {
 	return &pb.Datapoint{
@@ -37,7 +38,8 @@ func (r *Resources) ToPB() *pb.Datapoint {
 func ResourcesFromPB(in *pb.Resources) (*Resources, error) {
 	return &Resources{
 		Timestamp:   in.GetTimestamp().AsTime(),
-		CpuUsage:    in.GetCpuUsage(),
+		CpuProcess:  in.GetCpuProcess(),
+		CpuSystem:   in.GetCpuSystem(),
 		MemoryUsed:  in.GetMemoryUsed(),
 		MemoryFree:  in.GetMemoryFree(),
 		MemoryTotal: in.GetMemoryTotal(),
@@ -48,7 +50,8 @@ func ResourcesFromPB(in *pb.Resources) (*Resources, error) {
 func ResourcesToPB(r *Resources) *pb.Resources {
 	return &pb.Resources{
 		Timestamp:   timestamppb.New(r.Timestamp),
-		CpuUsage:    r.CpuUsage,
+		CpuProcess:  r.CpuProcess,
+		CpuSystem:   r.CpuSystem,
 		MemoryUsed:  r.MemoryUsed,
 		MemoryFree:  r.MemoryFree,
 		MemoryTotal: r.MemoryTotal,
