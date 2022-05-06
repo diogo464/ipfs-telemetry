@@ -20,6 +20,8 @@ dist:
 	mv third_party/go-ipfs/cmd/ipfs/ipfs dist/ipfs_linux-arm64
 	GOOS=darwin GOARCH=amd64 $(MAKE) -B -C third_party/go-ipfs/ build
 	mv third_party/go-ipfs/cmd/ipfs/ipfs dist/ipfs_darwin-amd64
+	GOOS=darwin GOARCH=arm64 $(MAKE) -B -C third_party/go-ipfs/ build
+	mv third_party/go-ipfs/cmd/ipfs/ipfs dist/ipfs_darwin-arm64
 
 ipfs:
 	$(MAKE) -B -C third_party/go-ipfs/ build
