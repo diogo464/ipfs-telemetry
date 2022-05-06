@@ -22,7 +22,7 @@
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
   "id": 2,
-  "iteration": 1651758929838,
+  "iteration": 1651821693788,
   "links": [],
   "liveNow": false,
   "panels": [
@@ -364,7 +364,7 @@
             "type": "influxdb",
             "uid": "P951FEA4DE68E13C5"
           },
-          "query": "from(bucket: \"telemetry\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"kademlia_handler\")\n  |> filter(fn: (r) => r[\"peer\"] == \"${peer}\")\n  |> group(columns: [\"peer\", \"type\"])\n  |> aggregateWindow(every: 5s, fn: mean)\n",
+          "query": "from(bucket: \"telemetry\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"kademlia_handler\")\n  |> filter(fn: (r) => r[\"peer\"] == \"${peer}\")\n  |> group(columns: [\"peer\", \"type\"])\n  |> aggregateWindow(every: duration(v: ( (uint(v: v.timeRangeStop) - uint(v: v.timeRangeStart)) / uint(v: 240) ) ), fn: mean)\n",
           "refId": "A"
         }
       ],
@@ -703,6 +703,6 @@
   "timezone": "",
   "title": "Peer",
   "uid": "NkRv8RQnk",
-  "version": 2,
+  "version": 1,
   "weekStart": ""
 }
