@@ -4,17 +4,16 @@ package walker
 
 import (
 	"context"
-	"math"
 	"sync"
 	"time"
 
 	"github.com/diogo464/telemetry/pkg/walker/preimage"
+	"github.com/gammazero/deque"
 	"github.com/libp2p/go-libp2p-core/host"
 	"github.com/libp2p/go-libp2p-core/peer"
+	"github.com/libp2p/go-libp2p-core/peerstore"
 	pb "github.com/libp2p/go-libp2p-kad-dht/pb"
 )
-
-const ADDRESS_TTL = time.Duration(math.MaxInt64)
 
 type Walker interface {
 	Walk(ctx context.Context) error
@@ -30,14 +29,15 @@ type walkResult struct {
 }
 
 type implWalker struct {
-	c *config
-	h host.Host
-	m *pb.ProtocolMessenger
-	t *preimage.Table
+	h         host.Host
+	opts      *options
+	messenger *pb.ProtocolMessenger
+	table     *preimage.Table
+	wg        sync.WaitGroup
 }
 
 func newImplWalker(h host.Host, opts ...Option) (*implWalker, error) {
-	c := new(config)
+	c := new(options)
 	defaults(c)
 	if err := apply(c, opts...); err != nil {
 		return nil, err
@@ -51,10 +51,10 @@ func newImplWalker(h host.Host, opts ...Option) (*implWalker, error) {
 	}
 
 	walker := &implWalker{
-		c: c,
-		h: h,
-		m: messenger,
-		t: preimage.Generate(),
+		h:         h,
+		opts:      c,
+		messenger: messenger,
+		table:     preimage.Generate(),
 	}
 
 	return walker, nil
@@ -63,82 +63,59 @@ func newImplWalker(h host.Host, opts ...Option) (*implWalker, error) {
 func (c *implWalker) Walk(ctx context.Context) error {
 	cwork := make(chan peer.ID)
 	cresult := make(chan walkResult, 1)
-	workctx, cancel := context.WithCancel(ctx)
-	wg := new(sync.WaitGroup)
-
-	defer wg.Wait()
 	defer close(cwork)
-	defer cancel()
 
-	wg.Add(int(c.c.concurrency))
-	for i := 0; i < int(c.c.concurrency); i++ {
-		go func() {
-			defer wg.Done()
-		LOOP:
-			for pid := range cwork {
-				res := c.walkPeer(workctx, pid)
-				select {
-				case cresult <- res:
-				case <-workctx.Done():
-					break LOOP
-				}
-			}
-		}()
-	}
-
+	var err error = nil
 	inprogress := 0
-	pending := make([]peer.ID, 0)
+	pending := deque.New()
 	queried := make(map[peer.ID]struct{})
+	interval := time.NewTicker(c.opts.interval)
 
-	for _, addr := range c.c.seeds {
-		c.h.Peerstore().AddAddrs(addr.ID, addr.Addrs, ADDRESS_TTL)
-		pending = append(pending, addr.ID)
+	for _, addr := range c.opts.seeds {
+		c.h.Peerstore().AddAddrs(addr.ID, addr.Addrs, peerstore.PermanentAddrTTL)
+		pending.PushBack(addr.ID)
 	}
 
-	for len(pending) > 0 || inprogress > 0 {
-		var next_id peer.ID
-		var cworkopt chan peer.ID
-
-		if len(pending) > 0 {
-			next_id = pending[0]
-			cworkopt = cwork
-		}
-
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		default:
+LOOP:
+	for pending.Len() > 0 || inprogress > 0 {
+		var intervalChan <-chan time.Time
+		if pending.Len() > 0 && inprogress < int(c.opts.concurrency) {
+			intervalChan = interval.C
 		}
 
 		select {
 		case result := <-cresult:
 			if result.ok != nil {
-				c.c.observer.ObservePeer(result.ok)
-				for _, bucket := range result.ok.Buckets {
-					for _, addrinfo := range bucket {
-						if _, ok := queried[addrinfo.ID]; !ok {
-							c.h.Peerstore().AddAddrs(addrinfo.ID, addrinfo.Addrs, ADDRESS_TTL)
-							pending = append(pending, addrinfo.ID)
-							queried[addrinfo.ID] = struct{}{}
-						}
+				c.opts.observer.ObservePeer(result.ok)
+				for _, addrinfo := range result.ok.Buckets {
+					if _, ok := queried[addrinfo.ID]; !ok {
+						c.h.Peerstore().AddAddrs(addrinfo.ID, addrinfo.Addrs, peerstore.PermanentAddrTTL)
+						queried[addrinfo.ID] = struct{}{}
+						pending.PushBack(addrinfo.ID)
 					}
 				}
 			} else {
-				c.c.observer.ObserveError(result.err)
+				c.opts.observer.ObserveError(result.err)
 			}
 			inprogress -= 1
-		case cworkopt <- next_id:
-			pending = pending[1:]
+		case <-intervalChan:
 			inprogress += 1
+			pid := pending.PopFront().(peer.ID)
+			c.walkPeer(ctx, cresult, pid)
+		case <-ctx.Done():
+			err = ctx.Err()
+			break LOOP
 		}
 	}
 
-	return nil
+	c.wg.Wait()
+
+	return err
 }
 
-func (c *implWalker) walkPeer(ctx context.Context, pid peer.ID) walkResult {
-	ctx, cancel := context.WithTimeout(ctx, c.c.requestTimeout)
-	defer cancel()
+func (c *implWalker) walkPeerTask(ctx context.Context, pid peer.ID) walkResult {
+	connCtx, connCancel := context.WithTimeout(ctx, c.opts.connectTimeout)
+	defer connCancel()
 
 	walkStart := time.Now()
 	walkError := &Error{
@@ -148,18 +125,23 @@ func (c *implWalker) walkPeer(ctx context.Context, pid peer.ID) walkResult {
 		Err:       nil,
 	}
 
-	if err := c.h.Connect(ctx, c.h.Peerstore().PeerInfo(pid)); err != nil {
+	connectStart := time.Now()
+	if err := c.h.Connect(connCtx, c.h.Peerstore().PeerInfo(pid)); err != nil {
 		walkError.Err = err
 		return walkResult{err: walkError}
 	}
+	connectDuration := time.Since(connectStart)
 	defer func() { _ = c.h.Network().ClosePeer(pid) }()
 
+	reqCtx, reqCancel := context.WithTimeout(ctx, c.opts.requestTimeout)
+	defer reqCancel()
+
 	requests := make([]Request, 0)
-	buckets := make([][]peer.AddrInfo, 0)
+	buckets := make([]BucketEntry, 0)
 	var addrset map[peer.ID]peer.AddrInfo = make(map[peer.ID]peer.AddrInfo)
-	for _, target := range c.t.GetIDsForPeer(pid) {
+	for _, target := range c.table.GetIDsForPeer(pid) {
 		requestStart := time.Now()
-		addrs, err := c.m.GetClosestPeers(ctx, pid, target)
+		addrs, err := c.messenger.GetClosestPeers(reqCtx, pid, target)
 		requestDuration := time.Since(requestStart)
 
 		if err != nil {
@@ -172,6 +154,12 @@ func (c *implWalker) walkPeer(ctx context.Context, pid peer.ID) walkResult {
 			Duration: requestDuration,
 		})
 
+		for _, addr := range addrs {
+			if _, ok := addrset[addr.ID]; !ok {
+				buckets = append(buckets, BucketEntry(*addr))
+			}
+		}
+
 		prevlen := len(addrset)
 		for _, addr := range addrs {
 			addrset[addr.ID] = *addr
@@ -181,15 +169,9 @@ func (c *implWalker) walkPeer(ctx context.Context, pid peer.ID) walkResult {
 			break
 		}
 
-		bucket := make([]peer.AddrInfo, 0, len(addrs))
-		for _, a := range addrs {
-			bucket = append(bucket, *a)
-		}
-		buckets = append(buckets, bucket)
-
 		select {
-		case <-ctx.Done():
-			walkError.Err = ctx.Err()
+		case <-reqCtx.Done():
+			walkError.Err = reqCtx.Err()
 			return walkResult{err: walkError}
 		default:
 		}
@@ -204,12 +186,26 @@ func (c *implWalker) walkPeer(ctx context.Context, pid peer.ID) walkResult {
 		protocols = []string{}
 	}
 	walkOk := &Peer{
-		ID:        pid,
-		Addresses: c.h.Peerstore().Addrs(pid),
-		Agent:     agent.(string),
-		Protocols: protocols,
-		Buckets:   buckets,
-		Requests:  requests,
+		ID:              pid,
+		Addresses:       c.h.Peerstore().Addrs(pid),
+		Agent:           agent.(string),
+		Protocols:       protocols,
+		Buckets:         buckets,
+		Requests:        requests,
+		ConnectStart:    connectStart,
+		ConnectDuration: connectDuration,
 	}
 	return walkResult{ok: walkOk}
+}
+
+func (c *implWalker) walkPeer(ctx context.Context, cresult chan<- walkResult, pid peer.ID) {
+	c.wg.Add(1)
+	go func() {
+		res := c.walkPeerTask(ctx, pid)
+		select {
+		case cresult <- res:
+		case <-ctx.Done():
+		}
+		c.wg.Add(-1)
+	}()
 }

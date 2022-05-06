@@ -51,10 +51,8 @@ func main() {
 
 func testObserver(p *walker.Peer) {
 	seen[p.ID] = struct{}{}
-	for _, bucket := range p.Buckets {
-		for _, info := range bucket {
-			seen[info.ID] = struct{}{}
-		}
+	for _, info := range p.Buckets {
+		seen[info.ID] = struct{}{}
 	}
 
 	public, err := utils.GetFirstPublicAddressFromMultiaddrs(p.Addresses)

@@ -5,23 +5,20 @@ import (
 
 	"github.com/libp2p/go-libp2p-core/host"
 	"github.com/libp2p/go-libp2p-core/peer"
+	"github.com/libp2p/go-libp2p-core/peerstore"
 )
 
 // Return all the peers in p's buckets
-func Dump(ctx context.Context, h host.Host, p peer.AddrInfo) ([]peer.AddrInfo, error) {
+func Dump(ctx context.Context, h host.Host, p peer.AddrInfo) ([]BucketEntry, error) {
 	walker, err := newImplWalker(h, WithConcurrency(1))
 	if err != nil {
 		return nil, err
 	}
 
-	h.Peerstore().AddAddrs(p.ID, p.Addrs, ADDRESS_TTL)
-	result := walker.walkPeer(ctx, p.ID)
+	h.Peerstore().AddAddrs(p.ID, p.Addrs, peerstore.PermanentAddrTTL)
+	result := walker.walkPeerTask(ctx, p.ID)
 	if result.ok != nil {
-		addrs := make([]peer.AddrInfo, 0)
-		for _, bucket := range result.ok.Buckets {
-			addrs = append(addrs, bucket...)
-		}
-		return addrs, nil
+		return result.ok.Buckets, nil
 	} else {
 		return nil, result.err.Err
 	}

@@ -48,10 +48,13 @@ orchestrator:
 probe:
 	$(GOCC) build -o bin/probe cmd/probe/*
 
+walker:
+	$(GOCC) build -o bin/walker cmd/walker/*
+
 windows-test:
 	$(GOCC) build -o bin/test cmd/main.go
 
-build-telemetry: monitor crawler telemetry ipfs link
+build-telemetry: monitor crawler telemetry ipfs link walker
 
 build-probing: orchestrator probe
 
