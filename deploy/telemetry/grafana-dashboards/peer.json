@@ -427,18 +427,6 @@
         "overrides": [
           {
             "matcher": {
-              "id": "byName",
-              "options": "cpu"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "percent"
-              }
-            ]
-          },
-          {
-            "matcher": {
               "id": "byRegexp",
               "options": "memory_.*"
             },
@@ -453,6 +441,18 @@
                   "log": 2,
                   "type": "log"
                 }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "cpu_.*"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
               }
             ]
           }
@@ -696,7 +696,7 @@
     ]
   },
   "time": {
-    "from": "now-5m",
+    "from": "now-30m",
     "to": "now"
   },
   "timepicker": {},
