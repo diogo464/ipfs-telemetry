@@ -1,7 +1,8 @@
 package main
 
 import (
-	"strconv"
+	"encoding/json"
+	"time"
 
 	"github.com/diogo464/telemetry/pkg/monitor"
 	"github.com/diogo464/telemetry/pkg/telemetry"
@@ -45,13 +46,19 @@ func (e *InfluxExporter) Close() {
 }
 
 // ExportSessionInfo implements monitor.Exporter
-func (*InfluxExporter) ExportSessionInfo(peer.ID, telemetry.SessionInfo) {
-	// panic("unimplemented")
+func (e *InfluxExporter) ExportSessionInfo(p peer.ID, s telemetry.SessionInfo) {
+	point := influxdb2.NewPointWithMeasurement("session_info").
+		AddField("boot_time", s.BootTime)
+	e.writePointWithTime(p, s.Session, time.Now(), point)
 }
 
 // ExportSystemInfo implements monitor.Exporter
-func (*InfluxExporter) ExportSystemInfo(peer.ID, telemetry.Session, telemetry.SystemInfo) {
-	// panic("unimplemented")
+func (e *InfluxExporter) ExportSystemInfo(p peer.ID, sess telemetry.Session, info telemetry.SystemInfo) {
+	point := influxdb2.NewPointWithMeasurement("system_info").
+		AddField("os", info.OS).
+		AddField("arch", info.Arch).
+		AddField("numcpu", info.NumCPU)
+	e.writePointWithTime(p, sess, time.Now(), point)
 }
 
 // Export implements monitor.Exporter
@@ -69,6 +76,7 @@ func (e *InfluxExporter) ExportDatapoints(p peer.ID, sess telemetry.Session, sna
 		case *datapoint.Resources:
 			e.exportResources(p, sess, v)
 		case *datapoint.TraceRoute:
+			e.exportTraceRoute(p, sess, v)
 		case *datapoint.Kademlia:
 			e.exportKademlia(p, sess, v)
 		case *datapoint.KademliaQuery:
@@ -87,22 +95,38 @@ func (e *InfluxExporter) ExportDatapoints(p peer.ID, sess telemetry.Session, sna
 
 // ExportBandwidth implements monitor.Exporter
 func (e *InfluxExporter) ExportBandwidth(p peer.ID, sess telemetry.Session, bw telemetry.Bandwidth) {
+	point := influxdb2.NewPointWithMeasurement("bandwidth").
+		AddField("upload", bw.UploadRate).
+		AddField("download", bw.DownloadRate)
+	e.writePointWithTime(p, sess, time.Now(), point)
 }
 
 func (e *InfluxExporter) exportPing(p peer.ID, sess telemetry.Session, snap *datapoint.Ping) {
+	data, _ := json.Marshal(snap)
+	point := influxdb2.NewPointWithMeasurement("ping").
+		AddField("data", data)
+	e.writePoint(p, sess, snap, point)
 }
 
 func (e *InfluxExporter) exportConnections(p peer.ID, sess telemetry.Session, snap *datapoint.Connections) {
-
+	data, _ := json.Marshal(snap.Connections)
+	point := influxdb2.NewPointWithMeasurement("connections").
+		AddField("data", data).
+		AddField("count", len(snap.Connections))
+	e.writePoint(p, sess, snap, point)
 }
 
 func (e *InfluxExporter) exportRoutingTable(p peer.ID, sess telemetry.Session, snap *datapoint.RoutingTable) {
-	for bucket_index, bucket := range snap.Buckets {
-		point := influxdb2.NewPointWithMeasurement("routing_table").
-			AddTag("bucket", strconv.Itoa(bucket_index)).
-			AddField("size", len(bucket))
-		e.writePoint(p, sess, snap, point)
+	peers := 0
+	for _, b := range snap.Buckets {
+		peers += len(b)
 	}
+	data, _ := json.Marshal(snap.Buckets)
+	point := influxdb2.NewPointWithMeasurement("routing_table").
+		AddField("data", data).
+		AddField("buckets", len(snap.Buckets)).
+		AddField("peers", peers)
+	e.writePoint(p, sess, snap, point)
 }
 
 func (e *InfluxExporter) exportNetwork(p peer.ID, sess telemetry.Session, snap *datapoint.Network) {
@@ -134,6 +158,13 @@ func (e *InfluxExporter) exportResources(p peer.ID, sess telemetry.Session, snap
 		AddField("memory_free", snap.MemoryFree).
 		AddField("memory_total", snap.MemoryTotal).
 		AddField("goroutines", snap.Goroutines)
+	e.writePoint(p, sess, snap, point)
+}
+
+func (e *InfluxExporter) exportTraceRoute(p peer.ID, sess telemetry.Session, snap *datapoint.TraceRoute) {
+	data, _ := json.Marshal(snap)
+	point := influxdb2.NewPointWithMeasurement("traceroute").
+		AddField("data", data)
 	e.writePoint(p, sess, snap, point)
 }
 
@@ -203,8 +234,12 @@ func (e *InfluxExporter) exportWindow(p peer.ID, sess telemetry.Session, snap *d
 }
 
 func (e *InfluxExporter) writePoint(p peer.ID, sess telemetry.Session, snap datapoint.Datapoint, point *write.Point) {
+	e.writePointWithTime(p, sess, snap.GetTimestamp(), point)
+}
+
+func (e *InfluxExporter) writePointWithTime(p peer.ID, sess telemetry.Session, t time.Time, point *write.Point) {
 	point.AddTag("peer", p.Pretty())
 	point.AddTag("session", sess.String())
-	point.SetTime(snap.GetTimestamp())
+	point.SetTime(t)
 	e.writer.WritePoint(point)
 }
