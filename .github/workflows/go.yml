@@ -49,14 +49,11 @@ jobs:
       with:
         go-version: 1.18
 
-    - name: Setup protoc
+    - name: Install protoc
       run: sudo apt install golang-goprotobuf-dev
     
-    - name: Build tools
-      run: make tools
-
-    - name: Build proto
-      run: make proto
+    - name: Make setup
+      run: make setup
 
     - name: Build binaries
       run: CGO_ENABLED=0 make build
@@ -89,13 +86,13 @@ jobs:
       with:
         go-version: 1.18
 
-    - name: Setup protoc
+    - name: Install protoc
       run: sudo apt install golang-goprotobuf-dev
     
-    - name: Build tools
+    - name: Make tools
       run: make tools
 
-    - name: Build proto
+    - name: Make proto
       run: make proto
 
     - name: Build
