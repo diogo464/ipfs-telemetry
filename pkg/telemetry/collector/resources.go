@@ -60,7 +60,7 @@ func (c *resourcesCollector) Collect(ctx context.Context, sink datapoint.Sink) {
 	var mem_total uint64 = INVALID_MEM_VALUE
 	memory, err := mem.VirtualMemory()
 	if err == nil {
-		mem_free = memory.Free
+		mem_free = memory.Available
 		mem_total = memory.Total
 	}
 
