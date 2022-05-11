@@ -65,7 +65,7 @@ jobs:
         file: deploy/telemetry/Dockerfile
         push: true
         tags: ghcr.io/diogo464/telemetry:latest
-    
+ 
   build-dist:
     runs-on: ubuntu-latest
     needs: [create-release]
@@ -77,6 +77,13 @@ jobs:
           - os: windows
             arch: arm64
     steps:
+    - name: Docker Login
+      uses: docker/login-action@v1.14.1
+      with:
+        registry: ghcr.io
+        username: diogo464
+        password: ${{ secrets.GITHUB_TOKEN }}
+
     - uses: actions/checkout@v3
       with:
         submodules: 'recursive'
@@ -107,4 +114,14 @@ jobs:
         asset_path: ./bin/ipfs
         asset_name: "ipfs_${{ matrix.os }}-${{ matrix.arch }}${{ matrix.os == 'windows' && '.exe' || '' }}"
         asset_content_type: application/octet-stream
+
+    - name: Build and push container
+      uses: docker/build-push-action@v2.10.0
+      if: ${{ matrix.os }} == "linux"
+      with:
+        context: .
+        platforms: "linux/${{ matrix.arch }}"
+        file: deploy/ipfs/Dockerfile
+        push: true
+        tags: ghcr.io/diogo464/ipfs:latest
 
