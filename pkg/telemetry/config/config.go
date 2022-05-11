@@ -15,6 +15,44 @@ type Config struct {
 	Window           Window
 }
 
+func Default() Config {
+	return Config{
+		Ping: Ping{
+			Interval: 5,
+			Timeout:  10,
+			Count:    5,
+		},
+		Connections: Connections{
+			Interval: 60,
+		},
+		NetworkCollector: NetworkCollector{
+			Interval:                30,
+			BandwidthByPeerInterval: 5 * 60,
+		},
+		RoutingTable: RoutingTable{
+			Interval: 60,
+		},
+		Resources: Resources{
+			Interval: 10,
+		},
+		Bitswap: Bitswap{
+			Interval: 30,
+		},
+		Storage: Storage{
+			Interval: 60,
+		},
+		Kademlia: Kademlia{
+			Interval: 30,
+		},
+		TraceRoute: TraceRoute{
+			Interval: 5,
+		},
+		Window: Window{
+			Interval: 5,
+		},
+	}
+}
+
 type Ping struct {
 	Interval int
 	Timeout  int
@@ -58,9 +96,9 @@ type Window struct {
 	Interval int
 }
 
-func SecondsToDuration(s int, def time.Duration) time.Duration {
+func SecondsToDuration(s int, def int) time.Duration {
 	if s == 0 {
-		return def
+		return time.Duration(int64(def)) * time.Second
 	}
 	return time.Duration(int64(s)) * time.Second
 }

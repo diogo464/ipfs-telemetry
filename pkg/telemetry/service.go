@@ -107,6 +107,7 @@ func (s *TelemetryService) deferCollectorClose(c collector.Collector) {
 }
 
 func (s *TelemetryService) startCollectors() error {
+	def := config.Default()
 	ssink := window.SnapshotSink(s.twindow)
 
 	// ping
@@ -116,25 +117,26 @@ func (s *TelemetryService) startCollectors() error {
 	}
 	pingCollector := collector.NewPingCollector(s.node.PeerHost, collector.PingOptions{
 		PingCount: pingCount,
-		Timeout:   config.SecondsToDuration(s.conf.Ping.Timeout, time.Second*10),
+		Timeout:   config.SecondsToDuration(s.conf.Ping.Timeout, def.Ping.Timeout),
 	})
-	collector.RunCollector(s.ctx, config.SecondsToDuration(s.conf.Ping.Interval, time.Second*5), ssink, pingCollector)
+	collector.RunCollector(s.ctx, config.SecondsToDuration(s.conf.Ping.Interval, def.Ping.Interval), ssink, pingCollector)
 	s.deferCollectorClose(pingCollector)
 
+	// connections
 	connectionsCollector := collector.NewConnectionsCollector(s.node.PeerHost)
-	collector.RunCollector(s.ctx, config.SecondsToDuration(s.conf.Connections.Interval, time.Second*60), ssink, connectionsCollector)
+	collector.RunCollector(s.ctx, config.SecondsToDuration(s.conf.Connections.Interval, def.Connections.Interval), ssink, connectionsCollector)
 	s.deferCollectorClose(connectionsCollector)
 
 	// network
 	networkCollector := collector.NewNetworkCollector(s.node, collector.NetworkOptions{
-		BandwidthByPeerInterval: config.SecondsToDuration(s.conf.NetworkCollector.BandwidthByPeerInterval, time.Minute*5),
+		BandwidthByPeerInterval: config.SecondsToDuration(s.conf.NetworkCollector.BandwidthByPeerInterval, def.NetworkCollector.BandwidthByPeerInterval),
 	})
-	collector.RunCollector(s.ctx, config.SecondsToDuration(s.conf.NetworkCollector.Interval, time.Second*30), ssink, networkCollector)
+	collector.RunCollector(s.ctx, config.SecondsToDuration(s.conf.NetworkCollector.Interval, def.NetworkCollector.Interval), ssink, networkCollector)
 	s.deferCollectorClose(networkCollector)
 
 	// routing table
 	routingTableCollector := collector.NewRoutingTableCollector(s.node)
-	collector.RunCollector(s.ctx, config.SecondsToDuration(s.conf.RoutingTable.Interval, time.Second*60), ssink, routingTableCollector)
+	collector.RunCollector(s.ctx, config.SecondsToDuration(s.conf.RoutingTable.Interval, def.RoutingTable.Interval), ssink, routingTableCollector)
 	s.deferCollectorClose(routingTableCollector)
 
 	// resources
@@ -142,32 +144,32 @@ func (s *TelemetryService) startCollectors() error {
 	if err != nil {
 		return err
 	}
-	collector.RunCollector(s.ctx, config.SecondsToDuration(s.conf.Resources.Interval, time.Second*10), ssink, resourcesCollector)
+	collector.RunCollector(s.ctx, config.SecondsToDuration(s.conf.Resources.Interval, def.Resources.Interval), ssink, resourcesCollector)
 	s.deferCollectorClose(resourcesCollector)
 
 	// bitswap
 	bitswapCollector := collector.NewBitswapCollector(s.node)
-	collector.RunCollector(s.ctx, config.SecondsToDuration(s.conf.Bitswap.Interval, time.Second*30), ssink, bitswapCollector)
+	collector.RunCollector(s.ctx, config.SecondsToDuration(s.conf.Bitswap.Interval, def.Bitswap.Interval), ssink, bitswapCollector)
 	s.deferCollectorClose(bitswapCollector)
 
 	// storage
 	storageCollector := collector.NewStorageCollector(s.node)
-	collector.RunCollector(s.ctx, config.SecondsToDuration(s.conf.Storage.Interval, time.Second*60), ssink, storageCollector)
+	collector.RunCollector(s.ctx, config.SecondsToDuration(s.conf.Storage.Interval, def.Storage.Interval), ssink, storageCollector)
 	s.deferCollectorClose(storageCollector)
 
 	// kademlia
 	kademliaCollector := collector.NewKademliaCollector()
-	collector.RunCollector(s.ctx, config.SecondsToDuration(s.conf.Kademlia.Interval, time.Second*30), ssink, kademliaCollector)
+	collector.RunCollector(s.ctx, config.SecondsToDuration(s.conf.Kademlia.Interval, def.Kademlia.Interval), ssink, kademliaCollector)
 	s.deferCollectorClose(kademliaCollector)
 
 	// traceroute
 	tracerouteCollector := collector.NewTracerouteCollector(s.node.PeerHost)
-	collector.RunCollector(s.ctx, config.SecondsToDuration(s.conf.TraceRoute.Interval, time.Second*5), ssink, tracerouteCollector)
+	collector.RunCollector(s.ctx, config.SecondsToDuration(s.conf.TraceRoute.Interval, def.TraceRoute.Interval), ssink, tracerouteCollector)
 	s.deferCollectorClose(tracerouteCollector)
 
 	// window
 	windowCollector := collector.NewWindowCollector(s.opts.windowDuration, s.twindow)
-	collector.RunCollector(s.ctx, config.SecondsToDuration(s.conf.Window.Interval, time.Second*5), ssink, windowCollector)
+	collector.RunCollector(s.ctx, config.SecondsToDuration(s.conf.Window.Interval, def.Window.Interval), ssink, windowCollector)
 	s.deferCollectorClose(windowCollector)
 
 	return nil
