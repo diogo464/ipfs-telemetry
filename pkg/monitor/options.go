@@ -14,8 +14,8 @@ import (
 const (
 	DEFAULT_MAX_FAILED_ATTEMPTS = 3
 	DEFAULT_RETRY_INTERVAL      = time.Second * 10
-	DEFAULT_COLLECT_PERIOD      = time.Second * 5
-	DEFAULT_BANDWIDTH_PERIOD    = time.Second * 5
+	DEFAULT_COLLECT_PERIOD      = time.Minute * 2
+	DEFAULT_BANDWIDTH_PERIOD    = time.Minute * 30
 )
 
 type Option func(*options) error
