@@ -11,7 +11,6 @@ require (
 	github.com/ipfs/go-datastore v0.5.1
 	github.com/ipfs/go-ipfs v0.12.1
 	github.com/libp2p/go-libp2p v0.19.1
-	github.com/libp2p/go-libp2p-connmgr v0.3.2-0.20220115145817-a7820a5879c7
 	github.com/libp2p/go-libp2p-core v0.15.1
 	github.com/libp2p/go-libp2p-gostream v0.3.0
 	github.com/libp2p/go-libp2p-kad-dht v0.15.0

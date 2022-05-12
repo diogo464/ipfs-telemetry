@@ -6,9 +6,9 @@ import (
 
 	"github.com/diogo464/telemetry/pkg/telemetry/datapoint"
 	"github.com/ipfs/go-ipfs/core"
-	connmgr "github.com/libp2p/go-libp2p-connmgr"
 	"github.com/libp2p/go-libp2p-core/metrics"
 	"github.com/libp2p/go-libp2p-core/peer"
+	connmgr "github.com/libp2p/go-libp2p/p2p/net/connmgr"
 )
 
 var _ Collector = (*networkCollector)(nil)
