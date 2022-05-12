@@ -47,6 +47,30 @@ var (
 		Value:   "localhost:4640",
 	}
 
+	FLAG_MAX_FAILED_ATTEMPTS = &cli.IntFlag{
+		Name:    "max-failed-attemps",
+		Usage:   "how many consecutive errors can happen while making requests to a peer before removing it",
+		EnvVars: []string{"MONITOR_MAX_FAILED_ATTEMPS"},
+	}
+
+	FLAG_RETRY_INTERVAL = &cli.IntFlag{
+		Name:    "retry-interval",
+		Usage:   "how many seconds before retrying a request to a peer after a failure",
+		EnvVars: []string{"MONITOR_RETRY_INTERVAL"},
+	}
+
+	FLAG_COLLECT_PERIOD = &cli.IntFlag{
+		Name:    "collect-period",
+		Usage:   "how many seconds between each telemetry request to a peer",
+		EnvVars: []string{"MONITOR_COLLECT_PERIOD"},
+	}
+
+	FLAG_BANDWIDTH_PERIOD = &cli.IntFlag{
+		Name:    "bandwidth-period",
+		Usage:   "how many seconds between each bandwidth request to a peer",
+		EnvVars: []string{"MONITOR_BANDWIDTH_PERIOD"},
+	}
+
 	FLAG_POSTGRES = &cli.StringFlag{
 		Name:    "postgres-address",
 		Usage:   "url for the database",
