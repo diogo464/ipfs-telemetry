@@ -48,7 +48,9 @@ func Default() Config {
 			Interval: 5,
 		},
 		Window: Window{
-			Interval: 5,
+			Interval:   5,
+			Duration:   30 * 60,
+			EventCount: 128 * 1024,
 		},
 	}
 }
@@ -93,7 +95,9 @@ type TraceRoute struct {
 }
 
 type Window struct {
-	Interval int
+	Interval   int
+	Duration   int
+	EventCount int
 }
 
 func SecondsToDuration(s int, def int) time.Duration {
