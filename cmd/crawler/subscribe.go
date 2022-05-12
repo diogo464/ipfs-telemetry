@@ -9,6 +9,7 @@ import (
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/urfave/cli/v2"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
 )
 
@@ -29,7 +30,7 @@ var SubscribeCommand = &cli.Command{
 }
 
 func subscribeAction(c *cli.Context) error {
-	conn, err := grpc.Dial(c.String(FLAG_ADDRESS.Name), grpc.WithInsecure())
+	conn, err := grpc.Dial(c.String(FLAG_ADDRESS.Name), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return err
 	}

@@ -60,7 +60,7 @@ func (s *TelemetryService) uploadHandler(stream network.Stream) {
 		if s.throttler_upload.isAllowed(publicIp) {
 			s.throttler_upload.disallow(publicIp, BANDWIDTH_BLOCK_DURATION)
 		} else {
-			utils.WriteU32(stream, 0)
+			_ = utils.WriteU32(stream, 0)
 			return
 		}
 	}
@@ -89,7 +89,7 @@ func (s *TelemetryService) downloadHandler(stream network.Stream) {
 		if s.throttler_download.isAllowed(publicIp) {
 			s.throttler_download.disallow(publicIp, BANDWIDTH_BLOCK_DURATION)
 		} else {
-			utils.WriteU32(stream, 0)
+			_ = utils.WriteU32(stream, 0)
 			return
 		}
 	}

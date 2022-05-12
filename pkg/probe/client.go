@@ -84,32 +84,3 @@ func (c *Client) ProbeResults(ctx context.Context, out chan<- *ProbeResult) erro
 		out <- result
 	}
 }
-
-type implProbeStream struct {
-	c pb.Probe_ProbeResultsClient
-}
-
-// Recv implements ProbeResultsStream
-func (s *implProbeStream) Recv() (*ProbeResult, error) {
-	resp, err := s.c.Recv()
-	if err != nil {
-		return nil, err
-	}
-
-	var probeError error = nil
-	if probeErrorStr := resp.GetError(); probeErrorStr == "" {
-		probeError = fmt.Errorf(probeErrorStr)
-	}
-
-	p, err := peer.Decode(resp.GetPeer())
-	if err != nil {
-		return nil, err
-	}
-
-	return &ProbeResult{
-		RequestStart:    resp.GetRequestStart().AsTime(),
-		RequestDuration: resp.GetRequestDuration().AsDuration(),
-		Peer:            p,
-		Error:           probeError,
-	}, nil
-}

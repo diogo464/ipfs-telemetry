@@ -155,20 +155,6 @@ func (c *Crawler) broadcastPeer(p peer.ID) {
 	}
 }
 
-func (c *Crawler) peerHasTelemetry(p peer.ID) (bool, error) {
-	protocols, err := c.h.Peerstore().GetProtocols(p)
-	if err != nil {
-		return false, err
-	}
-
-	for _, protocol := range protocols {
-		if protocol == telemetry.ID_TELEMETRY {
-			return true, nil
-		}
-	}
-	return false, nil
-}
-
 func (c *Crawler) cloneKnownTelemetryPeers() []peer.ID {
 	c.peers_mu.Lock()
 	defer c.peers_mu.Unlock()

@@ -10,6 +10,7 @@ import (
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/urfave/cli/v2"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 var FLAG_MONITOR = &cli.StringFlag{
@@ -44,12 +45,12 @@ func main() {
 
 func mainAction(c *cli.Context) error {
 	for {
-		monitor_conn, err := grpc.Dial(c.String(FLAG_MONITOR.Name), grpc.WithInsecure())
+		monitor_conn, err := grpc.Dial(c.String(FLAG_MONITOR.Name), grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
 			return err
 		}
 
-		crawler_conn, err := grpc.Dial(c.String(FLAG_CRAWLER.Name), grpc.WithInsecure())
+		crawler_conn, err := grpc.Dial(c.String(FLAG_CRAWLER.Name), grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
 			return err
 		}

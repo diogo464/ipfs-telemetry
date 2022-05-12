@@ -42,12 +42,4 @@ var (
 		EnvVars:  []string{"ORCHESTRATOR_INFLUXDB_BUCKET"},
 		Required: true,
 	}
-
-	FLAG_ADDRESS = &cli.StringFlag{
-		Name:    "address",
-		Aliases: []string{"addr"},
-		Usage:   "listen address for the server",
-		EnvVars: []string{"ORCHESTRATOR_ADDRESS"},
-		Value:   "localhost:4640",
-	}
 )

@@ -13,6 +13,7 @@ import (
 	dht "github.com/libp2p/go-libp2p-kad-dht"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 type namedResult struct {
@@ -55,7 +56,7 @@ func NewOrchestratorServer(ctx context.Context, o ...Option) (*OrchestratorServe
 
 	probes := make([]*probe.Client, 0)
 	for _, addr := range opts.probeAddrs {
-		conn, err := grpc.Dial(addr.String(), grpc.WithInsecure())
+		conn, err := grpc.Dial(addr.String(), grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
 			return nil, err
 		}

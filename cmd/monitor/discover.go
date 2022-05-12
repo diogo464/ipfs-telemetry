@@ -5,6 +5,7 @@ import (
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/urfave/cli/v2"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 var DiscoverCommand = &cli.Command{
@@ -25,7 +26,7 @@ func discoverAction(c *cli.Context) error {
 		pids = append(pids, p)
 	}
 
-	conn, err := grpc.Dial(c.String(FLAG_ADDRESS.Name), grpc.WithInsecure())
+	conn, err := grpc.Dial(c.String(FLAG_ADDRESS.Name), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return err
 	}

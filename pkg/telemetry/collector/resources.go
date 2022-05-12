@@ -41,8 +41,8 @@ func (*resourcesCollector) Close() {
 
 // Collect implements Collector
 func (c *resourcesCollector) Collect(ctx context.Context, sink datapoint.Sink) {
-	var cpuProcess float64 = INVALID_CPU_USAGE
-	var cpuSystem float64 = INVALID_CPU_USAGE
+	var cpuProcess float64
+	var cpuSystem float64
 
 	cpuProcess, err := c.proc.PercentWithContext(ctx, 0)
 	if err != nil {
@@ -52,7 +52,9 @@ func (c *resourcesCollector) Collect(ctx context.Context, sink datapoint.Sink) {
 	}
 
 	cpuSystemUsage, err := cpu.Percent(0, false)
-	if err == nil {
+	if err != nil {
+		cpuSystem = INVALID_CPU_USAGE
+	} else {
 		cpuSystem = cpuSystemUsage[0]
 	}
 

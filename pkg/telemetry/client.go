@@ -13,6 +13,7 @@ import (
 	"github.com/libp2p/go-libp2p-core/peer"
 	gostream "github.com/libp2p/go-libp2p-gostream"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
@@ -36,7 +37,7 @@ func Connect(ctx context.Context, h host.Host, p peer.ID) (*Client, error) {
 	}
 	conn, err := grpc.Dial(
 		"",
-		grpc.WithInsecure(),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithContextDialer(func(ctx context.Context, s string) (net.Conn, error) {
 			return stream, err
 		}))
@@ -50,7 +51,7 @@ func Connect(ctx context.Context, h host.Host, p peer.ID) (*Client, error) {
 func NewClient(h host.Host, p peer.ID) (*Client, error) {
 	conn, err := grpc.Dial(
 		"",
-		grpc.WithInsecure(),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithContextDialer(func(ctx context.Context, s string) (net.Conn, error) {
 			conn, err := gostream.Dial(ctx, h, p, ID_TELEMETRY)
 			return conn, err
