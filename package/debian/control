@@ -3,3 +3,4 @@ Version: ${PACKAGE_VERSION}
 Architecture: ${PACKAGE_ARCH}
 Maintainer: missing <missing>
 Description: IPFS with telemetry.
+Depends: traceroute
