@@ -235,9 +235,9 @@ func (s *Monitor) peerError(state *peerState, err error) {
 	logrus.WithField("peer", state.id).Debug("peer error: ", err)
 	state.failedAttemps += 1
 	if state.failedAttemps > s.opts.MaxFailedAttemps {
-		s.caction <- actionqueue.Now(&action{
+		s.caction <- actionqueue.After(&action{
 			kind: ActionRemovePeer,
 			pid:  state.id,
-		})
+		}, s.opts.RetryInterval)
 	}
 }

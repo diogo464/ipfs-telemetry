@@ -13,6 +13,7 @@ import (
 
 const (
 	DEFAULT_MAX_FAILED_ATTEMPTS = 3
+	DEFAULT_RETRY_INTERVAL      = time.Second * 10
 	DEFAULT_COLLECT_PERIOD      = time.Second * 5
 	DEFAULT_BANDWIDTH_PERIOD    = time.Second * 5
 )
@@ -23,6 +24,8 @@ type options struct {
 	// How many consecutive errors can happen while making requests
 	// to a peer before that peer is removed
 	MaxFailedAttemps int
+	// How long before retrying a request to a peer after a failure
+	RetryInterval time.Duration
 	// How often should telemetry be collected from peers
 	CollectPeriod   time.Duration
 	BandwidthPeriod time.Duration
@@ -32,6 +35,7 @@ type options struct {
 func defaults() *options {
 	return &options{
 		MaxFailedAttemps: DEFAULT_MAX_FAILED_ATTEMPTS,
+		RetryInterval:    DEFAULT_RETRY_INTERVAL,
 		CollectPeriod:    DEFAULT_COLLECT_PERIOD,
 		BandwidthPeriod:  DEFAULT_BANDWIDTH_PERIOD,
 	}
@@ -49,6 +53,13 @@ func apply(opts *options, o ...Option) error {
 func WithMaxFailedAttempts(attemps int) Option {
 	return func(o *options) error {
 		o.MaxFailedAttemps = attemps
+		return nil
+	}
+}
+
+func WithRetryInterval(interval time.Duration) Option {
+	return func(o *options) error {
+		o.RetryInterval = interval
 		return nil
 	}
 }
