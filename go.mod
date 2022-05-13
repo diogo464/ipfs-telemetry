@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/gammazero/deque v0.1.1
 	github.com/google/uuid v1.3.0
-	github.com/influxdata/influxdb-client-go/v2 v2.8.1
+	github.com/influxdata/influxdb-client-go/v2 v2.8.2
 	github.com/ipfs/go-bitswap v0.6.0
 	github.com/ipfs/go-cid v0.1.0
 	github.com/ipfs/go-datastore v0.5.1

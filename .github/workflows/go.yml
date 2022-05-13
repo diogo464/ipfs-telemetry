@@ -71,17 +71,12 @@ jobs:
       run: make proto
 
     - name: Build
-      run: make ipfs
-      env:
-        CGO_ENABLED: 0
-        GOOS: ${{ matrix.os }}
-        GOARCH: ${{ matrix.arch }}
-        IPFS_BIN: ipfs_${{ matrix.os }}-${{ matrix.arch }}${{ matrix.os == 'windows' && '.exe' || '' }}
+      run: "scripts/build_ipfs.sh ${{ matrix.os }} ${{ matrix.arch }}"
 
     - uses: actions/upload-artifact@v3
       with:
         name: bin
-        path: "bin/ipfs_${{ matrix.os }}-${{ matrix.arch }}${{ matrix.os == 'windows' && '.exe' || '' }}"
+        path: bin/ipfs*
 
   build-ipfs-deb:
     runs-on: ubuntu-latest
@@ -137,6 +132,34 @@ jobs:
         name: bin
         path: bin/ipfs_linux-${{ matrix.arch }}.pkg.tar.zst
 
+  build-ipfs-desktop:
+    runs-on: ubuntu-latest
+    needs: [build-ipfs-binaries]
+    strategy:
+      matrix:
+        os: [linux, windows]
+        arch: [amd64, arm64]
+        exclude:
+          - os: windows
+            arch: arm64
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: 'recursive'
+
+    - uses: actions/download-artifact@v3
+      with:
+        name: bin
+        path: ./bin
+
+    - name: build
+      run: "scripts/build_ipfs_desktop.sh ${{ matrix.os }} ${{ matrix.arch }}"
+
+    - uses: actions/upload-artifact@v3
+      with:
+        name: bin
+        path: bin/ipfs-desktop_*
+
   build-ipfs-docker:
     runs-on: ubuntu-latest
     needs: [build-ipfs-binaries]
@@ -175,7 +198,7 @@ jobs:
 
   release:
     runs-on: ubuntu-latest
-    needs: [build-ipfs-binaries, build-ipfs-deb, build-ipfs-arch]
+    needs: [build-ipfs-binaries, build-ipfs-deb, build-ipfs-arch, build-ipfs-desktop]
 
     steps:
     - uses: actions/checkout@v3

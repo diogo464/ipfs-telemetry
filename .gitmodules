@@ -13,3 +13,6 @@
 [submodule "third_party/go-libp2p-kbucket"]
 	path = third_party/go-libp2p-kbucket
 	url = git@github.com:diogo464/go-libp2p-kbucket.git
+[submodule "third_party/ipfs-desktop"]
+	path = third_party/ipfs-desktop
+	url = git@github.com:diogo464/ipfs-desktop.git
