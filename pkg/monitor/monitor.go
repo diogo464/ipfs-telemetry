@@ -119,12 +119,13 @@ func (s *Monitor) executePeerAction(p peer.ID, a int, t time.Duration, fn action
 			state.mu.Lock()
 			defer state.mu.Unlock()
 
-			delay := t
+			var delay time.Duration
 			if err := fn(state); err != nil {
+				delay = s.opts.RetryInterval
 				s.peerError(state, err)
 			} else {
 				state.failedAttemps = 0
-				delay = time.Second * 10
+				delay = t
 			}
 
 			s.caction <- actionqueue.After(&action{
