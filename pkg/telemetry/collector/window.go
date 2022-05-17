@@ -18,8 +18,9 @@ type windowCollector struct {
 
 func NewWindowCollector(d time.Duration, wnd window.Window) Collector {
 	return &windowCollector{
-		wnd:   wnd,
-		stats: new(window.Stats),
+		wnd:      wnd,
+		stats:    new(window.Stats),
+		duration: d,
 	}
 }
 

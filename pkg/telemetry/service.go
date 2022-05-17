@@ -21,42 +21,41 @@ type TelemetryService struct {
 	// the node we are collecting telemetry from
 	node *core.IpfsNode
 	// read-only options
-	opts *options
 	conf config.Config
 
-	ctx         context.Context
-	cancel      context.CancelFunc
-	grpc_server *grpc.Server
-	boot_time   time.Time
-	twindow     window.Window
-	collectors  []collector.Collector
+	ctx              context.Context
+	cancel           context.CancelFunc
+	grpc_server      *grpc.Server
+	boot_time        time.Time
+	twindow          window.Window
+	twindow_duration time.Duration
+	collectors       []collector.Collector
 
 	throttler_upload   *serviceThrottler
 	throttler_download *serviceThrottler
 }
 
-func NewTelemetryService(n *core.IpfsNode, conf config.Config, opts ...Option) (*TelemetryService, error) {
-	o := new(options)
-	defaults(o)
-
-	for _, opt := range opts {
-		if err := opt(o); err != nil {
-			return nil, err
-		}
-	}
+func NewTelemetryService(n *core.IpfsNode, conf config.Config) (*TelemetryService, error) {
 	h := n.PeerHost
+
+	defaultConfig := config.Default()
+	windowDuration := config.SecondsToDuration(conf.Window.Duration, defaultConfig.Window.Duration)
+	windowSize := conf.Window.EventCount
+	if windowSize == 0 {
+		windowSize = defaultConfig.Window.EventCount
+	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	session := RandomSession()
 	t := &TelemetryService{
 		session:            session,
 		node:               n,
-		opts:               o,
 		conf:               conf,
 		ctx:                ctx,
 		cancel:             cancel,
 		boot_time:          time.Now().UTC(),
-		twindow:            window.NewMemoryWindow(o.windowDuration, 128*1024),
+		twindow:            window.NewMemoryWindow(windowDuration, windowSize),
+		twindow_duration:   windowDuration,
 		collectors:         make([]collector.Collector, 0),
 		throttler_upload:   newServiceThrottler(),
 		throttler_download: newServiceThrottler(),
@@ -168,7 +167,7 @@ func (s *TelemetryService) startCollectors() error {
 	s.deferCollectorClose(tracerouteCollector)
 
 	// window
-	windowCollector := collector.NewWindowCollector(s.opts.windowDuration, s.twindow)
+	windowCollector := collector.NewWindowCollector(s.twindow_duration, s.twindow)
 	collector.RunCollector(s.ctx, config.SecondsToDuration(s.conf.Window.Interval, def.Window.Interval), ssink, windowCollector)
 	s.deferCollectorClose(windowCollector)
 
