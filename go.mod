@@ -230,6 +230,8 @@ require (
 	lukechampine.com/blake3 v1.1.7 // indirect
 )
 
+replace github.com/libp2p/go-libp2p => ./third_party/go-libp2p/
+
 replace github.com/ipfs/go-ipfs => ./third_party/go-ipfs/
 
 replace github.com/ipfs/go-bitswap => ./third_party/go-bitswap/
