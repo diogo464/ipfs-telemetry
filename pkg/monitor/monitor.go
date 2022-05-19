@@ -128,6 +128,7 @@ func (s *Monitor) executePeerAction(p peer.ID, a int, t time.Duration, fn action
 				delay = t
 			}
 
+			logrus.WithFields(logrus.Fields{"kind": a, "pid": p, "delay": delay.String()}).Debug("queueing peer action")
 			s.caction <- actionqueue.After(&action{
 				kind: a,
 				pid:  p,
