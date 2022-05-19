@@ -84,6 +84,10 @@ func (w *MemoryWindow) Stats(out *Stats) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
+	out.EventsSize = w.events.Len()
+	out.DatapointsSize = w.datapoints.Len()
+	out.FrontSeqN = w.frontSeqN()
+
 	if out.Count == nil {
 		out.Count = make(map[string]uint32)
 	}

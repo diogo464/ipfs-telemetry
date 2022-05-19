@@ -14,8 +14,11 @@ type FetchResult struct {
 }
 
 type Stats struct {
-	Count  map[string]uint32
-	Memory map[string]uint32
+	FrontSeqN      uint64
+	DatapointsSize int
+	EventsSize     int
+	Count          map[string]uint32
+	Memory         map[string]uint32
 }
 
 type Window interface {
