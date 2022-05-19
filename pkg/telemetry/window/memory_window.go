@@ -44,6 +44,11 @@ func (w *MemoryWindow) Fetch(since uint64, n uint64) FetchResult {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
+	frontSeqN := w.frontSeqN()
+	if since < frontSeqN {
+		since = frontSeqN
+	}
+
 	datapoints := make([]*pb.Datapoint, 0)
 	until := since + n
 	datapoints = copySinceSeqN(w.datapoints, since, until, datapoints)
@@ -125,4 +130,15 @@ func (w *MemoryWindow) clean() {
 		w.stats.Count[item.name] -= 1
 		w.stats.Memory[item.name] -= item.size
 	}
+}
+
+func (w *MemoryWindow) frontSeqN() uint64 {
+	var frontSeqN uint64 = math.MaxUint64
+	if w.events.Len() > 0 && w.events.Front().seqn < frontSeqN {
+		frontSeqN = w.events.Front().seqn
+	}
+	if w.datapoints.Len() > 0 && w.datapoints.Front().seqn < frontSeqN {
+		frontSeqN = w.datapoints.Front().seqn
+	}
+	return frontSeqN
 }
