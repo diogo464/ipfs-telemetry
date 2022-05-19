@@ -56,6 +56,14 @@ func FromPB(v *pb.Datapoint) (Datapoint, error) {
 		return StorageFromPB(v.GetStorage())
 	case *pb.Datapoint_Window:
 		return WindowFromPB(v.GetWindow())
+	case *pb.Datapoint_RelayReservation:
+		return RelayReservationFromPB(v.GetRelayReservation())
+	case *pb.Datapoint_RelayConnection:
+		return RelayConnectionFromPB(v.GetRelayConnection())
+	case *pb.Datapoint_RelayComplete:
+		return RelayCompleteFromPB(v.GetRelayComplete())
+	case *pb.Datapoint_RelayStats:
+		return RelayStatsFromPB(v.GetRelayStats())
 	default:
 		panic("unimplemented")
 	}

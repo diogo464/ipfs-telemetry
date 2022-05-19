@@ -33,6 +33,8 @@ type TelemetryService struct {
 
 	throttler_upload   *serviceThrottler
 	throttler_download *serviceThrottler
+
+	relayCollector *collector.RelayCollector
 }
 
 func NewTelemetryService(n *core.IpfsNode, conf config.Config) (*TelemetryService, error) {
@@ -171,6 +173,12 @@ func (s *TelemetryService) startCollectors() error {
 	collector.RunCollector(s.ctx, config.SecondsToDuration(s.conf.Window.Interval, def.Window.Interval), ssink, windowCollector)
 	s.deferCollectorClose(windowCollector)
 
+	// relay
+	relayCollector := collector.NewRelayCollector()
+	collector.RunCollector(s.ctx, config.SecondsToDuration(s.conf.Relay.Interval, def.Relay.Interval), ssink, relayCollector)
+	s.deferCollectorClose(relayCollector)
+	s.relayCollector = relayCollector
+
 	return nil
 }
 
@@ -178,4 +186,6 @@ func (s *TelemetryService) startEventCollector() {
 	esink := window.EventSink(s.twindow)
 
 	collector.StartKademliaEventCollector(s.ctx, esink)
+
+	s.relayCollector.SetEventSink(esink)
 }

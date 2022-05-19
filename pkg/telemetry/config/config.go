@@ -13,6 +13,7 @@ type Config struct {
 	Kademlia         Kademlia
 	TraceRoute       TraceRoute
 	Window           Window
+	Relay            Relay
 }
 
 func Default() Config {
@@ -51,6 +52,9 @@ func Default() Config {
 			Interval:   5,
 			Duration:   30 * 60,
 			EventCount: 128 * 1024,
+		},
+		Relay: Relay{
+			Interval: 30,
 		},
 	}
 }
@@ -98,6 +102,10 @@ type Window struct {
 	Interval   int
 	Duration   int
 	EventCount int
+}
+
+type Relay struct {
+	Interval int
 }
 
 func SecondsToDuration(s int, def int) time.Duration {

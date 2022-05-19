@@ -127,6 +127,44 @@ message Storage {
     uint64 num_objects                      = 4;
 }
 
+message RelayReservation {
+    google.protobuf.Timestamp timestamp         = 1;
+    // PeerID of the peer that made the reservation
+    string peer                                 = 2;
+}
+
+message RelayConnection {
+    google.protobuf.Timestamp timestamp         = 1;
+    // PeerID of the connection initiator
+    string initiator                            = 2;
+    // PeerID of the connection target
+    string target                               = 3;
+}
+
+message RelayComplete {
+    google.protobuf.Timestamp timestamp         = 1;
+    // how long the connection was opened for
+    google.protobuf.Duration duration           = 2;
+    // PeerID of the connection initiator
+    string initiator                            = 3;
+    // PeerID of the connection target
+    string target                               = 4;
+    // total number of bytes relayed in this connection
+    uint64 bytes_relayed                        = 5;
+}
+
+message RelayStats {
+    google.protobuf.Timestamp timestamp         = 1;
+    // total number of reservations accepted by this relay HopMessage_RESERVE
+    uint32 reservations                         = 2;
+    // total number of accepted connections for relaying HopMessage_CONNECT
+    uint32 connections                          = 3;
+    // total number of bytes relayed across all connections
+    uint64 bytes_relayed                        = 4;
+    // number of active streams being relayed at this point in time
+    uint32 active_connections                   = 5;
+}
+
 message Window {
     google.protobuf.Timestamp timestamp         = 1;
     google.protobuf.Duration window_duration    = 2;
@@ -138,17 +176,21 @@ message Window {
 
 message Datapoint  {
     oneof body {
-        Ping ping                       = 1; 
-        Connections connections         = 2;
-        RoutingTable routing_table      = 3;
-        Network network                 = 4;
-        Resources resources             = 5;
-        TraceRoute traceroute           = 6;
-        Kademlia kademlia               = 7;
-        KademliaQuery kademlia_query    = 8;
-        KademliaHandler kademlia_handler= 9;
-        Bitswap bitswap                 = 10;
-        Storage storage                 = 11;
-        Window window                   = 12;
+        Ping ping                           = 1;
+        Connections connections             = 2;
+        RoutingTable routing_table          = 3;
+        Network network                     = 4;
+        Resources resources                 = 5;
+        TraceRoute traceroute               = 6;
+        Kademlia kademlia                   = 7;
+        KademliaQuery kademlia_query        = 8;
+        KademliaHandler kademlia_handler    = 9;
+        Bitswap bitswap                     = 10;
+        Storage storage                     = 11;
+        Window window                       = 12;
+        RelayReservation relay_reservation  = 13;
+        RelayConnection relay_connection    = 14;
+        RelayComplete relay_complete        = 15;
+        RelayStats relay_stats              = 16;
     }
 }
