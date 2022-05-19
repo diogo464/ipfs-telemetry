@@ -33,7 +33,9 @@ func main() {
 			FLAG_MAX_FAILED_ATTEMPTS,
 			FLAG_RETRY_INTERVAL,
 			FLAG_COLLECT_PERIOD,
+			FLAG_COLLECT_TIMEOUT,
 			FLAG_BANDWIDTH_PERIOD,
+			FLAG_BANDWIDTH_TIMEOUT,
 			FLAG_POSTGRES,
 		},
 	}
@@ -73,8 +75,16 @@ func mainAction(c *cli.Context) error {
 		monitorOptions = append(monitorOptions, monitor.WithCollectPeriod(time.Second*time.Duration(c.Int(FLAG_COLLECT_PERIOD.Name))))
 	}
 
+	if c.IsSet(FLAG_COLLECT_TIMEOUT.Name) {
+		monitorOptions = append(monitorOptions, monitor.WithCollectTimeout(time.Second*time.Duration(c.Int(FLAG_COLLECT_TIMEOUT.Name))))
+	}
+
 	if c.IsSet(FLAG_BANDWIDTH_PERIOD.Name) {
 		monitorOptions = append(monitorOptions, monitor.WithBandwidthPeriod(time.Second*time.Duration(c.Int(FLAG_BANDWIDTH_PERIOD.Name))))
+	}
+
+	if c.IsSet(FLAG_BANDWIDTH_TIMEOUT.Name) {
+		monitorOptions = append(monitorOptions, monitor.WithBandwidthTimeout(time.Second*time.Duration(c.Int(FLAG_BANDWIDTH_TIMEOUT.Name))))
 	}
 
 	server, err := monitor.NewMonitor(c.Context, exporter, monitorOptions...)

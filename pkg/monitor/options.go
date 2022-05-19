@@ -15,7 +15,9 @@ const (
 	DEFAULT_MAX_FAILED_ATTEMPTS = 3
 	DEFAULT_RETRY_INTERVAL      = time.Second * 30
 	DEFAULT_COLLECT_PERIOD      = time.Minute * 2
+	DEFAULT_COLLECT_TIMEOUT     = time.Minute * 5
 	DEFAULT_BANDWIDTH_PERIOD    = time.Minute * 30
+	DEFAULT_BANDWIDTH_TIMEOUT   = time.Minute * 5
 )
 
 type Option func(*options) error
@@ -27,9 +29,11 @@ type options struct {
 	// How long before retrying a request to a peer after a failure
 	RetryInterval time.Duration
 	// How often should telemetry be collected from peers
-	CollectPeriod   time.Duration
-	BandwidthPeriod time.Duration
-	Host            host.Host
+	CollectPeriod    time.Duration
+	CollectTimeout   time.Duration
+	BandwidthPeriod  time.Duration
+	BandwidthTimeout time.Duration
+	Host             host.Host
 }
 
 func defaults() *options {
@@ -37,7 +41,9 @@ func defaults() *options {
 		MaxFailedAttemps: DEFAULT_MAX_FAILED_ATTEMPTS,
 		RetryInterval:    DEFAULT_RETRY_INTERVAL,
 		CollectPeriod:    DEFAULT_COLLECT_PERIOD,
+		CollectTimeout:   DEFAULT_COLLECT_TIMEOUT,
 		BandwidthPeriod:  DEFAULT_BANDWIDTH_PERIOD,
+		BandwidthTimeout: DEFAULT_BANDWIDTH_TIMEOUT,
 	}
 }
 
@@ -71,9 +77,23 @@ func WithCollectPeriod(period time.Duration) Option {
 	}
 }
 
+func WithCollectTimeout(timeout time.Duration) Option {
+	return func(o *options) error {
+		o.CollectTimeout = timeout
+		return nil
+	}
+}
+
 func WithBandwidthPeriod(period time.Duration) Option {
 	return func(o *options) error {
 		o.BandwidthPeriod = period
+		return nil
+	}
+}
+
+func WithBandwidthTimeout(timeout time.Duration) Option {
+	return func(o *options) error {
+		o.BandwidthTimeout = timeout
 		return nil
 	}
 }

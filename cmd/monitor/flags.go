@@ -65,10 +65,22 @@ var (
 		EnvVars: []string{"MONITOR_COLLECT_PERIOD"},
 	}
 
+	FLAG_COLLECT_TIMEOUT = &cli.IntFlag{
+		Name:    "collect-timeout",
+		Usage:   "how many seconds before a telemetry request times out and counts as an error",
+		EnvVars: []string{"MONITOR_COLLECT_TIMEOUT"},
+	}
+
 	FLAG_BANDWIDTH_PERIOD = &cli.IntFlag{
 		Name:    "bandwidth-period",
 		Usage:   "how many seconds between each bandwidth request to a peer",
 		EnvVars: []string{"MONITOR_BANDWIDTH_PERIOD"},
+	}
+
+	FLAG_BANDWIDTH_TIMEOUT = &cli.IntFlag{
+		Name:    "bandwidth-timeout",
+		Usage:   "how many seconds before a bandwidth request times out and counts as an error",
+		EnvVars: []string{"MONITOR_BANDWIDTH_TIMEOUT"},
 	}
 
 	FLAG_POSTGRES = &cli.StringFlag{

@@ -168,7 +168,8 @@ func (s *Monitor) setupPeer(p peer.ID) error {
 
 // must be holding the state's lock
 func (s *Monitor) collectTelemetry(state *peerState) error {
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), s.opts.CollectTimeout)
+	defer cancel()
 
 	logrus.WithField("peer", state.id).Debug("creating client")
 	client, err := telemetry.NewClient(s.h, state.id)
@@ -198,7 +199,7 @@ func (s *Monitor) collectTelemetry(state *peerState) error {
 		}
 	}()
 
-	err = client.Datapoints(context.Background(), since, stream)
+	err = client.Datapoints(ctx, since, stream)
 	if err != nil {
 		return err
 	}
@@ -209,7 +210,9 @@ func (s *Monitor) collectTelemetry(state *peerState) error {
 
 // must be holding the state's lock
 func (s *Monitor) collectBandwidth(state *peerState) error {
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), s.opts.BandwidthTimeout)
+	defer cancel()
+
 	client, err := telemetry.NewClient(s.h, state.id)
 	if err != nil {
 		return err
