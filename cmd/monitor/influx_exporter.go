@@ -89,6 +89,15 @@ func (e *InfluxExporter) ExportDatapoints(p peer.ID, sess telemetry.Session, sna
 			e.exportStorage(p, sess, v)
 		case *datapoint.Window:
 			e.exportWindow(p, sess, v)
+		case *datapoint.RelayReservation:
+			e.exportRelayReservation(p, sess, v)
+		case *datapoint.RelayConnection:
+			e.exportRelayConnection(p, sess, v)
+		case *datapoint.RelayComplete:
+			e.exportRelayComplete(p, sess, v)
+		case *datapoint.HolePunch:
+			e.exportHolePunch(p, sess, v)
+		default:
 		}
 	}
 }
@@ -231,6 +240,37 @@ func (e *InfluxExporter) exportWindow(p peer.ID, sess telemetry.Session, snap *d
 		}
 		e.writePoint(p, sess, snap, point)
 	}
+}
+
+func (e *InfluxExporter) exportRelayReservation(p peer.ID, sess telemetry.Session, v *datapoint.RelayReservation) {
+	point := influxdb2.NewPointWithMeasurement("relay_reservation").
+		AddField("initiator", v.Peer.String())
+	e.writePoint(p, sess, v, point)
+}
+
+func (e *InfluxExporter) exportRelayConnection(p peer.ID, sess telemetry.Session, v *datapoint.RelayConnection) {
+	point := influxdb2.NewPointWithMeasurement("relay_connection").
+		AddField("initiator", v.Initiator.String()).
+		AddField("target", v.Target.String())
+	e.writePoint(p, sess, v, point)
+}
+
+func (e *InfluxExporter) exportRelayComplete(p peer.ID, sess telemetry.Session, v *datapoint.RelayComplete) {
+	point := influxdb2.NewPointWithMeasurement("relay_complete").
+		AddField("duration", v.Duration.Nanoseconds()).
+		AddField("initiator", v.Initiator.String()).
+		AddField("target", v.Target.String()).
+		AddField("bytes_released", v.BytesRelayed)
+	e.writePoint(p, sess, v, point)
+}
+
+func (e *InfluxExporter) exportHolePunch(p peer.ID, sess telemetry.Session, v *datapoint.HolePunch) {
+	point := influxdb2.NewPointWithMeasurement("holepunch").
+		AddField("incoming_success", v.IncomingSuccess).
+		AddField("incoming_failure", v.IncomingFailure).
+		AddField("outgoing_success", v.OutgoingSuccess).
+		AddField("outgoing_failure", v.OutgoingFailure)
+	e.writePoint(p, sess, v, point)
 }
 
 func (e *InfluxExporter) writePoint(p peer.ID, sess telemetry.Session, snap datapoint.Datapoint, point *write.Point) {
