@@ -17,6 +17,7 @@ func main() {
 		Name: "telemetry",
 		Commands: []*cli.Command{
 			CommandSystemInfo,
+			CommandSessionInfo,
 			CommandUpload,
 			CommandDownload,
 			CommandWatch,
