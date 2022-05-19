@@ -10,12 +10,14 @@ import (
 )
 
 var FLAG_TYPE = &cli.StringFlag{Name: "type"}
+var FLAG_SINCE = &cli.Int64Flag{Name: "since", Value: 0}
 
 var CommandWatch = &cli.Command{
 	Name:   "watch",
 	Action: actionWatch,
 	Flags: []cli.Flag{
 		FLAG_TYPE,
+		FLAG_SINCE,
 	},
 }
 
@@ -31,7 +33,7 @@ func actionWatch(c *cli.Context) error {
 		datapointTypes = []string{}
 	}
 
-	var since uint64 = 0
+	var since uint64 = uint64(c.Int64(FLAG_SINCE.Name))
 	ticker := time.NewTicker(time.Second)
 LOOP:
 	for {
