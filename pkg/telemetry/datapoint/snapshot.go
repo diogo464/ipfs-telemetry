@@ -68,7 +68,7 @@ func FromPB(v *pb.Datapoint) (Datapoint, error) {
 	case *pb.Datapoint_Holepunch:
 		return HolePunchFromPB(v.GetHolepunch())
 	default:
-		panic("unimplemented")
+		return nil, fmt.Errorf("unimplemented datapoint type")
 	}
 }
 
