@@ -14,6 +14,7 @@ type Config struct {
 	TraceRoute       TraceRoute
 	Window           Window
 	Relay            Relay
+	HolePunch        HolePunch
 }
 
 func Default() Config {
@@ -54,6 +55,9 @@ func Default() Config {
 			EventCount: 128 * 1024,
 		},
 		Relay: Relay{
+			Interval: 30,
+		},
+		HolePunch: HolePunch{
 			Interval: 30,
 		},
 	}
@@ -105,6 +109,10 @@ type Window struct {
 }
 
 type Relay struct {
+	Interval int
+}
+
+type HolePunch struct {
 	Interval int
 }
 

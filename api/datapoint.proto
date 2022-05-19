@@ -165,6 +165,14 @@ message RelayStats {
     uint32 active_connections                   = 5;
 }
 
+message HolePunch {
+    google.protobuf.Timestamp timestamp         = 1;
+    uint32 incoming_success                     = 2;
+    uint32 incoming_failure                     = 3;
+    uint32 outgoing_sucess                      = 4;
+    uint32 outgoing_failure                     = 5;
+}
+
 message Window {
     google.protobuf.Timestamp timestamp         = 1;
     google.protobuf.Duration window_duration    = 2;
@@ -192,5 +200,6 @@ message Datapoint  {
         RelayConnection relay_connection    = 14;
         RelayComplete relay_complete        = 15;
         RelayStats relay_stats              = 16;
+        HolePunch holepunch                 = 17;
     }
 }

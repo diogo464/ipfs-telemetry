@@ -179,6 +179,11 @@ func (s *TelemetryService) startCollectors() error {
 	s.deferCollectorClose(relayCollector)
 	s.relayCollector = relayCollector
 
+	// holepunch
+	holePunchCollector := collector.NewHolePunchCollector()
+	collector.RunCollector(s.ctx, config.SecondsToDuration(s.conf.HolePunch.Interval, def.HolePunch.Interval), ssink, holePunchCollector)
+	s.deferCollectorClose(holePunchCollector)
+
 	return nil
 }
 

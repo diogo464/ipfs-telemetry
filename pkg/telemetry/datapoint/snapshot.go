@@ -1,6 +1,7 @@
 package datapoint
 
 import (
+	"fmt"
 	"time"
 
 	pb "github.com/diogo464/telemetry/pkg/proto/datapoint"
@@ -64,6 +65,8 @@ func FromPB(v *pb.Datapoint) (Datapoint, error) {
 		return RelayCompleteFromPB(v.GetRelayComplete())
 	case *pb.Datapoint_RelayStats:
 		return RelayStatsFromPB(v.GetRelayStats())
+	case *pb.Datapoint_Holepunch:
+		return HolePunchFromPB(v.GetHolepunch())
 	default:
 		panic("unimplemented")
 	}
