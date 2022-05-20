@@ -6,5 +6,5 @@ if [ -z "$PACKAGE_ARCH" ]; then
 fi
 
 export PACKAGE_ARCH
-export PACKAGE_VERSION=${PACKAGE_VERSION:-"0.0.0telemetry$(git rev-parse --short HEAD)"}
+export PACKAGE_VERSION=${PACKAGE_VERSION:-"$(git describe --tags --abbrev=0)"}
 export PACKAGE_OUTPUT_DIR=${PACKAGE_OUTPUT_DIR:-"bin/"}

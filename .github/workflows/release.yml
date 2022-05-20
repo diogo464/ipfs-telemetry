@@ -1,9 +1,8 @@
-name: Go
-
+name: release
 on:
   push:
-    branches:
-      - main
+    tags:
+    - "[0-9]+.[0-9]+.[0-9]+"
 
 jobs:
   build-telemetry-docker:
@@ -208,22 +207,14 @@ jobs:
         name: bin
         path: ./bin
 
-    - uses: dev-drprasad/delete-tag-and-release@v0.2.0
-      continue-on-error: true
-      with:
-        delete_release: true # default: false
-        tag_name: latest
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
     - name: Create Release
       id: create_release
       uses: actions/create-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
       with:
-        tag_name: latest
-        release_name: latest
+        tag_name: ${{ github.ref }}
+        release_name: ${{ github.ref }}
         body: IPFS Telemetry
         draft: false
         prerelease: false
