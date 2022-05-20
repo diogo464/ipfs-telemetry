@@ -167,10 +167,8 @@ message RelayStats {
 
 message HolePunch {
     google.protobuf.Timestamp timestamp         = 1;
-    uint32 incoming_success                     = 2;
-    uint32 incoming_failure                     = 3;
-    uint32 outgoing_sucess                      = 4;
-    uint32 outgoing_failure                     = 5;
+    uint32 success                              = 2;
+    uint32 failure                              = 3;
 }
 
 message Window {

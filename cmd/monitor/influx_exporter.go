@@ -266,10 +266,8 @@ func (e *InfluxExporter) exportRelayComplete(p peer.ID, sess telemetry.Session, 
 
 func (e *InfluxExporter) exportHolePunch(p peer.ID, sess telemetry.Session, v *datapoint.HolePunch) {
 	point := influxdb2.NewPointWithMeasurement("holepunch").
-		AddField("incoming_success", v.IncomingSuccess).
-		AddField("incoming_failure", v.IncomingFailure).
-		AddField("outgoing_success", v.OutgoingSuccess).
-		AddField("outgoing_failure", v.OutgoingFailure)
+		AddField("success", v.Success).
+		AddField("failure", v.Failure)
 	e.writePoint(p, sess, v, point)
 }
 

@@ -3,8 +3,7 @@ package measurements
 var holepunch HolePunch = nil
 
 type HolePunch interface {
-	Incoming(success bool)
-	Outgoing(success bool)
+	Register(success bool)
 }
 
 func HolePunchRegister(h HolePunch) {

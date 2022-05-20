@@ -12,18 +12,16 @@ var _ Datapoint = (*HolePunch)(nil)
 const HolePunchName = "holepunch"
 
 type HolePunch struct {
-	Timestamp       time.Time `json:"timestamp"`
-	IncomingSuccess uint32    `json:"incoming_success"`
-	IncomingFailure uint32    `json:"incoming_failure"`
-	OutgoingSuccess uint32    `json:"outgoing_success"`
-	OutgoingFailure uint32    `json:"outgoing_failure"`
+	Timestamp time.Time `json:"timestamp"`
+	Success   uint32    `json:"success"`
+	Failure   uint32    `json:"failure"`
 }
 
 func (*HolePunch) sealed()                   {}
 func (*HolePunch) GetName() string           { return HolePunchName }
 func (b *HolePunch) GetTimestamp() time.Time { return b.Timestamp }
 func (b *HolePunch) GetSizeEstimate() uint32 {
-	return estimateTimestampSize + 4*4
+	return estimateTimestampSize + 2*4
 }
 func (c *HolePunch) ToPB() *pb.Datapoint {
 	return &pb.Datapoint{
@@ -35,20 +33,16 @@ func (c *HolePunch) ToPB() *pb.Datapoint {
 
 func HolePunchFromPB(in *pb.HolePunch) (*HolePunch, error) {
 	return &HolePunch{
-		Timestamp:       in.GetTimestamp().AsTime(),
-		IncomingSuccess: in.GetIncomingSuccess(),
-		IncomingFailure: in.GetIncomingFailure(),
-		OutgoingSuccess: in.GetOutgoingSucess(),
-		OutgoingFailure: in.GetOutgoingFailure(),
+		Timestamp: in.GetTimestamp().AsTime(),
+		Success:   in.GetSuccess(),
+		Failure:   in.GetFailure(),
 	}, nil
 }
 
 func HolePunchToPB(c *HolePunch) *pb.HolePunch {
 	return &pb.HolePunch{
-		Timestamp:       timestamppb.New(c.Timestamp),
-		IncomingSuccess: c.IncomingSuccess,
-		IncomingFailure: c.IncomingFailure,
-		OutgoingSucess:  c.OutgoingSuccess,
-		OutgoingFailure: c.OutgoingFailure,
+		Timestamp: timestamppb.New(c.Timestamp),
+		Success:   c.Success,
+		Failure:   c.Failure,
 	}
 }
