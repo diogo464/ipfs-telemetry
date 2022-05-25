@@ -95,6 +95,8 @@ func (e *InfluxExporter) ExportDatapoints(p peer.ID, sess telemetry.Session, sna
 			e.exportRelayConnection(p, sess, v)
 		case *datapoint.RelayComplete:
 			e.exportRelayComplete(p, sess, v)
+		case *datapoint.RelayStats:
+			e.exportRelayStats(p, sess, v)
 		case *datapoint.HolePunch:
 			e.exportHolePunch(p, sess, v)
 		default:
@@ -261,6 +263,15 @@ func (e *InfluxExporter) exportRelayComplete(p peer.ID, sess telemetry.Session, 
 		AddField("initiator", v.Initiator.String()).
 		AddField("target", v.Target.String()).
 		AddField("bytes_released", v.BytesRelayed)
+	e.writePoint(p, sess, v, point)
+}
+
+func (e *InfluxExporter) exportRelayStats(p peer.ID, sess telemetry.Session, v *datapoint.RelayStats) {
+	point := influxdb2.NewPointWithMeasurement("relay_stats").
+		AddField("reservations", v.Reservations).
+		AddField("connections", v.Connections).
+		AddField("bytes_relayed", v.BytesRelayed).
+		AddField("active_connections", v.ActiveConnections)
 	e.writePoint(p, sess, v, point)
 }
 

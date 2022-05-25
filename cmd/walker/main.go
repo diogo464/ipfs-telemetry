@@ -115,8 +115,8 @@ func (c *fileCollector) writeData(d any) {
 
 func main() {
 	app := &cli.App{
-		Name:        "link",
-		Description: "link a monitor and a crawler",
+		Name:        "walker",
+		Description: "walk the dht",
 		Action:      mainAction,
 		Flags: []cli.Flag{
 			FLAG_OUTPUT,
@@ -141,7 +141,7 @@ func mainAction(c *cli.Context) error {
 
 	file, err := os.Create(c.String(FLAG_OUTPUT.Name))
 	if err != nil {
-		return nil
+		return err
 	}
 	defer file.Close()
 
