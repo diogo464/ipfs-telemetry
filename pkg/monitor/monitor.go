@@ -184,6 +184,14 @@ func (s *Monitor) collectTelemetry(state *peerState) error {
 	if err != nil {
 		return err
 	}
+	s.exporter.ExportSessionInfo(state.id, *session)
+
+	logrus.WithField("peer", state.id).Debug("gettings system info")
+	system, err := client.SystemInfo(ctx)
+	if err != nil {
+		return err
+	}
+	s.exporter.ExportSystemInfo(state.id, session.Session, *system)
 
 	since := state.nextSeqN
 	if session.Session != state.lastSession {
