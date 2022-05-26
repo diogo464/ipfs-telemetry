@@ -5,8 +5,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/diogo464/telemetry/pkg/telemetry/measurements"
 	"github.com/diogo464/telemetry/pkg/telemetry/datapoint"
+	"github.com/diogo464/telemetry/pkg/telemetry/measurements"
 	"github.com/libp2p/go-libp2p-core/peer"
 )
 
@@ -21,10 +21,8 @@ type kademliaCollector struct {
 	messages_in  map[datapoint.KademliaMessageType]uint64
 	messages_out map[datapoint.KademliaMessageType]uint64
 
-	cquery   chan kademliaQueryTiming
-	chandler chan kademliaHandlerTiming
-	cmsgin   chan datapoint.KademliaMessageType
-	cmsgout  chan datapoint.KademliaMessageType
+	cmsgin  chan datapoint.KademliaMessageType
+	cmsgout chan datapoint.KademliaMessageType
 }
 
 func NewKademliaCollector() Collector {
@@ -35,7 +33,15 @@ func NewKademliaCollector() Collector {
 
 		messages_in:  make(map[datapoint.KademliaMessageType]uint64),
 		messages_out: make(map[datapoint.KademliaMessageType]uint64),
+
+		cmsgin:  make(chan datapoint.KademliaMessageType, 64),
+		cmsgout: make(chan datapoint.KademliaMessageType, 64),
 	}
+	for _, ty := range datapoint.KademliaMessageTypes {
+		c.messages_in[ty] = 0
+		c.messages_out[ty] = 0
+	}
+	measurements.KademliaRegister(c)
 	go c.eventLoop()
 	return c
 }
@@ -64,12 +70,12 @@ LOOP:
 		select {
 		case t := <-c.cmsgin:
 			c.messages_mu.Lock()
-			defer c.messages_mu.Unlock()
 			c.messages_in[t] += 1
+			c.messages_mu.Unlock()
 		case t := <-c.cmsgout:
 			c.messages_mu.Lock()
-			defer c.messages_mu.Unlock()
 			c.messages_out[t] += 1
+			c.messages_mu.Unlock()
 		case <-c.ctx.Done():
 			break LOOP
 		}
@@ -88,19 +94,8 @@ func (c *kademliaCollector) IncMessageOut(t datapoint.KademliaMessageType) {
 
 // PushHandler implements measurements.Kademlia
 func (c *kademliaCollector) PushHandler(p peer.ID, m datapoint.KademliaMessageType, handler time.Duration, write time.Duration) {
-	c.chandler <- kademliaHandlerTiming{
-		p: p,
-		t: m,
-		h: handler,
-		w: write,
-	}
 }
 
 // PushQuery implements measurements.Kademlia
 func (c *kademliaCollector) PushQuery(p peer.ID, t datapoint.KademliaMessageType, d time.Duration) {
-	c.cquery <- kademliaQueryTiming{
-		p: p,
-		t: t,
-		d: d,
-	}
 }

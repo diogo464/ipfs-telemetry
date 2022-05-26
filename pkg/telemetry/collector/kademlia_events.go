@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/diogo464/telemetry/pkg/telemetry/measurements"
 	"github.com/diogo464/telemetry/pkg/telemetry/datapoint"
+	"github.com/diogo464/telemetry/pkg/telemetry/measurements"
 	"github.com/libp2p/go-libp2p-core/peer"
 )
 
@@ -31,8 +31,8 @@ type kademliaEventCollector struct {
 
 func StartKademliaEventCollector(ctx context.Context, sink datapoint.Sink) {
 	c := &kademliaEventCollector{
-		cquery:   make(chan kademliaQueryTiming),
-		chandler: make(chan kademliaHandlerTiming),
+		cquery:   make(chan kademliaQueryTiming, 64),
+		chandler: make(chan kademliaHandlerTiming, 64),
 	}
 	measurements.KademliaRegister(c)
 	go c.eventLoop(ctx, sink)

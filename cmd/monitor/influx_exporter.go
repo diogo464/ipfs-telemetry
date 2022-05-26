@@ -190,7 +190,7 @@ func (e *InfluxExporter) exportKademlia(p peer.ID, sess telemetry.Session, snap 
 		}
 	}
 	exportWithDirection(snap.MessagesIn, "in")
-	exportWithDirection(snap.MessagesIn, "out")
+	exportWithDirection(snap.MessagesOut, "out")
 }
 
 func (e *InfluxExporter) exportKademliaQuery(p peer.ID, sess telemetry.Session, snap *datapoint.KademliaQuery) {

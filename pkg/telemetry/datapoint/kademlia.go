@@ -27,6 +27,15 @@ const (
 	KademliaMessageTypePing         = pb.KademliaMessageType_PING
 )
 
+var KademliaMessageTypes = []KademliaMessageType{
+	KademliaMessageTypePutValue,
+	KademliaMessageTypeGetValue,
+	KademliaMessageTypeAddProvider,
+	KademliaMessageTypeGetProviders,
+	KademliaMessageTypeFindNode,
+	KademliaMessageTypePing,
+}
+
 var KademliaMessageTypeString = map[KademliaMessageType]string{
 	KademliaMessageTypePutValue:     "putvalue",
 	KademliaMessageTypeGetValue:     "getvalue",

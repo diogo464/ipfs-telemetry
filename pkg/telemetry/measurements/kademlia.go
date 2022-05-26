@@ -8,7 +8,7 @@ import (
 	pb "github.com/libp2p/go-libp2p-kad-dht/pb"
 )
 
-var kademlia Kademlia = nil
+var kademlia []Kademlia = []Kademlia{}
 
 type KademliaQueryTypeKey struct{}
 
@@ -39,14 +39,16 @@ func ConvertKademliaMessageType(in pb.Message_MessageType) datapoint.KademliaMes
 }
 
 func KademliaRegister(k Kademlia) {
-	if kademlia != nil {
-		panic("should not happend")
+	for _, kad := range kademlia {
+		if kad == k {
+			return
+		}
 	}
-	kademlia = k
+	kademlia = append(kademlia, k)
 }
 
 func WithKademlia(fn func(k Kademlia)) {
-	if kademlia != nil {
-		fn(kademlia)
+	for _, kad := range kademlia {
+		fn(kad)
 	}
 }
