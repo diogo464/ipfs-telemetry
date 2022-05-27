@@ -12,9 +12,12 @@ const (
 	ID_DOWNLOAD                = "/telemetry/download/0.0.0"
 	DEFAULT_PAYLOAD_SIZE       = 32 * 1024 * 1024
 	MAX_PAYLOAD_SIZE           = 128 * 1024 * 1024
-	BANDWIDTH_BLOCK_DURATION   = time.Minute * 5
 	DATAPOINT_FETCH_BLOCK_SIZE = 128
 	DATAPOINT_UPLOAD_RATE      = 1024
+
+	BLOCK_DURATION_BANDWIDTH          = time.Minute * 5
+	BLOCK_DURATION_GETRECORDPROVIDERS = time.Minute * 5
+	BLOCK_DURATION_GETDATAPOINTS      = time.Minute * 5
 )
 
 type SystemInfo struct {

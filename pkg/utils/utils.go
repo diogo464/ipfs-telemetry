@@ -96,7 +96,7 @@ func GetPublicAddressesFromMultiaddrs(in []multiaddr.Multiaddr) []net.IP {
 				if ip == nil {
 					continue
 				}
-				if ip.IsPrivate() {
+				if ip.IsPrivate() || ip.IsLoopback() {
 					continue
 				}
 				public = append(public, ip)

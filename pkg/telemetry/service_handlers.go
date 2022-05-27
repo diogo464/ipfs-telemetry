@@ -2,17 +2,31 @@ package telemetry
 
 import (
 	"context"
+	"fmt"
 	"io"
+	"net"
 	"runtime"
 	"time"
 
 	pb "github.com/diogo464/telemetry/pkg/proto/telemetry"
 	"github.com/diogo464/telemetry/pkg/utils"
+	"github.com/libp2p/go-libp2p-core/host"
 	"github.com/libp2p/go-libp2p-core/network"
+	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/multiformats/go-multiaddr"
+	grpc_peer "google.golang.org/grpc/peer"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
+
+const (
+	TAG_UPLOAD     = "upload"
+	TAG_DOWNLOAD   = "download"
+	TAG_DATAPOINTS = "getdatapoints"
+	TAG_GETRECORDS = "getrecords"
+)
+
+var errBlocked error = fmt.Errorf("blocked")
 
 func (s *TelemetryService) GetSessionInfo(context.Context, *emptypb.Empty) (*pb.GetSessionInfoResponse, error) {
 	response := &pb.GetSessionInfoResponse{
@@ -32,6 +46,14 @@ func (s *TelemetryService) GetSystemInfo(context.Context, *emptypb.Empty) (*pb.S
 }
 
 func (s *TelemetryService) GetDatapoints(req *pb.GetDatapointsRequest, stream pb.Telemetry_GetDatapointsServer) error {
+	if publicIp, err := getPublicIpFromContext(s.node.PeerHost, stream.Context()); err == nil {
+		if s.requestBlocker.isBlocked(TAG_DATAPOINTS, publicIp) {
+			return errBlocked
+		}
+		s.requestBlocker.block(TAG_DATAPOINTS, publicIp, BLOCK_DURATION_GETDATAPOINTS)
+		defer s.requestBlocker.block(TAG_DATAPOINTS, publicIp, BLOCK_DURATION_GETDATAPOINTS)
+	}
+
 	since := req.GetSince()
 	sleep := time.Duration((1.0 / (float64(DATAPOINT_UPLOAD_RATE) / float64(DATAPOINT_FETCH_BLOCK_SIZE))) * float64(time.Second))
 	for {
@@ -59,12 +81,19 @@ func (s *TelemetryService) GetProviderRecords(_ *emptypb.Empty, stream pb.Teleme
 		return err
 	}
 
+	if publicIp, err := getPublicIpFromContext(s.node.PeerHost, stream.Context()); err == nil {
+		if s.requestBlocker.isBlocked(TAG_GETRECORDS, publicIp) {
+			return errBlocked
+		}
+		s.requestBlocker.block(TAG_GETRECORDS, publicIp, BLOCK_DURATION_GETRECORDPROVIDERS)
+		defer s.requestBlocker.block(TAG_GETRECORDS, publicIp, BLOCK_DURATION_GETRECORDPROVIDERS)
+	}
 
 	for _, record := range records {
 		pbentries := make([]*pb.ProviderRecord_Entry, len(record.Entries))
 		for i, entry := range record.Entries {
 			pbentries[i] = &pb.ProviderRecord_Entry{
-				Peer:       entry.Peer.String(),
+				Peer:        entry.Peer.String(),
 				LastRefresh: timestamppb.New(entry.LastRefresh),
 			}
 		}
@@ -86,12 +115,12 @@ func (s *TelemetryService) uploadHandler(stream network.Stream) {
 	defer stream.Close()
 
 	if publicIp, err := utils.GetFirstPublicAddressFromMultiaddrs([]multiaddr.Multiaddr{stream.Conn().RemoteMultiaddr()}); err == nil {
-		if s.throttler_upload.isAllowed(publicIp) {
-			s.throttler_upload.disallow(publicIp, BANDWIDTH_BLOCK_DURATION)
-		} else {
+		if s.requestBlocker.isBlocked(TAG_UPLOAD, publicIp) {
 			_ = utils.WriteU32(stream, 0)
 			return
 		}
+		s.requestBlocker.block(TAG_UPLOAD, publicIp, BLOCK_DURATION_BANDWIDTH)
+		defer s.requestBlocker.block(TAG_UPLOAD, publicIp, BLOCK_DURATION_BANDWIDTH)
 	}
 
 	requested_payload, err := utils.ReadU32(stream)
@@ -114,13 +143,14 @@ func (s *TelemetryService) uploadHandler(stream network.Stream) {
 
 func (s *TelemetryService) downloadHandler(stream network.Stream) {
 	defer stream.Close()
+
 	if publicIp, err := utils.GetFirstPublicAddressFromMultiaddrs([]multiaddr.Multiaddr{stream.Conn().RemoteMultiaddr()}); err == nil {
-		if s.throttler_download.isAllowed(publicIp) {
-			s.throttler_download.disallow(publicIp, BANDWIDTH_BLOCK_DURATION)
-		} else {
+		if s.requestBlocker.isBlocked(TAG_DOWNLOAD, publicIp) {
 			_ = utils.WriteU32(stream, 0)
 			return
 		}
+		s.requestBlocker.block(TAG_DOWNLOAD, publicIp, BLOCK_DURATION_BANDWIDTH)
+		defer s.requestBlocker.block(TAG_DOWNLOAD, publicIp, BLOCK_DURATION_BANDWIDTH)
 	}
 
 	expected_payload, err := utils.ReadU32(stream)
@@ -136,4 +166,19 @@ func (s *TelemetryService) downloadHandler(stream network.Stream) {
 	}
 	rate := uint32(float64(n) / elapsed.Seconds())
 	_ = utils.WriteU32(stream, rate)
+}
+
+func getPublicIpFromContext(h host.Host, ctx context.Context) (net.IP, error) {
+	grpcPeer, ok := grpc_peer.FromContext(ctx)
+	if !ok {
+		return nil, fmt.Errorf("failed to obtain peer")
+	}
+	// https://github.com/libp2p/go-libp2p-gostream/blob/master/addr.go
+	pidB58 := grpcPeer.Addr.String()
+	pid, err := peer.Decode(pidB58)
+	if err != nil {
+		return nil, err
+	}
+	addrs := h.Peerstore().Addrs(pid)
+	return utils.GetFirstPublicAddressFromMultiaddrs(addrs)
 }

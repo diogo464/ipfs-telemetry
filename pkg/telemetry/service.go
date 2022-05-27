@@ -31,9 +31,7 @@ type TelemetryService struct {
 	twindow_duration time.Duration
 	collectors       []collector.Collector
 
-	throttler_upload   *serviceThrottler
-	throttler_download *serviceThrottler
-
+	requestBlocker *requestBlocker
 	relayCollector *collector.RelayCollector
 }
 
@@ -50,17 +48,17 @@ func NewTelemetryService(n *core.IpfsNode, conf config.Config) (*TelemetryServic
 	ctx, cancel := context.WithCancel(context.Background())
 	session := RandomSession()
 	t := &TelemetryService{
-		session:            session,
-		node:               n,
-		conf:               conf,
-		ctx:                ctx,
-		cancel:             cancel,
-		boot_time:          time.Now().UTC(),
-		twindow:            window.NewMemoryWindow(windowDuration, windowSize),
-		twindow_duration:   windowDuration,
-		collectors:         make([]collector.Collector, 0),
-		throttler_upload:   newServiceThrottler(),
-		throttler_download: newServiceThrottler(),
+		session:          session,
+		node:             n,
+		conf:             conf,
+		ctx:              ctx,
+		cancel:           cancel,
+		boot_time:        time.Now().UTC(),
+		twindow:          window.NewMemoryWindow(windowDuration, windowSize),
+		twindow_duration: windowDuration,
+		collectors:       make([]collector.Collector, 0),
+
+		requestBlocker: newRequestBlocker(),
 	}
 	h.SetStreamHandler(ID_UPLOAD, t.uploadHandler)
 	h.SetStreamHandler(ID_DOWNLOAD, t.downloadHandler)
