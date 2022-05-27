@@ -13,10 +13,20 @@ message SystemInfo {
     uint32 numcpu   = 3;
 }
 
+message ProviderRecord {
+    message Entry {
+        string peer                                 = 1;
+        google.protobuf.Timestamp last_refresh      = 2;
+    }
+    bytes key               = 1;
+    repeated Entry entries  = 2;
+}
+
 service Telemetry {
     rpc GetSessionInfo(google.protobuf.Empty) returns (GetSessionInfoResponse);
     rpc GetSystemInfo(google.protobuf.Empty) returns (SystemInfo);
     rpc GetDatapoints(GetDatapointsRequest) returns (stream GetDatapointsResponse);
+    rpc GetProviderRecords(google.protobuf.Empty) returns (stream ProviderRecord);
 }
 
 message GetSessionInfoResponse  {

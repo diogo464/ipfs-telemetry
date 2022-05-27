@@ -53,6 +53,35 @@ func (s *TelemetryService) GetDatapoints(req *pb.GetDatapointsRequest, stream pb
 	return nil
 }
 
+func (s *TelemetryService) GetProviderRecords(_ *emptypb.Empty, stream pb.Telemetry_GetProviderRecordsServer) error {
+	records, err := s.node.DHT.WAN.ProviderStore().GetProviderRecords(stream.Context())
+	if err != nil {
+		return err
+	}
+
+
+	for _, record := range records {
+		pbentries := make([]*pb.ProviderRecord_Entry, len(record.Entries))
+		for i, entry := range record.Entries {
+			pbentries[i] = &pb.ProviderRecord_Entry{
+				Peer:       entry.Peer.String(),
+				LastRefresh: timestamppb.New(entry.LastRefresh),
+			}
+		}
+
+		err = stream.Send(&pb.ProviderRecord{
+			Key:     record.Key,
+			Entries: pbentries,
+		})
+
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (s *TelemetryService) uploadHandler(stream network.Stream) {
 	defer stream.Close()
 

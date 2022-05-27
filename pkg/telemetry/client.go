@@ -208,6 +208,49 @@ func (c *Client) Bandwidth(ctx context.Context, payload uint32) (Bandwidth, erro
 	}, nil
 }
 
+func (c *Client) ProviderRecords(ctx context.Context) ([]ProviderRecord, error) {
+	client, err := c.newGrpcClient()
+	if err != nil {
+		return nil, err
+	}
+
+	stream, err := client.GetProviderRecords(ctx, &emptypb.Empty{})
+	if err != nil {
+		return nil, err
+	}
+
+	records := make([]ProviderRecord, 0)
+	for {
+		pbrecord, err := stream.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		entries := make([]ProviderRecordEntry, 0, len(pbrecord.GetEntries()))
+		for _, pbentry := range pbrecord.GetEntries() {
+			pid, err := peer.Decode(pbentry.Peer)
+			if err != nil {
+				return nil, err
+			}
+
+			entries = append(entries, ProviderRecordEntry{
+				Peer:       pid,
+				LastRefresh: pbentry.GetLastRefresh().AsTime(),
+			})
+		}
+
+		records = append(records, ProviderRecord{
+			Key:     pbrecord.GetKey(),
+			Entries: entries,
+		})
+	}
+
+	return records, nil
+}
+
 func (c *Client) newGrpcClient() (pb.TelemetryClient, error) {
 	return pb.NewTelemetryClient(c.c), nil
 }

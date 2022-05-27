@@ -2,6 +2,8 @@ package telemetry
 
 import (
 	"time"
+
+	"github.com/libp2p/go-libp2p-core/peer"
 )
 
 const (
@@ -29,4 +31,14 @@ type SessionInfo struct {
 type Bandwidth struct {
 	UploadRate   uint32 `json:"upload_rate"`
 	DownloadRate uint32 `json:"download_rate"`
+}
+
+type ProviderRecordEntry struct {
+	Peer        peer.ID   `json:"peer"`
+	LastRefresh time.Time `json:"last_refresh"`
+}
+
+type ProviderRecord struct {
+	Key     []byte                `json:"key"`
+	Entries []ProviderRecordEntry `json:"entries"`
 }
