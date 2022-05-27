@@ -154,7 +154,10 @@ func (s *Monitor) onActionDiscover(p peer.ID) {
 }
 
 func (s *Monitor) setupPeer(p peer.ID) error {
-	if _, ok := s.peers[p]; ok {
+	if pd, ok := s.peers[p]; ok {
+		pd.mu.Lock()
+		pd.failedAttemps = 0
+		pd.mu.Unlock()
 		return nil
 	}
 	s.peers[p] = &peerState{
