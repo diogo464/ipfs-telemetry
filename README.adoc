@@ -118,6 +118,23 @@ type Connection struct {
 }
 ----
 
+=== Streams
+
+[cols="1,1,3"]
+|===
+| **Measurement**
+| streams
+|
+
+| **Tag**
+| protocol
+| protocol name of the stream
+
+| **Field**
+| count
+| number of streams
+|===
+
 === Routing Table
 
 [cols="1,1,3"]

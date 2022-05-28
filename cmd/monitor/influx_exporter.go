@@ -120,11 +120,31 @@ func (e *InfluxExporter) exportPing(p peer.ID, sess telemetry.Session, snap *dat
 }
 
 func (e *InfluxExporter) exportConnections(p peer.ID, sess telemetry.Session, snap *datapoint.Connections) {
-	data, _ := json.Marshal(snap.Connections)
-	point := influxdb2.NewPointWithMeasurement("connections").
-		AddField("data", data).
-		AddField("count", len(snap.Connections))
-	e.writePoint(p, sess, snap, point)
+	{
+		data, _ := json.Marshal(snap.Connections)
+		point := influxdb2.NewPointWithMeasurement("connections").
+			AddField("data", data).
+			AddField("count", len(snap.Connections))
+		e.writePoint(p, sess, snap, point)
+	}
+	{
+		streamCounts := make(map[string]uint32)
+		for _, conn := range snap.Connections {
+			for _, stream := range conn.Streams {
+				if stream.Protocol == "" {
+					streamCounts["none"] += 1
+				} else {
+					streamCounts[stream.Protocol] += 1
+				}
+			}
+		}
+		for protocol, count := range streamCounts {
+			point := influxdb2.NewPointWithMeasurement("streams").
+				AddTag("protocol", protocol).
+				AddField("count", count)
+			e.writePoint(p, sess, snap, point)
+		}
+	}
 }
 
 func (e *InfluxExporter) exportRoutingTable(p peer.ID, sess telemetry.Session, snap *datapoint.RoutingTable) {

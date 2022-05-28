@@ -15,12 +15,26 @@ message Ping {
 }
 
 message Connections {
+    enum Direction {
+        DirUnknown      = 0;
+        DirInbound      = 1;
+        DirOutbound     = 2;
+    }
+
+    message Stream {
+        string protocol                     = 1;
+        google.protobuf.Timestamp opened    = 2;
+        Direction direction                 = 3;
+    }
+
     message Connection {
         // remote peer id
         string peer                         = 1;
         // remote multiaddr
         string addr                         = 2; 
         google.protobuf.Duration latency    = 3;
+        google.protobuf.Timestamp opened    = 4;
+        repeated Stream streams             = 5;
     }
 
     google.protobuf.Timestamp timestamp = 1;

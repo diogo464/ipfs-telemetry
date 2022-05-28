@@ -4,6 +4,7 @@ import (
 	"time"
 
 	pb "github.com/diogo464/telemetry/pkg/proto/datapoint"
+	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/multiformats/go-multiaddr"
 	"google.golang.org/protobuf/types/known/durationpb"
@@ -14,10 +15,18 @@ var _ Datapoint = (*Connections)(nil)
 
 const ConnectionsName = "connections"
 
+type Stream struct {
+	Protocol  string            `json:"protocol"`
+	Opened    time.Time         `json:"opened"`
+	Direction network.Direction `json:"direction"`
+}
+
 type Connection struct {
 	ID      peer.ID             `json:"id"`
 	Addr    multiaddr.Multiaddr `json:"addr"`
 	Latency time.Duration       `json:"latency"`
+	Opened  time.Time           `json:"opened"`
+	Streams []Stream            `json:"streams"`
 }
 
 type Connections struct {
@@ -29,7 +38,9 @@ func (*Connections) sealed()                   {}
 func (*Connections) GetName() string           { return ConnectionsName }
 func (b *Connections) GetTimestamp() time.Time { return b.Timestamp }
 func (b *Connections) GetSizeEstimate() uint32 {
-	return estimateTimestampSize + uint32(len(b.Connections))*(estimatePeerIdSize+estimateMultiAddrSize+estimateDurationSize)
+	estimateStreamSize := 16 + estimateTimestampSize + 4
+	estimateConnectionSize := estimatePeerIdSize + estimateMultiAddrSize + estimateDurationSize + estimateTimestampSize + estimateStreamSize
+	return estimateTimestampSize + uint32(len(b.Connections))*uint32(estimateConnectionSize)
 }
 func (c *Connections) ToPB() *pb.Datapoint {
 	return &pb.Datapoint{
@@ -52,10 +63,21 @@ func ConnectionsFromPB(in *pb.Connections) (*Connections, error) {
 			return nil, err
 		}
 
+		streams := make([]Stream, 0, len(conn.GetStreams()))
+		for _, pbstream := range conn.GetStreams() {
+			streams = append(streams, Stream{
+				Protocol:  pbstream.GetProtocol(),
+				Opened:    pbstream.GetOpened().AsTime(),
+				Direction: network.Direction(pbstream.GetDirection()),
+			})
+		}
+
 		conns = append(conns, Connection{
 			ID:      id,
 			Addr:    addr,
 			Latency: conn.GetLatency().AsDuration(),
+			Opened:  conn.GetOpened().AsTime(),
+			Streams: streams,
 		})
 	}
 
@@ -68,10 +90,21 @@ func ConnectionsFromPB(in *pb.Connections) (*Connections, error) {
 func ConnectionsToPB(c *Connections) *pb.Connections {
 	conns := make([]*pb.Connections_Connection, 0, len(c.Connections))
 	for _, conn := range c.Connections {
+		pbstreams := make([]*pb.Connections_Stream, 0, len(conn.Streams))
+		for _, stream := range conn.Streams {
+			pbstreams = append(pbstreams, &pb.Connections_Stream{
+				Protocol:  stream.Protocol,
+				Opened:    timestamppb.New(stream.Opened),
+				Direction: pb.Connections_Direction(stream.Direction),
+			})
+		}
+
 		conns = append(conns, &pb.Connections_Connection{
 			Peer:    conn.ID.String(),
 			Addr:    conn.Addr.String(),
 			Latency: durationpb.New(conn.Latency),
+			Opened:  timestamppb.New(conn.Opened),
+			Streams: pbstreams,
 		})
 	}
 
