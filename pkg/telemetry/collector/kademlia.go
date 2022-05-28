@@ -56,11 +56,10 @@ func (c *kademliaCollector) Close() {
 func (c *kademliaCollector) Collect(ctx context.Context, sink datapoint.Sink) {
 	c.messages_mu.Lock()
 	defer c.messages_mu.Unlock()
-	// TODO: clone map
 	sink.Push(&datapoint.Kademlia{
 		Timestamp:   datapoint.NewTimestamp(),
-		MessagesIn:  c.messages_in,
-		MessagesOut: c.messages_out,
+		MessagesIn:  cloneMap(c.messages_in),
+		MessagesOut: cloneMap(c.messages_out),
 	})
 }
 
@@ -98,4 +97,12 @@ func (c *kademliaCollector) PushHandler(p peer.ID, m datapoint.KademliaMessageTy
 
 // PushQuery implements measurements.Kademlia
 func (c *kademliaCollector) PushQuery(p peer.ID, t datapoint.KademliaMessageType, d time.Duration) {
+}
+
+func cloneMap(in map[datapoint.KademliaMessageType]uint64) map[datapoint.KademliaMessageType]uint64 {
+	out := make(map[datapoint.KademliaMessageType]uint64)
+	for k, v := range in {
+		out[k] = v
+	}
+	return out
 }
