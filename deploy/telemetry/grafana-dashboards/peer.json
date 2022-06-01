@@ -3,7 +3,10 @@
     "list": [
       {
         "builtIn": 1,
-        "datasource": "-- Grafana --",
+        "datasource": {
+          "type": "datasource",
+          "uid": "grafana"
+        },
         "enable": true,
         "hide": true,
         "iconColor": "rgba(0, 211, 255, 1)",
@@ -22,7 +25,7 @@
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
   "id": 2,
-  "iteration": 1651821693788,
+  "iteration": 1654108600486,
   "links": [],
   "liveNow": false,
   "panels": [
@@ -51,8 +54,8 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
-        "w": 8,
+        "h": 4,
+        "w": 4,
         "x": 0,
         "y": 0
       },
@@ -71,18 +74,76 @@
         },
         "textMode": "auto"
       },
-      "pluginVersion": "8.4.4",
+      "pluginVersion": "8.5.2",
       "targets": [
         {
           "datasource": {
             "type": "influxdb",
             "uid": "P951FEA4DE68E13C5"
           },
-          "query": "from(bucket: \"telemetry\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"bitswap\" and r[\"peer\"] == \"${peer}\")\n  |> drop(columns: [\"peer\", \"session\"])",
+          "query": "from(bucket: \"telemetry\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"bitswap\" and r[\"peer\"] == \"${peer}\")\n  |> filter(fn: (r) => r._field == \"messages_in\" or r._field == \"messages_out\")\n  |> drop(columns: [\"peer\", \"session\"])",
           "refId": "A"
         }
       ],
       "title": "Bitswap",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "P951FEA4DE68E13C5"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 4,
+        "y": 0
+      },
+      "id": 22,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "8.5.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "P951FEA4DE68E13C5"
+          },
+          "query": "from(bucket: \"telemetry\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"network_conns\" and r.peer == \"${peer}\" and r._field == \"conns\")\n  |> drop(columns: [\"peer\", \"session\"])\n  |> sort(columns: [\"_time\"])\n  |> last()",
+          "refId": "A"
+        }
+      ],
+      "title": "Connections",
       "type": "stat"
     },
     {
@@ -138,10 +199,37 @@
             ]
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "__systemRef": "hideSeriesFrom",
+            "matcher": {
+              "id": "byNames",
+              "options": {
+                "mode": "exclude",
+                "names": [
+                  "streams",
+                  "network_conns conns",
+                  "network_conns high_water"
+                ],
+                "prefix": "All except:",
+                "readOnly": true
+              }
+            },
+            "properties": [
+              {
+                "id": "custom.hideFrom",
+                "value": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": true
+                }
+              }
+            ]
+          }
+        ]
       },
       "gridPos": {
-        "h": 8,
+        "h": 9,
         "w": 16,
         "x": 8,
         "y": 0
@@ -166,10 +254,87 @@
           },
           "query": "from(bucket: \"telemetry\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"network_conns\" and r[\"peer\"] == \"${peer}\")\n  |> drop(columns: [\"peer\", \"session\"])\n",
           "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "P951FEA4DE68E13C5"
+          },
+          "hide": false,
+          "query": "from(bucket: \"telemetry\")\n    |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n    |> filter(fn: (r) => r._measurement == \"routing_table\" and r._field == \"peers\")\n    |> filter(fn: (r) => r.peer == \"${peer}\")\n    |> drop(columns: [\"peer\", \"session\"])",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "P951FEA4DE68E13C5"
+          },
+          "hide": false,
+          "query": "from(bucket: \"telemetry\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"streams\" and r.peer == \"${peer}\")\n  |> drop(columns: [\"peer\", \"session\", \"protocol\"])\n  |> group(columns: [\"_time\"])\n  |> sum()\n  |> group()\n  |> rename(columns: {_value: \"streams\"})\n",
+          "refId": "C"
         }
       ],
       "title": "Connections",
       "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "P951FEA4DE68E13C5"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 12,
+        "w": 8,
+        "x": 0,
+        "y": 4
+      },
+      "id": 21,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "pieType": "pie",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "P951FEA4DE68E13C5"
+          },
+          "query": "from(bucket: \"telemetry\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"streams\")\n  |> drop(columns: [\"peer\", \"session\", \"_start\", \"_stop\", \"_field\"])\n  |> last()",
+          "refId": "A"
+        }
+      ],
+      "title": "Stream Protocols",
+      "type": "piechart"
     },
     {
       "datasource": {
@@ -253,9 +418,9 @@
       },
       "gridPos": {
         "h": 7,
-        "w": 24,
-        "x": 0,
-        "y": 8
+        "w": 16,
+        "x": 8,
+        "y": 9
       },
       "id": 10,
       "options": {
@@ -280,6 +445,93 @@
         }
       ],
       "title": "Network",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "P951FEA4DE68E13C5"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 16
+      },
+      "id": 18,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "P951FEA4DE68E13C5"
+          },
+          "query": "import \"experimental/aggregate\"\nfrom(bucket: \"telemetry\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"bitswap\" and (r._field == \"messages_in\" or r._field == \"messages_out\"))\n  |> filter(fn: (r) => r.peer != \"\")\n  |> aggregate.rate(every: 1m, unit: 1s, groupColumns: [\"_field\"])\n  |> drop(columns: [\"peer\", \"session\"])\n  ",
+          "refId": "A"
+        }
+      ],
+      "title": "Bitswap Req/s",
       "type": "timeseries"
     },
     {
@@ -344,7 +596,7 @@
         "h": 9,
         "w": 24,
         "x": 0,
-        "y": 15
+        "y": 25
       },
       "id": 2,
       "options": {
@@ -455,6 +707,30 @@
                 "value": "percent"
               }
             ]
+          },
+          {
+            "__systemRef": "hideSeriesFrom",
+            "matcher": {
+              "id": "byNames",
+              "options": {
+                "mode": "exclude",
+                "names": [
+                  "cpu_process"
+                ],
+                "prefix": "All except:",
+                "readOnly": true
+              }
+            },
+            "properties": [
+              {
+                "id": "custom.hideFrom",
+                "value": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": true
+                }
+              }
+            ]
           }
         ]
       },
@@ -462,7 +738,7 @@
         "h": 9,
         "w": 24,
         "x": 0,
-        "y": 24
+        "y": 34
       },
       "id": 4,
       "options": {
@@ -514,7 +790,7 @@
         "h": 13,
         "w": 12,
         "x": 0,
-        "y": 33
+        "y": 43
       },
       "id": 13,
       "options": {
@@ -574,7 +850,7 @@
         "h": 13,
         "w": 12,
         "x": 12,
-        "y": 33
+        "y": 43
       },
       "id": 14,
       "options": {
@@ -636,7 +912,7 @@
         "h": 9,
         "w": 24,
         "x": 0,
-        "y": 46
+        "y": 56
       },
       "id": 16,
       "options": {
@@ -653,7 +929,7 @@
         },
         "textMode": "auto"
       },
-      "pluginVersion": "8.4.4",
+      "pluginVersion": "8.5.2",
       "targets": [
         {
           "datasource": {
@@ -668,8 +944,8 @@
       "type": "stat"
     }
   ],
-  "refresh": "5s",
-  "schemaVersion": 35,
+  "refresh": false,
+  "schemaVersion": 36,
   "style": "dark",
   "tags": [],
   "templating": {
@@ -677,19 +953,19 @@
       {
         "current": {
           "selected": false,
-          "text": "12D3KooWDmpSWyXdjFYhdSfvNiz48adEABZfrLDcfguTsWyriRM9",
-          "value": "12D3KooWDmpSWyXdjFYhdSfvNiz48adEABZfrLDcfguTsWyriRM9"
+          "text": "12D3KooWCRJWRLAP7xTmx1m4M96AsEvXCfm5epvQABHAF4vpiNdH",
+          "value": "12D3KooWCRJWRLAP7xTmx1m4M96AsEvXCfm5epvQABHAF4vpiNdH"
         },
         "hide": 0,
         "name": "peer",
         "options": [
           {
-            "selected": true,
+            "selected": false,
             "text": "",
             "value": ""
           }
         ],
-        "query": "",
+        "query": "12D3KooWCRJWRLAP7xTmx1m4M96AsEvXCfm5epvQABHAF4vpiNdH",
         "skipUrlSync": false,
         "type": "textbox"
       }
@@ -703,6 +979,6 @@
   "timezone": "",
   "title": "Peer",
   "uid": "NkRv8RQnk",
-  "version": 1,
+  "version": 2,
   "weekStart": ""
 }
