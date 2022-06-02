@@ -3,6 +3,7 @@ package config
 import "time"
 
 type Config struct {
+	Disabled         bool
 	Ping             Ping
 	Connections      Connections
 	NetworkCollector NetworkCollector
