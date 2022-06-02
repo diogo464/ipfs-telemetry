@@ -3,6 +3,7 @@ package monitor
 import (
 	"context"
 
+	"github.com/diogo464/telemetry/pkg/actionqueue"
 	pb "github.com/diogo464/telemetry/pkg/proto/monitor"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -13,6 +14,9 @@ func (s *Monitor) Discover(ctx context.Context, req *pb.DiscoverRequest) (*empty
 	if err != nil {
 		return nil, err
 	}
-	s.PeerDiscovered(p)
+	s.caction <- actionqueue.Now(&action{
+		kind: ActionDiscover,
+		pid:  p,
+	})
 	return &emptypb.Empty{}, nil
 }

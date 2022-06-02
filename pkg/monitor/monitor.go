@@ -76,13 +76,6 @@ func (s *Monitor) Close() {
 	s.h.Close()
 }
 
-func (s *Monitor) PeerDiscovered(p peer.ID) {
-	s.caction <- actionqueue.Now(&action{
-		kind: ActionDiscover,
-		pid:  p,
-	})
-}
-
 func (s *Monitor) Run(ctx context.Context) {
 LOOP:
 	for {
@@ -140,14 +133,14 @@ func (s *Monitor) executePeerAction(p peer.ID, a int, t time.Duration, fn action
 func (s *Monitor) onActionDiscover(p peer.ID) {
 	if err := s.setupPeer(p); err == nil {
 		logrus.WithField("peer", p).Debug("peer setup")
-		s.caction <- actionqueue.Now(&action{
+		s.actions.Push(actionqueue.Now(&action{
 			kind: ActionTelemetry,
 			pid:  p,
-		})
-		s.caction <- actionqueue.Now(&action{
+		}))
+		s.actions.Push(actionqueue.Now(&action{
 			kind: ActionBandwidth,
 			pid:  p,
-		})
+		}))
 	} else {
 		logrus.WithField("peer", p).Error("failed to setup peer: ", err)
 	}
