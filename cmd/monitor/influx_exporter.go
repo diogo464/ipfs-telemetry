@@ -121,10 +121,15 @@ func (e *InfluxExporter) exportPing(p peer.ID, sess telemetry.Session, snap *dat
 
 func (e *InfluxExporter) exportConnections(p peer.ID, sess telemetry.Session, snap *datapoint.Connections) {
 	{
+		latencies := make([]int64, len(snap.Connections))
+		for i, conn := range snap.Connections {
+			latencies[i] = conn.Latency.Nanoseconds()
+		}
 		data, _ := json.Marshal(snap.Connections)
 		point := influxdb2.NewPointWithMeasurement("connections").
 			AddField("data", data).
-			AddField("count", len(snap.Connections))
+			AddField("count", len(snap.Connections)).
+			AddField("latencies", latencies)
 		e.writePoint(p, sess, snap, point)
 	}
 	{
