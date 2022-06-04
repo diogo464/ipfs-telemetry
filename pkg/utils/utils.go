@@ -9,6 +9,7 @@ import (
 	"net"
 
 	"github.com/ipfs/go-cid"
+	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/multiformats/go-multihash"
 )
@@ -120,4 +121,14 @@ func RandomCID() (cid.Cid, error) {
 	}
 
 	return cid.NewCidV0(hash), nil
+}
+
+func RandomPeerID() peer.ID {
+	b := make([]byte, 64)
+	if _, err := rand.Read(b); err != nil {
+		panic(err)
+	}
+	var alg uint64 = multihash.SHA2_256
+	hash, _ := multihash.Sum(b, alg, -1)
+	return peer.ID(hash)
 }
