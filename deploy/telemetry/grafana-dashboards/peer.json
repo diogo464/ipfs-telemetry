@@ -25,7 +25,7 @@
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
   "id": 2,
-  "iteration": 1654270304979,
+  "iteration": 1654335756619,
   "links": [],
   "liveNow": false,
   "panels": [
@@ -610,7 +610,7 @@
             "type": "influxdb",
             "uid": "P951FEA4DE68E13C5"
           },
-          "query": "from(bucket: \"telemetry\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"bitswap\" and r[\"peer\"] == \"${peer}\")\n  |> filter(fn: (r) => r._field == \"messages_in\" or r._field == \"messages_out\")\n  |> drop(columns: [\"peer\", \"session\"])",
+          "query": "from(bucket: \"telemetry\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"bitswap\" and r[\"peer\"] == \"${peer}\")\n  |> filter(fn: (r) => r._field == \"messages_in\" or r._field == \"messages_out\")\n  |> drop(columns: [\"peer\", \"session\"])\n  |> sort(columns: [\"_time\"])\n  |> last()",
           "refId": "A"
         }
       ],
@@ -1310,7 +1310,7 @@
             "type": "influxdb",
             "uid": "P951FEA4DE68E13C5"
           },
-          "query": "from(bucket: \"telemetry\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"window_count\" and r.peer == \"${peer}\")\n  |> drop(columns: [\"peer\", \"session\"])",
+          "query": "startTime = time(v: (int(v: v.timeRangeStop) - int(v: 5m)))\nfrom(bucket: \"telemetry\")\n  |> range(start: startTime, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"window_count\" and r.peer == \"${peer}\")\n  |> drop(columns: [\"peer\", \"session\"])\n  |> sort(columns: [\"_time\"])\n  |> last()",
           "refId": "A"
         }
       ],
@@ -1370,7 +1370,7 @@
             "type": "influxdb",
             "uid": "P951FEA4DE68E13C5"
           },
-          "query": "from(bucket: \"telemetry\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"window_memory\" and r.peer == \"${peer}\")\n  |> drop(columns: [\"peer\", \"session\"])",
+          "query": "startTime = time(v: (int(v: v.timeRangeStop) - int(v: 5m)))\nfrom(bucket: \"telemetry\")\n  |> range(start: startTime, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"window_memory\" and r.peer == \"${peer}\")\n  |> drop(columns: [\"peer\", \"session\"])\n  |> sort(columns: [\"_time\"])\n  |> last()",
           "refId": "A"
         }
       ],
@@ -1392,7 +1392,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "blue"
+                "color": "blue",
+                "value": null
               }
             ]
           },
@@ -1428,7 +1429,7 @@
             "type": "influxdb",
             "uid": "P951FEA4DE68E13C5"
           },
-          "query": "import \"experimental/aggregate\"\nfrom(bucket: \"telemetry\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"window_memory\")\n  |> drop(columns: [\"peer\", \"session\"])\n  |> sort(columns: [\"_time\"])\n  |> aggregate.rate(every: 1m, unit: 1s, groupColumns: [\"_field\"])",
+          "query": "import \"experimental/aggregate\"\nstartTime = time(v: (int(v: v.timeRangeStop) - int(v: 5m)))\nfrom(bucket: \"telemetry\")\n  |> range(start: startTime, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"window_memory\")\n  |> drop(columns: [\"peer\", \"session\"])\n  |> sort(columns: [\"_time\"])\n  |> aggregate.rate(every: 1m, unit: 1s, groupColumns: [\"_field\"])",
           "refId": "A"
         }
       ],
@@ -1436,7 +1437,7 @@
       "type": "stat"
     }
   ],
-  "refresh": "10s",
+  "refresh": "5m",
   "schemaVersion": 36,
   "style": "dark",
   "tags": [],
@@ -1445,19 +1446,19 @@
       {
         "current": {
           "selected": false,
-          "text": "12D3KooWM2XHKGfqWHHMV3VBPEo6eHrQewX57WYw58mY8kK8EBKa",
-          "value": "12D3KooWM2XHKGfqWHHMV3VBPEo6eHrQewX57WYw58mY8kK8EBKa"
+          "text": "",
+          "value": ""
         },
         "hide": 0,
         "name": "peer",
         "options": [
           {
-            "selected": false,
+            "selected": true,
             "text": "",
             "value": ""
           }
         ],
-        "query": "12D3KooWM2XHKGfqWHHMV3VBPEo6eHrQewX57WYw58mY8kK8EBKa",
+        "query": "",
         "skipUrlSync": false,
         "type": "textbox"
       }
@@ -1471,6 +1472,6 @@
   "timezone": "",
   "title": "Peer",
   "uid": "NkRv8RQnk",
-  "version": 8,
+  "version": 3,
   "weekStart": ""
 }
