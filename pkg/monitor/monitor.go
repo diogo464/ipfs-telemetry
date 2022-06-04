@@ -2,7 +2,6 @@ package monitor
 
 import (
 	"context"
-	"sync"
 	"time"
 
 	"github.com/diogo464/telemetry/pkg/actionqueue"
@@ -17,6 +16,7 @@ const (
 	ActionDiscover = iota
 	ActionTelemetry
 	ActionBandwidth
+	ActionProviderRecords
 	ActionRemovePeer
 )
 
@@ -25,29 +25,49 @@ type action struct {
 	pid  peer.ID
 }
 
-type actionFn = func(*peerState) error
+type taskResult struct {
+	kind   int
+	pid    peer.ID
+	result interface{}
+}
+
+type taskTelemetryResult struct {
+	session  telemetry.Session
+	nextSeqN uint64
+	err      error
+}
+
+type taskBandwidthResult struct {
+	err error
+}
+
+type taskProviderRecordsResult struct {
+	err error
+}
 
 type peerState struct {
-	mu sync.Mutex
-	id peer.ID
-	// consecutive failed attempts
+	id            peer.ID
 	failedAttemps int
 	lastSession   telemetry.Session
 	nextSeqN      uint64
+	ctx           context.Context
+	cancel        context.CancelFunc
 }
 
 type Monitor struct {
 	pb.UnimplementedMonitorServer
 	h        host.Host
+	ctx      context.Context
 	opts     *options
-	peers    map[peer.ID]*peerState
 	exporter Exporter
 
+	peers   map[peer.ID]*peerState
 	actions *actionqueue.Queue[action]
 	caction chan actionqueue.Action[action]
+	cresult chan *taskResult
 }
 
-func NewMonitor(ctx context.Context, exporter Exporter, o ...Option) (*Monitor, error) {
+func NewMonitor(ctx context.Context, o ...Option) (*Monitor, error) {
 	opts := defaults()
 	if err := apply(opts, o...); err != nil {
 		return nil, err
@@ -61,18 +81,26 @@ func NewMonitor(ctx context.Context, exporter Exporter, o ...Option) (*Monitor, 
 		opts.Host = h
 	}
 
+	if opts.Exporter == nil {
+		opts.Exporter = &NullExporter{}
+	}
+
 	return &Monitor{
 		h:        opts.Host,
+		ctx:      ctx,
 		opts:     opts,
+		exporter: opts.Exporter,
 		peers:    make(map[peer.ID]*peerState),
-		exporter: exporter,
-
-		actions: actionqueue.NewQueue[action](),
-		caction: make(chan actionqueue.Action[action], 8),
+		actions:  actionqueue.NewQueue[action](),
+		caction:  make(chan actionqueue.Action[action]),
+		cresult:  make(chan *taskResult),
 	}, nil
 }
 
 func (s *Monitor) Close() {
+	for _, state := range s.peers {
+		state.cancel()
+	}
 	s.h.Close()
 }
 
@@ -84,20 +112,9 @@ LOOP:
 		select {
 		case <-actionTimer.C:
 			action := s.actions.Pop()
-			switch action.kind {
-			case ActionDiscover:
-				logrus.WithField("peer", action.pid).Debug("action discovery")
-				s.onActionDiscover(action.pid)
-			case ActionTelemetry:
-				logrus.WithField("peer", action.pid).Debug("action telemetry")
-				s.executePeerAction(action.pid, ActionTelemetry, s.opts.CollectPeriod, s.collectTelemetry)
-			case ActionBandwidth:
-				logrus.WithField("peer", action.pid).Debug("action bandwidth")
-				s.executePeerAction(action.pid, ActionBandwidth, s.opts.BandwidthPeriod, s.collectBandwidth)
-			case ActionRemovePeer:
-				logrus.WithField("peer", action.pid).Debug("action remove peer")
-				delete(s.peers, action.pid)
-			}
+			s.processAction(action)
+		case tresult := <-s.cresult:
+			s.processTaskResult(tresult)
 		case action := <-s.caction:
 			s.actions.Push(action)
 		case <-ctx.Done():
@@ -106,147 +123,258 @@ LOOP:
 	}
 }
 
-func (s *Monitor) executePeerAction(p peer.ID, a int, t time.Duration, fn actionFn) {
-	if state, ok := s.peers[p]; ok {
-		go func() {
-			state.mu.Lock()
-			defer state.mu.Unlock()
+func (s *Monitor) processAction(action *action) {
+	switch action.kind {
+	case ActionDiscover:
+		logrus.WithField("peer", action.pid).Debug("action discovery")
+		s.onActionDiscover(action.pid)
+	case ActionTelemetry:
+		logrus.WithField("peer", action.pid).Debug("action telemetry")
+		s.onActionTelemetry(action.pid)
+	case ActionBandwidth:
+		logrus.WithField("peer", action.pid).Debug("action bandwidth")
+		s.onActionBandwidth(action.pid)
+	case ActionProviderRecords:
+		logrus.WithField("peer", action.pid).Debug("action provider records")
+		s.onActionProviderRecords(action.pid)
+	case ActionRemovePeer:
+		logrus.WithField("peer", action.pid).Debug("action remove peer")
+		s.onActionRemove(action.pid)
+	default:
+		logrus.Error("unhandled action, kind = ", action.kind)
+	}
+}
 
-			var delay time.Duration
-			if err := fn(state); err != nil {
-				delay = s.opts.RetryInterval
-				s.peerError(state, err)
-			} else {
-				state.failedAttemps = 0
-				delay = t
-			}
-
-			logrus.WithFields(logrus.Fields{"kind": a, "pid": p, "delay": delay.String()}).Debug("queueing peer action")
-			s.caction <- actionqueue.After(&action{
-				kind: a,
-				pid:  p,
-			}, delay)
-		}()
+func (s *Monitor) processTaskResult(tresult *taskResult) {
+	switch tresult.kind {
+	case ActionTelemetry:
+		s.onTaskResultTelemetry(tresult.pid, tresult.result.(*taskTelemetryResult))
+	case ActionBandwidth:
+		s.onTaskResultBandwidth(tresult.pid, tresult.result.(*taskBandwidthResult))
+	case ActionProviderRecords:
+		s.onTaskResultProviderRecords(tresult.pid, tresult.result.(*taskProviderRecordsResult))
+	default:
+		logrus.Error("unhandled task result, kind = ", tresult.kind)
 	}
 }
 
 func (s *Monitor) onActionDiscover(p peer.ID) {
-	if err := s.setupPeer(p); err == nil {
-		logrus.WithField("peer", p).Debug("peer setup")
+	if state, ok := s.peers[p]; ok {
+		state.failedAttemps = 0
+	} else {
+		ctx, cancel := context.WithCancel(context.Background())
+		s.peers[p] = &peerState{
+			id:            p,
+			failedAttemps: 0,
+			lastSession:   telemetry.InvalidSession,
+			nextSeqN:      0,
+			ctx:           ctx,
+			cancel:        cancel,
+		}
+
 		s.actions.Push(actionqueue.Now(&action{
 			kind: ActionTelemetry,
 			pid:  p,
 		}))
-		s.actions.Push(actionqueue.Now(&action{
+
+		s.actions.Push(actionqueue.After(&action{
+			kind: ActionProviderRecords,
+			pid:  p,
+		}, time.Second*30))
+
+		s.actions.Push(actionqueue.After(&action{
 			kind: ActionBandwidth,
 			pid:  p,
-		}))
-	} else {
-		logrus.WithField("peer", p).Error("failed to setup peer: ", err)
+		}, time.Second*60))
 	}
 }
 
-func (s *Monitor) setupPeer(p peer.ID) error {
-	if pd, ok := s.peers[p]; ok {
-		pd.mu.Lock()
-		pd.failedAttemps = 0
-		pd.mu.Unlock()
-		return nil
+func (s *Monitor) onActionTelemetry(p peer.ID) {
+	if state, ok := s.peers[p]; ok {
+		go func() {
+			result := s.taskCollectTelemetry(state.ctx, state.id, state.lastSession, state.nextSeqN)
+			s.cresult <- &taskResult{
+				kind:   ActionTelemetry,
+				pid:    p,
+				result: result,
+			}
+		}()
 	}
-	s.peers[p] = &peerState{
-		mu:            sync.Mutex{},
-		id:            p,
-		failedAttemps: 0,
-		lastSession:   telemetry.InvalidSession,
-		nextSeqN:      0,
-	}
-	return nil
 }
 
-// must be holding the state's lock
-func (s *Monitor) collectTelemetry(state *peerState) error {
-	ctx, cancel := context.WithTimeout(context.Background(), s.opts.CollectTimeout)
+func (s *Monitor) onActionBandwidth(p peer.ID) {
+	if state, ok := s.peers[p]; ok {
+		go func() {
+			result := s.taskBandwidth(state.ctx, state.id)
+			s.cresult <- &taskResult{
+				kind:   ActionBandwidth,
+				pid:    p,
+				result: result,
+			}
+		}()
+	}
+}
+
+func (s *Monitor) onActionProviderRecords(p peer.ID) {
+	if state, ok := s.peers[p]; ok {
+		go func() {
+			result := s.taskProviderRecords(state.ctx, state.id)
+			s.cresult <- &taskResult{
+				kind:   ActionProviderRecords,
+				pid:    p,
+				result: result,
+			}
+		}()
+	}
+}
+
+func (s *Monitor) onActionRemove(p peer.ID) {
+	if state, ok := s.peers[p]; ok {
+		state.cancel()
+		delete(s.peers, p)
+	}
+}
+
+func (s *Monitor) taskCollectTelemetry(pctx context.Context, pid peer.ID, lastSession telemetry.Session, nextSeqN uint64) *taskTelemetryResult {
+	ctx, cancel := context.WithTimeout(pctx, s.opts.CollectTimeout)
 	defer cancel()
 
-	logrus.WithField("peer", state.id).Debug("creating client")
-	client, err := telemetry.NewClient(s.h, state.id)
+	logrus.WithField("peer", pid).Debug("creating client")
+	client, err := telemetry.NewClient(s.h, pid)
 	if err != nil {
-		return err
+		return &taskTelemetryResult{err: err}
 	}
 	defer client.Close()
 
-	logrus.WithField("peer", state.id).Debug("getting session info")
+	logrus.WithField("peer", pid).Debug("getting session info")
 	session, err := client.SessionInfo(ctx)
 	if err != nil {
-		return err
+		return &taskTelemetryResult{err: err}
 	}
-	s.exporter.ExportSessionInfo(state.id, *session)
+	s.exporter.ExportSessionInfo(pid, *session)
 
-	logrus.WithField("peer", state.id).Debug("gettings system info")
+	logrus.WithField("peer", pid).Debug("gettings system info")
 	system, err := client.SystemInfo(ctx)
 	if err != nil {
-		return err
+		return &taskTelemetryResult{err: err}
 	}
-	s.exporter.ExportSystemInfo(state.id, session.Session, *system)
+	s.exporter.ExportSystemInfo(pid, session.Session, *system)
 
-	since := state.nextSeqN
-	if session.Session != state.lastSession {
+	since := nextSeqN
+	if session.Session != lastSession {
 		since = 0
-		state.lastSession = session.Session
+		lastSession = session.Session
 	}
 
 	stream := make(chan telemetry.DatapointStreamItem)
 	go func() {
 		for item := range stream {
-			state.nextSeqN = item.NextSeqN
-			logrus.WithField("peer", state.id).Debug("exporting ", len(item.Datapoints), " datapoint.")
-			s.exporter.ExportDatapoints(state.id, session.Session, item.Datapoints)
+			nextSeqN = item.NextSeqN
+			logrus.WithField("peer", pid).Debug("exporting ", len(item.Datapoints), " datapoint.")
+			s.exporter.ExportDatapoints(pid, session.Session, item.Datapoints)
 		}
 	}()
 
 	err = client.Datapoints(ctx, since, stream)
 	if err != nil {
-		return err
+		return &taskTelemetryResult{err: err}
 	}
 	close(stream)
 
-	return nil
+	return &taskTelemetryResult{
+		session:  session.Session,
+		nextSeqN: nextSeqN,
+		err:      nil,
+	}
 }
 
-// must be holding the state's lock
-func (s *Monitor) collectBandwidth(state *peerState) error {
-	ctx, cancel := context.WithTimeout(context.Background(), s.opts.BandwidthTimeout)
+func (s *Monitor) taskBandwidth(pctx context.Context, pid peer.ID) *taskBandwidthResult {
+	ctx, cancel := context.WithTimeout(pctx, s.opts.BandwidthTimeout)
 	defer cancel()
 
-	client, err := telemetry.NewClient(s.h, state.id)
+	client, err := telemetry.NewClient(s.h, pid)
 	if err != nil {
-		return err
+		return &taskBandwidthResult{err: err}
 	}
 	defer client.Close()
 
 	session, err := client.SessionInfo(ctx)
 	if err != nil {
-		return err
+		return &taskBandwidthResult{err: err}
 	}
 
 	bandwidth, err := client.Bandwidth(ctx, telemetry.DEFAULT_PAYLOAD_SIZE)
 	if err != nil {
-		return err
+		return &taskBandwidthResult{err: err}
 	}
 
-	s.exporter.ExportBandwidth(state.id, session.Session, bandwidth)
+	s.exporter.ExportBandwidth(pid, session.Session, bandwidth)
 
-	return nil
+	return &taskBandwidthResult{err: nil}
 }
 
-// must be holding the state's lock
-func (s *Monitor) peerError(state *peerState, err error) {
-	logrus.WithField("peer", state.id).Debug("peer error: ", err)
-	state.failedAttemps += 1
-	if state.failedAttemps > s.opts.MaxFailedAttemps {
-		s.caction <- actionqueue.After(&action{
-			kind: ActionRemovePeer,
-			pid:  state.id,
-		}, s.opts.RetryInterval)
+func (s *Monitor) taskProviderRecords(pctx context.Context, pid peer.ID) *taskProviderRecordsResult {
+	ctx, cancel := context.WithTimeout(pctx, s.opts.ProviderRecordsTimeout)
+	defer cancel()
+
+	client, err := telemetry.NewClient(s.h, pid)
+	if err != nil {
+		return &taskProviderRecordsResult{err: err}
+	}
+	defer client.Close()
+
+	session, err := client.SessionInfo(ctx)
+	if err != nil {
+		return &taskProviderRecordsResult{err: err}
+	}
+
+	records, err := client.ProviderRecords(ctx)
+	if err != nil {
+		return &taskProviderRecordsResult{err: err}
+	}
+
+	s.exporter.ExportProviderRecords(pid, session.Session, records)
+
+	return &taskProviderRecordsResult{err: nil}
+}
+
+func (s *Monitor) onTaskResultTelemetry(pid peer.ID, tresult *taskTelemetryResult) {
+	s.onTaskResultCommon(pid, ActionTelemetry, s.opts.CollectPeriod, tresult.err)
+	if state, ok := s.peers[pid]; ok && tresult == nil {
+		state.nextSeqN = tresult.nextSeqN
+		state.lastSession = tresult.session
+	}
+}
+
+func (s *Monitor) onTaskResultBandwidth(pid peer.ID, tresult *taskBandwidthResult) {
+	s.onTaskResultCommon(pid, ActionBandwidth, s.opts.BandwidthPeriod, tresult.err)
+}
+
+func (s *Monitor) onTaskResultProviderRecords(pid peer.ID, tresult *taskProviderRecordsResult) {
+	s.onTaskResultCommon(pid, ActionProviderRecords, s.opts.ProviderRecordsPeriod, tresult.err)
+}
+
+func (s *Monitor) onTaskResultCommon(pid peer.ID, kind int, interval time.Duration, err error) {
+	if state, ok := s.peers[pid]; ok {
+		if err == nil {
+			state.failedAttemps = 0
+			s.actions.Push(actionqueue.After(&action{
+				kind: kind,
+				pid:  pid,
+			}, interval))
+		} else {
+			state.failedAttemps += 1
+			if state.failedAttemps >= s.opts.MaxFailedAttemps {
+				s.actions.Push(actionqueue.Now(&action{
+					kind: ActionRemovePeer,
+					pid:  pid,
+				}))
+			} else {
+				s.actions.Push(actionqueue.After(&action{
+					kind: kind,
+					pid:  pid,
+				}, s.opts.RetryInterval))
+			}
+		}
 	}
 }

@@ -36,6 +36,8 @@ func main() {
 			FLAG_COLLECT_TIMEOUT,
 			FLAG_BANDWIDTH_PERIOD,
 			FLAG_BANDWIDTH_TIMEOUT,
+			FLAG_PROVIDER_RECORDS_PERIOD,
+			FLAG_PROVIDER_RECORDS_TIMEOUT,
 			FLAG_POSTGRES,
 		},
 	}
@@ -87,7 +89,16 @@ func mainAction(c *cli.Context) error {
 		monitorOptions = append(monitorOptions, monitor.WithBandwidthTimeout(time.Second*time.Duration(c.Int(FLAG_BANDWIDTH_TIMEOUT.Name))))
 	}
 
-	server, err := monitor.NewMonitor(c.Context, exporter, monitorOptions...)
+	if c.IsSet(FLAG_PROVIDER_RECORDS_PERIOD.Name) {
+		monitorOptions = append(monitorOptions, monitor.WithProviderRecordsPeriod(time.Second*time.Duration(c.Int(FLAG_PROVIDER_RECORDS_PERIOD.Name))))
+	}
+
+	if c.IsSet(FLAG_PROVIDER_RECORDS_TIMEOUT.Name) {
+		monitorOptions = append(monitorOptions, monitor.WithProviderRecordsTimeout(time.Second*time.Duration(c.Int(FLAG_PROVIDER_RECORDS_TIMEOUT.Name))))
+	}
+	monitorOptions = append(monitorOptions, monitor.WithExporter(exporter))
+
+	server, err := monitor.NewMonitor(c.Context, monitorOptions...)
 	if err != nil {
 		return err
 	}

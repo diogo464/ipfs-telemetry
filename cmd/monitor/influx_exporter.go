@@ -11,6 +11,7 @@ import (
 	"github.com/influxdata/influxdb-client-go/v2/api"
 	"github.com/influxdata/influxdb-client-go/v2/api/write"
 	"github.com/libp2p/go-libp2p-core/peer"
+	"github.com/sirupsen/logrus"
 )
 
 // *pb.Datapoint_Ping:
@@ -110,6 +111,17 @@ func (e *InfluxExporter) ExportBandwidth(p peer.ID, sess telemetry.Session, bw t
 		AddField("upload", bw.UploadRate).
 		AddField("download", bw.DownloadRate)
 	e.writePointWithTime(p, sess, time.Now(), point)
+}
+
+func (e *InfluxExporter) ExportProviderRecords(p peer.ID, sess telemetry.Session, records []telemetry.ProviderRecord) {
+	if data, err := json.Marshal(records); err == nil {
+		point := influxdb2.NewPointWithMeasurement("provider_records").
+			AddField("count", len(records)).
+			AddField("data", data)
+		e.writePointWithTime(p, sess, time.Now(), point)
+	} else {
+		logrus.Error("failed to encode provider records: ", err)
+	}
 }
 
 func (e *InfluxExporter) exportPing(p peer.ID, sess telemetry.Session, snap *datapoint.Ping) {

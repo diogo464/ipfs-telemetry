@@ -83,6 +83,18 @@ var (
 		EnvVars: []string{"MONITOR_BANDWIDTH_TIMEOUT"},
 	}
 
+	FLAG_PROVIDER_RECORDS_PERIOD = &cli.IntFlag{
+		Name:    "provider-records-period",
+		Usage:   "how many seconds between each provider records request to a peer",
+		EnvVars: []string{"MONITOR_PROVIDER_RECORDS_PERIOD"},
+	}
+
+	FLAG_PROVIDER_RECORDS_TIMEOUT = &cli.IntFlag{
+		Name:    "provider-records-timeout",
+		Usage:   "how many seconds before a provider records request times out and counts as an error",
+		EnvVars: []string{"MONITOR_PROVIDER_RECORDS_TIMEOUT"},
+	}
+
 	FLAG_POSTGRES = &cli.StringFlag{
 		Name:    "postgres-address",
 		Usage:   "url for the database",

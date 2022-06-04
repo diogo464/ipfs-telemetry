@@ -12,12 +12,14 @@ import (
 )
 
 const (
-	DEFAULT_MAX_FAILED_ATTEMPTS = 15
-	DEFAULT_RETRY_INTERVAL      = time.Second * 30
-	DEFAULT_COLLECT_PERIOD      = time.Minute * 5
-	DEFAULT_COLLECT_TIMEOUT     = time.Minute * 5
-	DEFAULT_BANDWIDTH_PERIOD    = time.Minute * 30
-	DEFAULT_BANDWIDTH_TIMEOUT   = time.Minute * 5
+	DEFAULT_MAX_FAILED_ATTEMPTS      = 15
+	DEFAULT_RETRY_INTERVAL           = time.Second * 30
+	DEFAULT_COLLECT_PERIOD           = time.Minute * 5
+	DEFAULT_COLLECT_TIMEOUT          = time.Minute * 2
+	DEFAULT_BANDWIDTH_PERIOD         = time.Minute * 30
+	DEFAULT_BANDWIDTH_TIMEOUT        = time.Minute * 5
+	DEFAULT_PROVIDER_RECORDS_PERIOD  = time.Minute * 10
+	DEFAULT_PROVIDER_RECORDS_TIMEOUT = time.Minute * 2
 )
 
 type Option func(*options) error
@@ -29,21 +31,26 @@ type options struct {
 	// How long before retrying a request to a peer after a failure
 	RetryInterval time.Duration
 	// How often should telemetry be collected from peers
-	CollectPeriod    time.Duration
-	CollectTimeout   time.Duration
-	BandwidthPeriod  time.Duration
-	BandwidthTimeout time.Duration
-	Host             host.Host
+	CollectPeriod          time.Duration
+	CollectTimeout         time.Duration
+	BandwidthPeriod        time.Duration
+	BandwidthTimeout       time.Duration
+	ProviderRecordsPeriod  time.Duration
+	ProviderRecordsTimeout time.Duration
+	Host                   host.Host
+	Exporter               Exporter
 }
 
 func defaults() *options {
 	return &options{
-		MaxFailedAttemps: DEFAULT_MAX_FAILED_ATTEMPTS,
-		RetryInterval:    DEFAULT_RETRY_INTERVAL,
-		CollectPeriod:    DEFAULT_COLLECT_PERIOD,
-		CollectTimeout:   DEFAULT_COLLECT_TIMEOUT,
-		BandwidthPeriod:  DEFAULT_BANDWIDTH_PERIOD,
-		BandwidthTimeout: DEFAULT_BANDWIDTH_TIMEOUT,
+		MaxFailedAttemps:       DEFAULT_MAX_FAILED_ATTEMPTS,
+		RetryInterval:          DEFAULT_RETRY_INTERVAL,
+		CollectPeriod:          DEFAULT_COLLECT_PERIOD,
+		CollectTimeout:         DEFAULT_COLLECT_TIMEOUT,
+		BandwidthPeriod:        DEFAULT_BANDWIDTH_PERIOD,
+		BandwidthTimeout:       DEFAULT_BANDWIDTH_TIMEOUT,
+		ProviderRecordsPeriod:  DEFAULT_PROVIDER_RECORDS_PERIOD,
+		ProviderRecordsTimeout: DEFAULT_PROVIDER_RECORDS_TIMEOUT,
 	}
 }
 
@@ -98,9 +105,30 @@ func WithBandwidthTimeout(timeout time.Duration) Option {
 	}
 }
 
+func WithProviderRecordsPeriod(period time.Duration) Option {
+	return func(o *options) error {
+		o.ProviderRecordsPeriod = period
+		return nil
+	}
+}
+
+func WithProviderRecordsTimeout(timeout time.Duration) Option {
+	return func(o *options) error {
+		o.ProviderRecordsTimeout = timeout
+		return nil
+	}
+}
+
 func WithHost(h host.Host) Option {
 	return func(o *options) error {
 		o.Host = h
+		return nil
+	}
+}
+
+func WithExporter(e Exporter) Option {
+	return func(o *options) error {
+		o.Exporter = e
 		return nil
 	}
 }
