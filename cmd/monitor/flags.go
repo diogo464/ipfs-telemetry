@@ -59,6 +59,12 @@ var (
 		EnvVars: []string{"MONITOR_RETRY_INTERVAL"},
 	}
 
+	FLAG_COLLECT_ENABLED = &cli.BoolFlag{
+		Name:    "collect-enabled",
+		EnvVars: []string{"MONITOR_COLLECT_ENABLED"},
+		Value:   true,
+	}
+
 	FLAG_COLLECT_PERIOD = &cli.IntFlag{
 		Name:    "collect-period",
 		Usage:   "how many seconds between each telemetry request to a peer",
@@ -71,6 +77,12 @@ var (
 		EnvVars: []string{"MONITOR_COLLECT_TIMEOUT"},
 	}
 
+	FLAG_BANDWIDTH_ENABLED = &cli.BoolFlag{
+		Name:    "bandwidth-enabled",
+		EnvVars: []string{"MONITOR_BANDWIDTH_ENABLED"},
+		Value:   true,
+	}
+
 	FLAG_BANDWIDTH_PERIOD = &cli.IntFlag{
 		Name:    "bandwidth-period",
 		Usage:   "how many seconds between each bandwidth request to a peer",
@@ -81,6 +93,12 @@ var (
 		Name:    "bandwidth-timeout",
 		Usage:   "how many seconds before a bandwidth request times out and counts as an error",
 		EnvVars: []string{"MONITOR_BANDWIDTH_TIMEOUT"},
+	}
+
+	FLAG_PROVIDER_RECORDS_ENABLED = &cli.BoolFlag{
+		Name:    "provider-records-enabled",
+		EnvVars: []string{"MONITOR_PROVIDER_RECORDS_ENABLED"},
+		Value:   true,
 	}
 
 	FLAG_PROVIDER_RECORDS_PERIOD = &cli.IntFlag{

@@ -87,6 +87,8 @@ func NewMonitor(ctx context.Context, o ...Option) (*Monitor, error) {
 		opts.Exporter = &NullExporter{}
 	}
 
+	logrus.Debug("options: ", *opts)
+
 	return &Monitor{
 		h:        opts.Host,
 		ctx:      ctx,
@@ -174,20 +176,26 @@ func (s *Monitor) onActionDiscover(p peer.ID) {
 			cancel:        cancel,
 		}
 
-		s.actions.Push(actionqueue.Now(&action{
-			kind: ActionTelemetry,
-			pid:  p,
-		}))
+		if s.opts.CollectEnabled {
+			s.actions.Push(actionqueue.Now(&action{
+				kind: ActionTelemetry,
+				pid:  p,
+			}))
+		}
 
-		s.actions.Push(actionqueue.After(&action{
-			kind: ActionProviderRecords,
-			pid:  p,
-		}, time.Second*30))
+		if s.opts.ProivderRecordsEnabled {
+			s.actions.Push(actionqueue.After(&action{
+				kind: ActionProviderRecords,
+				pid:  p,
+			}, time.Second*30))
+		}
 
-		s.actions.Push(actionqueue.After(&action{
-			kind: ActionBandwidth,
-			pid:  p,
-		}, time.Second*60))
+		if s.opts.BandwidthEnabled {
+			s.actions.Push(actionqueue.After(&action{
+				kind: ActionBandwidth,
+				pid:  p,
+			}, time.Second*60))
+		}
 	}
 }
 

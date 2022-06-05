@@ -32,10 +32,13 @@ func main() {
 			FLAG_ADDRESS,
 			FLAG_MAX_FAILED_ATTEMPTS,
 			FLAG_RETRY_INTERVAL,
+			FLAG_COLLECT_ENABLED,
 			FLAG_COLLECT_PERIOD,
 			FLAG_COLLECT_TIMEOUT,
+			FLAG_BANDWIDTH_ENABLED,
 			FLAG_BANDWIDTH_PERIOD,
 			FLAG_BANDWIDTH_TIMEOUT,
+			FLAG_PROVIDER_RECORDS_ENABLED,
 			FLAG_PROVIDER_RECORDS_PERIOD,
 			FLAG_PROVIDER_RECORDS_TIMEOUT,
 			FLAG_POSTGRES,
@@ -73,6 +76,8 @@ func mainAction(c *cli.Context) error {
 		monitorOptions = append(monitorOptions, monitor.WithRetryInterval(time.Second*time.Duration(c.Int(FLAG_RETRY_INTERVAL.Name))))
 	}
 
+	monitorOptions = append(monitorOptions, monitor.WithCollectEnabled(c.Bool(FLAG_COLLECT_ENABLED.Name)))
+
 	if c.IsSet(FLAG_COLLECT_PERIOD.Name) {
 		monitorOptions = append(monitorOptions, monitor.WithCollectPeriod(time.Second*time.Duration(c.Int(FLAG_COLLECT_PERIOD.Name))))
 	}
@@ -81,6 +86,8 @@ func mainAction(c *cli.Context) error {
 		monitorOptions = append(monitorOptions, monitor.WithCollectTimeout(time.Second*time.Duration(c.Int(FLAG_COLLECT_TIMEOUT.Name))))
 	}
 
+	monitorOptions = append(monitorOptions, monitor.WithBandwidthEnabled(c.Bool(FLAG_BANDWIDTH_ENABLED.Name)))
+
 	if c.IsSet(FLAG_BANDWIDTH_PERIOD.Name) {
 		monitorOptions = append(monitorOptions, monitor.WithBandwidthPeriod(time.Second*time.Duration(c.Int(FLAG_BANDWIDTH_PERIOD.Name))))
 	}
@@ -88,6 +95,8 @@ func mainAction(c *cli.Context) error {
 	if c.IsSet(FLAG_BANDWIDTH_TIMEOUT.Name) {
 		monitorOptions = append(monitorOptions, monitor.WithBandwidthTimeout(time.Second*time.Duration(c.Int(FLAG_BANDWIDTH_TIMEOUT.Name))))
 	}
+
+	monitorOptions = append(monitorOptions, monitor.WithProviderRecordsEnabled(c.Bool(FLAG_PROVIDER_RECORDS_ENABLED.Name)))
 
 	if c.IsSet(FLAG_PROVIDER_RECORDS_PERIOD.Name) {
 		monitorOptions = append(monitorOptions, monitor.WithProviderRecordsPeriod(time.Second*time.Duration(c.Int(FLAG_PROVIDER_RECORDS_PERIOD.Name))))

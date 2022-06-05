@@ -14,10 +14,13 @@ import (
 const (
 	DEFAULT_MAX_FAILED_ATTEMPTS      = 15
 	DEFAULT_RETRY_INTERVAL           = time.Second * 30
+	DEFAULT_COLLECT_ENABLED          = true
 	DEFAULT_COLLECT_PERIOD           = time.Minute * 5
 	DEFAULT_COLLECT_TIMEOUT          = time.Minute * 2
+	DEFAULT_BANDWIDTH_ENABLED        = true
 	DEFAULT_BANDWIDTH_PERIOD         = time.Minute * 30
 	DEFAULT_BANDWIDTH_TIMEOUT        = time.Minute * 5
+	DEFAULT_PROVIDER_RECORDS_ENABLED = true
 	DEFAULT_PROVIDER_RECORDS_PERIOD  = time.Minute * 10
 	DEFAULT_PROVIDER_RECORDS_TIMEOUT = time.Minute * 2
 )
@@ -31,10 +34,13 @@ type options struct {
 	// How long before retrying a request to a peer after a failure
 	RetryInterval time.Duration
 	// How often should telemetry be collected from peers
+	CollectEnabled         bool
 	CollectPeriod          time.Duration
 	CollectTimeout         time.Duration
+	BandwidthEnabled       bool
 	BandwidthPeriod        time.Duration
 	BandwidthTimeout       time.Duration
+	ProivderRecordsEnabled bool
 	ProviderRecordsPeriod  time.Duration
 	ProviderRecordsTimeout time.Duration
 	Host                   host.Host
@@ -45,10 +51,13 @@ func defaults() *options {
 	return &options{
 		MaxFailedAttemps:       DEFAULT_MAX_FAILED_ATTEMPTS,
 		RetryInterval:          DEFAULT_RETRY_INTERVAL,
+		CollectEnabled:         DEFAULT_COLLECT_ENABLED,
 		CollectPeriod:          DEFAULT_COLLECT_PERIOD,
 		CollectTimeout:         DEFAULT_COLLECT_TIMEOUT,
+		BandwidthEnabled:       DEFAULT_BANDWIDTH_ENABLED,
 		BandwidthPeriod:        DEFAULT_BANDWIDTH_PERIOD,
 		BandwidthTimeout:       DEFAULT_BANDWIDTH_TIMEOUT,
+		ProivderRecordsEnabled: DEFAULT_PROVIDER_RECORDS_ENABLED,
 		ProviderRecordsPeriod:  DEFAULT_PROVIDER_RECORDS_PERIOD,
 		ProviderRecordsTimeout: DEFAULT_PROVIDER_RECORDS_TIMEOUT,
 	}
@@ -77,6 +86,13 @@ func WithRetryInterval(interval time.Duration) Option {
 	}
 }
 
+func WithCollectEnabled(enabled bool) Option {
+	return func(o *options) error {
+		o.CollectEnabled = enabled
+		return nil
+	}
+}
+
 func WithCollectPeriod(period time.Duration) Option {
 	return func(o *options) error {
 		o.CollectPeriod = period
@@ -91,6 +107,13 @@ func WithCollectTimeout(timeout time.Duration) Option {
 	}
 }
 
+func WithBandwidthEnabled(enabled bool) Option {
+	return func(o *options) error {
+		o.BandwidthEnabled = enabled
+		return nil
+	}
+}
+
 func WithBandwidthPeriod(period time.Duration) Option {
 	return func(o *options) error {
 		o.BandwidthPeriod = period
@@ -101,6 +124,13 @@ func WithBandwidthPeriod(period time.Duration) Option {
 func WithBandwidthTimeout(timeout time.Duration) Option {
 	return func(o *options) error {
 		o.BandwidthTimeout = timeout
+		return nil
+	}
+}
+
+func WithProviderRecordsEnabled(enabled bool) Option {
+	return func(o *options) error {
+		o.ProivderRecordsEnabled = enabled
 		return nil
 	}
 }
