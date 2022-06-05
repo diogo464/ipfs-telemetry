@@ -8,13 +8,14 @@ import (
 
 	pb "github.com/diogo464/telemetry/pkg/proto/telemetry"
 	"github.com/diogo464/telemetry/pkg/telemetry/datapoint"
+	"github.com/diogo464/telemetry/pkg/telemetry/pbutils"
 	"github.com/diogo464/telemetry/pkg/utils"
+	"github.com/gogo/protobuf/types"
 	"github.com/libp2p/go-libp2p-core/host"
 	"github.com/libp2p/go-libp2p-core/peer"
 	gostream "github.com/libp2p/go-libp2p-gostream"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 var ErrInvalidResponse = fmt.Errorf("invalid response")
@@ -78,7 +79,7 @@ func (c *Client) SessionInfo(ctx context.Context) (*SessionInfo, error) {
 		return nil, err
 	}
 
-	response, err := client.GetSessionInfo(ctx, &emptypb.Empty{})
+	response, err := client.GetSessionInfo(ctx, &types.Empty{})
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +91,7 @@ func (c *Client) SessionInfo(ctx context.Context) (*SessionInfo, error) {
 
 	return &SessionInfo{
 		Session:  session,
-		BootTime: response.GetBootTime().AsTime(),
+		BootTime: pbutils.TimeFromPB(response.GetBootTime()),
 	}, nil
 }
 
@@ -137,7 +138,7 @@ func (c *Client) SystemInfo(ctx context.Context) (*SystemInfo, error) {
 		return nil, err
 	}
 
-	response, err := client.GetSystemInfo(ctx, &emptypb.Empty{})
+	response, err := client.GetSystemInfo(ctx, &types.Empty{})
 	if err != nil {
 		return nil, err
 	}
@@ -214,7 +215,7 @@ func (c *Client) ProviderRecords(ctx context.Context) ([]ProviderRecord, error) 
 		return nil, err
 	}
 
-	stream, err := client.GetProviderRecords(ctx, &emptypb.Empty{})
+	stream, err := client.GetProviderRecords(ctx, &types.Empty{})
 	if err != nil {
 		return nil, err
 	}
@@ -237,8 +238,8 @@ func (c *Client) ProviderRecords(ctx context.Context) ([]ProviderRecord, error) 
 			}
 
 			entries = append(entries, ProviderRecordEntry{
-				Peer:       pid,
-				LastRefresh: pbentry.GetLastRefresh().AsTime(),
+				Peer:        pid,
+				LastRefresh: pbutils.TimeFromPB(pbentry.GetLastRefresh()),
 			})
 		}
 

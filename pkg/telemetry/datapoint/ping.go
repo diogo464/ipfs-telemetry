@@ -6,7 +6,6 @@ import (
 	pb "github.com/diogo464/telemetry/pkg/proto/datapoint"
 	"github.com/diogo464/telemetry/pkg/telemetry/pbutils"
 	"github.com/libp2p/go-libp2p-core/peer"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 var _ Datapoint = (*Ping)(nil)
@@ -45,10 +44,10 @@ func PingFromPB(in *pb.Ping) (*Ping, error) {
 	}
 	durations := make([]time.Duration, 0, len(in.Durations))
 	for _, dur := range in.Durations {
-		durations = append(durations, dur.AsDuration())
+		durations = append(durations, pbutils.DurationFromPB(dur))
 	}
 	return &Ping{
-		Timestamp:   in.GetTimestamp().AsTime(),
+		Timestamp:   pbutils.TimeFromPB(in.GetTimestamp()),
 		Source:      source,
 		Destination: dest,
 		Durations:   durations,
@@ -60,7 +59,7 @@ func PingToPB(p *Ping) *pb.Ping {
 	destination := pbutils.AddrInfoToPB(&p.Destination)
 
 	return &pb.Ping{
-		Timestamp:   timestamppb.New(p.Timestamp),
+		Timestamp:   pbutils.TimeToPB(&p.Timestamp),
 		Source:      source,
 		Destination: destination,
 		Durations:   pbutils.DurationArrayToPB(p.Durations),

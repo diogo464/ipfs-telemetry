@@ -4,7 +4,7 @@ import (
 	"time"
 
 	pb "github.com/diogo464/telemetry/pkg/proto/datapoint"
-	"google.golang.org/protobuf/types/known/timestamppb"
+	"github.com/diogo464/telemetry/pkg/telemetry/pbutils"
 )
 
 var _ Datapoint = (*Resources)(nil)
@@ -37,7 +37,7 @@ func (r *Resources) ToPB() *pb.Datapoint {
 
 func ResourcesFromPB(in *pb.Resources) (*Resources, error) {
 	return &Resources{
-		Timestamp:   in.GetTimestamp().AsTime(),
+		Timestamp:   pbutils.TimeFromPB(in.GetTimestamp()),
 		CpuProcess:  in.GetCpuProcess(),
 		CpuSystem:   in.GetCpuSystem(),
 		MemoryUsed:  in.GetMemoryUsed(),
@@ -49,7 +49,7 @@ func ResourcesFromPB(in *pb.Resources) (*Resources, error) {
 
 func ResourcesToPB(r *Resources) *pb.Resources {
 	return &pb.Resources{
-		Timestamp:   timestamppb.New(r.Timestamp),
+		Timestamp:   pbutils.TimeToPB(&r.Timestamp),
 		CpuProcess:  r.CpuProcess,
 		CpuSystem:   r.CpuSystem,
 		MemoryUsed:  r.MemoryUsed,

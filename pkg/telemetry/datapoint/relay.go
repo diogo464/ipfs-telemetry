@@ -4,9 +4,8 @@ import (
 	"time"
 
 	pb "github.com/diogo464/telemetry/pkg/proto/datapoint"
+	"github.com/diogo464/telemetry/pkg/telemetry/pbutils"
 	"github.com/libp2p/go-libp2p-core/peer"
-	"google.golang.org/protobuf/types/known/durationpb"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 var _ Datapoint = (*RelayReservation)(nil)
@@ -44,14 +43,14 @@ func RelayReservationFromPB(in *pb.RelayReservation) (*RelayReservation, error) 
 		return nil, err
 	}
 	return &RelayReservation{
-		Timestamp: in.GetTimestamp().AsTime(),
+		Timestamp: pbutils.TimeFromPB(in.GetTimestamp()),
 		Peer:      p,
 	}, nil
 }
 
 func RelayReservationToPB(r *RelayReservation) *pb.RelayReservation {
 	return &pb.RelayReservation{
-		Timestamp: timestamppb.New(r.Timestamp),
+		Timestamp: pbutils.TimeToPB(&r.Timestamp),
 		Peer:      r.Peer.String(),
 	}
 }
@@ -86,7 +85,7 @@ func RelayConnectionFromPB(in *pb.RelayConnection) (*RelayConnection, error) {
 		return nil, err
 	}
 	return &RelayConnection{
-		Timestamp: in.GetTimestamp().AsTime(),
+		Timestamp: pbutils.TimeFromPB(in.GetTimestamp()),
 		Initiator: initiator,
 		Target:    target,
 	}, nil
@@ -94,7 +93,7 @@ func RelayConnectionFromPB(in *pb.RelayConnection) (*RelayConnection, error) {
 
 func RelayConnectionToPB(n *RelayConnection) *pb.RelayConnection {
 	return &pb.RelayConnection{
-		Timestamp: timestamppb.New(n.Timestamp),
+		Timestamp: pbutils.TimeToPB(&n.Timestamp),
 		Initiator: n.Initiator.String(),
 		Target:    n.Target.String(),
 	}
@@ -132,8 +131,8 @@ func RelayCompleteFromPB(in *pb.RelayComplete) (*RelayComplete, error) {
 		return nil, err
 	}
 	return &RelayComplete{
-		Timestamp:    in.GetTimestamp().AsTime(),
-		Duration:     in.GetDuration().AsDuration(),
+		Timestamp:    pbutils.TimeFromPB(in.GetTimestamp()),
+		Duration:     pbutils.DurationFromPB(in.GetDuration()),
 		Initiator:    initiator,
 		Target:       target,
 		BytesRelayed: in.GetBytesRelayed(),
@@ -142,8 +141,8 @@ func RelayCompleteFromPB(in *pb.RelayComplete) (*RelayComplete, error) {
 
 func RelayCompleteToPB(r *RelayComplete) *pb.RelayComplete {
 	return &pb.RelayComplete{
-		Timestamp:    timestamppb.New(r.Timestamp),
-		Duration:     durationpb.New(r.Duration),
+		Timestamp:    pbutils.TimeToPB(&r.Timestamp),
+		Duration:     pbutils.DurationToPB(&r.Duration),
 		Initiator:    r.Initiator.String(),
 		Target:       r.Target.String(),
 		BytesRelayed: r.BytesRelayed,
@@ -174,7 +173,7 @@ func (r *RelayStats) ToPB() *pb.Datapoint {
 
 func RelayStatsFromPB(in *pb.RelayStats) (*RelayStats, error) {
 	return &RelayStats{
-		Timestamp:         in.GetTimestamp().AsTime(),
+		Timestamp:         pbutils.TimeFromPB(in.GetTimestamp()),
 		Reservations:      in.GetReservations(),
 		Connections:       in.GetConnections(),
 		BytesRelayed:      in.GetBytesRelayed(),
@@ -184,7 +183,7 @@ func RelayStatsFromPB(in *pb.RelayStats) (*RelayStats, error) {
 
 func RelayStatsToPB(r *RelayStats) *pb.RelayStats {
 	return &pb.RelayStats{
-		Timestamp:         timestamppb.New(r.Timestamp),
+		Timestamp:         pbutils.TimeToPB(&r.Timestamp),
 		Reservations:      r.Reservations,
 		Connections:       r.Connections,
 		BytesRelayed:      r.BytesRelayed,

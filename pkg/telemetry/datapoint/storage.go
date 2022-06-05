@@ -4,7 +4,7 @@ import (
 	"time"
 
 	pb "github.com/diogo464/telemetry/pkg/proto/datapoint"
-	"google.golang.org/protobuf/types/known/timestamppb"
+	"github.com/diogo464/telemetry/pkg/telemetry/pbutils"
 )
 
 var _ Datapoint = (*Storage)(nil)
@@ -34,7 +34,7 @@ func (s *Storage) ToPB() *pb.Datapoint {
 
 func StorageFromPB(in *pb.Storage) (*Storage, error) {
 	return &Storage{
-		Timestamp:    in.GetTimestamp().AsTime(),
+		Timestamp:    pbutils.TimeFromPB(in.GetTimestamp()),
 		StorageUsed:  in.GetStorageUsed(),
 		StorageTotal: in.GetStorageTotal(),
 		NumObjects:   in.GetNumObjects(),
@@ -43,7 +43,7 @@ func StorageFromPB(in *pb.Storage) (*Storage, error) {
 
 func StorageToPB(s *Storage) *pb.Storage {
 	return &pb.Storage{
-		Timestamp:    timestamppb.New(s.Timestamp),
+		Timestamp:    pbutils.TimeToPB(&s.Timestamp),
 		StorageUsed:  s.StorageUsed,
 		StorageTotal: s.StorageTotal,
 		NumObjects:   s.NumObjects,

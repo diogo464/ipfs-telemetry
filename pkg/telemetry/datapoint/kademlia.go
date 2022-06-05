@@ -4,9 +4,8 @@ import (
 	"time"
 
 	pb "github.com/diogo464/telemetry/pkg/proto/datapoint"
+	"github.com/diogo464/telemetry/pkg/telemetry/pbutils"
 	"github.com/libp2p/go-libp2p-core/peer"
-	"google.golang.org/protobuf/types/known/durationpb"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 var _ Datapoint = (*Kademlia)(nil)
@@ -67,7 +66,7 @@ func (p *Kademlia) ToPB() *pb.Datapoint {
 
 func KademliaFromPB(in *pb.Kademlia) (*Kademlia, error) {
 	return &Kademlia{
-		Timestamp:   in.GetTimestamp().AsTime(),
+		Timestamp:   pbutils.TimeFromPB(in.GetTimestamp()),
 		MessagesIn:  kademliaCountMapFromPB(in.GetMessagesIn()),
 		MessagesOut: kademliaCountMapFromPB(in.GetMessagesOut()),
 	}, nil
@@ -75,7 +74,7 @@ func KademliaFromPB(in *pb.Kademlia) (*Kademlia, error) {
 
 func KademliaToPB(in *Kademlia) *pb.Kademlia {
 	return &pb.Kademlia{
-		Timestamp:   timestamppb.New(in.Timestamp),
+		Timestamp:   pbutils.TimeToPB(&in.Timestamp),
 		MessagesIn:  kademliaCountMapToPB(in.MessagesIn),
 		MessagesOut: kademliaCountMapToPB(in.MessagesOut),
 	}
@@ -108,19 +107,19 @@ func KademliaQueryFromPB(in *pb.KademliaQuery) (*KademliaQuery, error) {
 		return nil, err
 	}
 	return &KademliaQuery{
-		Timestamp: in.GetTimestamp().AsTime(),
+		Timestamp: pbutils.TimeFromPB(in.GetTimestamp()),
 		Peer:      p,
 		QueryType: in.GetQueryType(),
-		Duration:  in.GetDuration().AsDuration(),
+		Duration:  pbutils.DurationFromPB(in.GetDuration()),
 	}, nil
 }
 
 func KademliaQueryToPB(p *KademliaQuery) *pb.KademliaQuery {
 	return &pb.KademliaQuery{
-		Timestamp: timestamppb.New(p.Timestamp),
+		Timestamp: pbutils.TimeToPB(&p.Timestamp),
 		Peer:      p.Peer.Pretty(),
 		QueryType: p.QueryType,
-		Duration:  durationpb.New(p.Duration),
+		Duration:  pbutils.DurationToPB(&p.Duration),
 	}
 }
 
@@ -147,19 +146,19 @@ func (p *KademliaHandler) ToPB() *pb.Datapoint {
 
 func KademliaHandlerFromPB(in *pb.KademliaHandler) (*KademliaHandler, error) {
 	return &KademliaHandler{
-		Timestamp:       in.GetTimestamp().AsTime(),
+		Timestamp:       pbutils.TimeFromPB(in.GetTimestamp()),
 		HandlerType:     in.GetHandlerType(),
-		HandlerDuration: in.GetHandlerDuration().AsDuration(),
-		WriteDuration:   in.GetWriteDuration().AsDuration(),
+		HandlerDuration: pbutils.DurationFromPB(in.GetHandlerDuration()),
+		WriteDuration:   pbutils.DurationFromPB(in.GetWriteDuration()),
 	}, nil
 }
 
 func KademliaHandlerToPB(p *KademliaHandler) *pb.KademliaHandler {
 	return &pb.KademliaHandler{
-		Timestamp:       timestamppb.New(p.Timestamp),
+		Timestamp:       pbutils.TimeToPB(&p.Timestamp),
 		HandlerType:     p.HandlerType,
-		HandlerDuration: durationpb.New(p.HandlerDuration),
-		WriteDuration:   durationpb.New(p.WriteDuration),
+		HandlerDuration: pbutils.DurationToPB(&p.HandlerDuration),
+		WriteDuration:   pbutils.DurationToPB(&p.WriteDuration),
 	}
 }
 

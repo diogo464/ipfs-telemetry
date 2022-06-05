@@ -7,11 +7,11 @@ import (
 	pbc "github.com/diogo464/telemetry/pkg/proto/common"
 	pbs "github.com/diogo464/telemetry/pkg/proto/datapoint"
 	"github.com/diogo464/telemetry/pkg/rle"
+	"github.com/gogo/protobuf/types"
 	"github.com/libp2p/go-libp2p-core/metrics"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/multiformats/go-multiaddr"
 	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/durationpb"
 )
 
 func AddrInfoFromPB(in *pbc.AddrInfo) (peer.AddrInfo, error) {
@@ -43,10 +43,32 @@ func AddrInfoToPB(in *peer.AddrInfo) *pbc.AddrInfo {
 	}
 }
 
-func DurationArrayToPB(in []time.Duration) []*durationpb.Duration {
-	out := make([]*durationpb.Duration, 0, len(in))
+func TimeFromPB(in *types.Timestamp) time.Time {
+	return time.Unix(in.Seconds, int64(in.Nanos))
+}
+
+func TimeToPB(in *time.Time) *types.Timestamp {
+	return &types.Timestamp{
+		Seconds: in.Unix(),
+		Nanos:   int32(in.Nanosecond()),
+	}
+}
+
+func DurationFromPB(in *types.Duration) time.Duration {
+	return time.Duration(in.Seconds + int64(in.Nanos))
+}
+
+func DurationToPB(in *time.Duration) *types.Duration {
+	return &types.Duration{
+		Seconds: in.Nanoseconds() / 1_000_000_000,
+		Nanos:   int32(in.Nanoseconds() % 1_000_000_000),
+	}
+}
+
+func DurationArrayToPB(in []time.Duration) []*types.Duration {
+	out := make([]*types.Duration, 0, len(in))
 	for _, dur := range in {
-		out = append(out, durationpb.New(dur))
+		out = append(out, DurationToPB(&dur))
 	}
 	return out
 }

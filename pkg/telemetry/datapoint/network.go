@@ -9,7 +9,6 @@ import (
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/libp2p/go-libp2p-core/protocol"
 	"github.com/multiformats/go-multiaddr"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 var _ Datapoint = (*Network)(nil)
@@ -68,7 +67,7 @@ func NetworkFromPB(in *pb.Network) (*Network, error) {
 	}
 
 	return &Network{
-		Timestamp:       in.GetTimestamp().AsTime(),
+		Timestamp:       pbutils.TimeFromPB(in.GetTimestamp()),
 		Addresses:       addresses,
 		Overall:         pbutils.MetricsStatsFromPB(in.GetStatsOverall()),
 		StatsByProtocol: byprotocol,
@@ -90,7 +89,7 @@ func NetworkToPB(n *Network) *pb.Network {
 	}
 
 	return &pb.Network{
-		Timestamp:       timestamppb.New(n.Timestamp),
+		Timestamp:       pbutils.TimeToPB(&n.Timestamp),
 		Addresses:       pbutils.MultiAddrsToPB(n.Addresses),
 		StatsOverall:    pbutils.MetricsStatsToPB(&n.Overall),
 		StatsByProtocol: byprotocol,

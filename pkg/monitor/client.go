@@ -12,7 +12,7 @@ type Client interface {
 	Discover(ctx context.Context, p peer.ID) error
 }
 
-func NewClient(conn grpc.ClientConnInterface) Client {
+func NewClient(conn *grpc.ClientConn) Client {
 	return &client{
 		c: pb.NewMonitorClient(conn),
 	}

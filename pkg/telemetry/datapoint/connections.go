@@ -4,11 +4,10 @@ import (
 	"time"
 
 	pb "github.com/diogo464/telemetry/pkg/proto/datapoint"
+	"github.com/diogo464/telemetry/pkg/telemetry/pbutils"
 	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/multiformats/go-multiaddr"
-	"google.golang.org/protobuf/types/known/durationpb"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 var _ Datapoint = (*Connections)(nil)
@@ -67,7 +66,7 @@ func ConnectionsFromPB(in *pb.Connections) (*Connections, error) {
 		for _, pbstream := range conn.GetStreams() {
 			streams = append(streams, Stream{
 				Protocol:  pbstream.GetProtocol(),
-				Opened:    pbstream.GetOpened().AsTime(),
+				Opened:    pbutils.TimeFromPB(pbstream.GetOpened()),
 				Direction: network.Direction(pbstream.GetDirection()),
 			})
 		}
@@ -75,14 +74,14 @@ func ConnectionsFromPB(in *pb.Connections) (*Connections, error) {
 		conns = append(conns, Connection{
 			ID:      id,
 			Addr:    addr,
-			Latency: conn.GetLatency().AsDuration(),
-			Opened:  conn.GetOpened().AsTime(),
+			Latency: pbutils.DurationFromPB(conn.GetLatency()),
+			Opened:  pbutils.TimeFromPB(conn.GetOpened()),
 			Streams: streams,
 		})
 	}
 
 	return &Connections{
-		Timestamp:   in.Timestamp.AsTime(),
+		Timestamp:   pbutils.TimeFromPB(in.Timestamp),
 		Connections: conns,
 	}, nil
 }
@@ -94,7 +93,7 @@ func ConnectionsToPB(c *Connections) *pb.Connections {
 		for _, stream := range conn.Streams {
 			pbstreams = append(pbstreams, &pb.Connections_Stream{
 				Protocol:  stream.Protocol,
-				Opened:    timestamppb.New(stream.Opened),
+				Opened:    pbutils.TimeToPB(&stream.Opened),
 				Direction: pb.Connections_Direction(stream.Direction),
 			})
 		}
@@ -102,14 +101,14 @@ func ConnectionsToPB(c *Connections) *pb.Connections {
 		conns = append(conns, &pb.Connections_Connection{
 			Peer:    conn.ID.String(),
 			Addr:    conn.Addr.String(),
-			Latency: durationpb.New(conn.Latency),
-			Opened:  timestamppb.New(conn.Opened),
+			Latency: pbutils.DurationToPB(&conn.Latency),
+			Opened:  pbutils.TimeToPB(&conn.Opened),
 			Streams: pbstreams,
 		})
 	}
 
 	return &pb.Connections{
-		Timestamp:   timestamppb.New(c.Timestamp),
+		Timestamp:   pbutils.TimeToPB(&c.Timestamp),
 		Connections: conns,
 	}
 }

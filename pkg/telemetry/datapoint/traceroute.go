@@ -6,7 +6,6 @@ import (
 	pb "github.com/diogo464/telemetry/pkg/proto/datapoint"
 	"github.com/diogo464/telemetry/pkg/telemetry/pbutils"
 	"github.com/libp2p/go-libp2p-core/peer"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 var _ Datapoint = (*TraceRoute)(nil)
@@ -45,7 +44,7 @@ func TraceRouteFromPB(in *pb.TraceRoute) (*TraceRoute, error) {
 		return nil, err
 	}
 	return &TraceRoute{
-		Timestamp:   in.Timestamp.AsTime(),
+		Timestamp:   pbutils.TimeFromPB(in.Timestamp),
 		Origin:      origin,
 		Destination: destination,
 		Provider:    in.GetProvider(),
@@ -55,7 +54,7 @@ func TraceRouteFromPB(in *pb.TraceRoute) (*TraceRoute, error) {
 
 func TraceRouteToPB(in *TraceRoute) *pb.TraceRoute {
 	return &pb.TraceRoute{
-		Timestamp:   timestamppb.New(in.Timestamp),
+		Timestamp:   pbutils.TimeToPB(&in.Timestamp),
 		Origin:      pbutils.AddrInfoToPB(&in.Origin),
 		Destination: pbutils.AddrInfoToPB(&in.Destination),
 		Provider:    in.Provider,

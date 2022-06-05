@@ -4,8 +4,10 @@ package telemetry.datapoint;
 import "common.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/duration.proto";
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 
 option go_package = "github.com/diogo464/telemetry/pkg/proto/datapoint";
+option (gogoproto.marshaler_all) = true;
 
 message Ping {
     google.protobuf.Timestamp timestamp         = 1;

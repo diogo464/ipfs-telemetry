@@ -9,14 +9,14 @@ import (
 	"time"
 
 	pb "github.com/diogo464/telemetry/pkg/proto/telemetry"
+	"github.com/diogo464/telemetry/pkg/telemetry/pbutils"
 	"github.com/diogo464/telemetry/pkg/utils"
+	"github.com/gogo/protobuf/types"
 	"github.com/libp2p/go-libp2p-core/host"
 	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/multiformats/go-multiaddr"
 	grpc_peer "google.golang.org/grpc/peer"
-	"google.golang.org/protobuf/types/known/emptypb"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const (
@@ -28,15 +28,15 @@ const (
 
 var errBlocked error = fmt.Errorf("blocked")
 
-func (s *TelemetryService) GetSessionInfo(context.Context, *emptypb.Empty) (*pb.GetSessionInfoResponse, error) {
+func (s *TelemetryService) GetSessionInfo(context.Context, *types.Empty) (*pb.GetSessionInfoResponse, error) {
 	response := &pb.GetSessionInfoResponse{
 		Session:  s.session.String(),
-		BootTime: timestamppb.New(s.boot_time),
+		BootTime: pbutils.TimeToPB(&s.boot_time),
 	}
 	return response, nil
 }
 
-func (s *TelemetryService) GetSystemInfo(context.Context, *emptypb.Empty) (*pb.SystemInfo, error) {
+func (s *TelemetryService) GetSystemInfo(context.Context, *types.Empty) (*pb.SystemInfo, error) {
 	response := &pb.SystemInfo{
 		Os:     runtime.GOOS,
 		Arch:   runtime.GOARCH,
@@ -75,7 +75,7 @@ func (s *TelemetryService) GetDatapoints(req *pb.GetDatapointsRequest, stream pb
 	return nil
 }
 
-func (s *TelemetryService) GetProviderRecords(_ *emptypb.Empty, stream pb.Telemetry_GetProviderRecordsServer) error {
+func (s *TelemetryService) GetProviderRecords(_ *types.Empty, stream pb.Telemetry_GetProviderRecordsServer) error {
 	records, err := s.node.DHT.WAN.ProviderStore().GetProviderRecords(stream.Context())
 	if err != nil {
 		return err
@@ -94,7 +94,7 @@ func (s *TelemetryService) GetProviderRecords(_ *emptypb.Empty, stream pb.Teleme
 		for i, entry := range record.Entries {
 			pbentries[i] = &pb.ProviderRecord_Entry{
 				Peer:        entry.Peer.String(),
-				LastRefresh: timestamppb.New(entry.LastRefresh),
+				LastRefresh: pbutils.TimeToPB(&entry.LastRefresh),
 			}
 		}
 

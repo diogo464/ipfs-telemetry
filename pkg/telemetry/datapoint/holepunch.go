@@ -4,7 +4,7 @@ import (
 	"time"
 
 	pb "github.com/diogo464/telemetry/pkg/proto/datapoint"
-	"google.golang.org/protobuf/types/known/timestamppb"
+	"github.com/diogo464/telemetry/pkg/telemetry/pbutils"
 )
 
 var _ Datapoint = (*HolePunch)(nil)
@@ -33,7 +33,7 @@ func (c *HolePunch) ToPB() *pb.Datapoint {
 
 func HolePunchFromPB(in *pb.HolePunch) (*HolePunch, error) {
 	return &HolePunch{
-		Timestamp: in.GetTimestamp().AsTime(),
+		Timestamp: pbutils.TimeFromPB(in.GetTimestamp()),
 		Success:   in.GetSuccess(),
 		Failure:   in.GetFailure(),
 	}, nil
@@ -41,7 +41,7 @@ func HolePunchFromPB(in *pb.HolePunch) (*HolePunch, error) {
 
 func HolePunchToPB(c *HolePunch) *pb.HolePunch {
 	return &pb.HolePunch{
-		Timestamp: timestamppb.New(c.Timestamp),
+		Timestamp: pbutils.TimeToPB(&c.Timestamp),
 		Success:   c.Success,
 		Failure:   c.Failure,
 	}

@@ -4,16 +4,16 @@ import (
 	"context"
 
 	pb "github.com/diogo464/telemetry/pkg/proto/crawler"
+	"github.com/gogo/protobuf/types"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"google.golang.org/grpc"
-	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 type Client struct {
 	client pb.CrawlerClient
 }
 
-func NewClient(conn grpc.ClientConnInterface) *Client {
+func NewClient(conn *grpc.ClientConn) *Client {
 	return &Client{
 		client: pb.NewCrawlerClient(conn),
 	}
@@ -24,7 +24,7 @@ func (c *Client) Subscribe(ctx context.Context, sender chan<- peer.ID) error {
 	defer cancel()
 	defer close(sender)
 
-	stream, err := c.client.Subscribe(ctx, &emptypb.Empty{})
+	stream, err := c.client.Subscribe(ctx, &types.Empty{})
 	if err != nil {
 		return err
 	}

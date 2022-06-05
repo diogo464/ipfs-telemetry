@@ -19,3 +19,6 @@
 [submodule "third_party/go-libp2p"]
 	path = third_party/go-libp2p
 	url = git@github.com:diogo464/go-libp2p.git
+[submodule "third_party/github.com/gogo/protobuf"]
+	path = third_party/github.com/gogo/protobuf
+	url = https://github.com/gogo/protobuf

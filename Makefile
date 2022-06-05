@@ -1,6 +1,7 @@
 GOCC ?= go
 IPFS_BIN ?= ipfs
-PROTO_FLAGS := --proto_path=api/ --go_out=./ --go-grpc_out=./ --go-grpc_opt=module=github.com/diogo464/telemetry --go_opt=module=github.com/diogo464/telemetry
+GOGOPROTO_FLAGS := -I=api/ -I=. -I=./third_party/ -I=./third_party/github.com/gogo/protobuf/protobuf \
+				--gogofast_out=plugins=grpc,Mgoogle/protobuf/any.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/duration.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/struct.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/timestamp.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/wrappers.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/empty.proto=github.com/gogo/protobuf/types:.
 
 .PHONY: setup
 setup: tools proto geolite
@@ -21,7 +22,15 @@ geolite: GeoLite2-City.mmdb
 
 .PHONY: proto
 proto:
-	protoc $(PROTO_FLAGS) api/*.proto
+	protoc $(GOGOPROTO_FLAGS) api/common.proto
+	protoc $(GOGOPROTO_FLAGS) api/crawler.proto
+	protoc $(GOGOPROTO_FLAGS) api/datapoint.proto
+	protoc $(GOGOPROTO_FLAGS) api/monitor.proto
+	protoc $(GOGOPROTO_FLAGS) api/probe.proto
+	protoc $(GOGOPROTO_FLAGS) api/telemetry.proto
+	rm -rf pkg/proto
+	mv github.com/diogo464/telemetry/pkg/proto pkg/
+	rm -rf github.com
 
 .PHONY: tools
 tools:

@@ -4,8 +4,7 @@ import (
 	"time"
 
 	pb "github.com/diogo464/telemetry/pkg/proto/datapoint"
-	"google.golang.org/protobuf/types/known/durationpb"
-	"google.golang.org/protobuf/types/known/timestamppb"
+	"github.com/diogo464/telemetry/pkg/telemetry/pbutils"
 )
 
 var _ Datapoint = (*Window)(nil)
@@ -52,8 +51,8 @@ func (s *Window) TotalMemory() uint32 {
 
 func WindowFromPB(in *pb.Window) (*Window, error) {
 	return &Window{
-		Timestamp:       in.GetTimestamp().AsTime(),
-		WindowDuration:  in.GetWindowDuration().AsDuration(),
+		Timestamp:       pbutils.TimeFromPB(in.GetTimestamp()),
+		WindowDuration:  pbutils.DurationFromPB(in.GetWindowDuration()),
 		DatapointCount:  in.GetDatapointCount(),
 		DatapointMemory: in.GetDatapointMemory(),
 	}, nil
@@ -61,8 +60,8 @@ func WindowFromPB(in *pb.Window) (*Window, error) {
 
 func WindowToPB(s *Window) *pb.Window {
 	return &pb.Window{
-		Timestamp:       timestamppb.New(s.Timestamp),
-		WindowDuration:  durationpb.New(s.WindowDuration),
+		Timestamp:       pbutils.TimeToPB(&s.Timestamp),
+		WindowDuration:  pbutils.DurationToPB(&s.WindowDuration),
 		DatapointCount:  s.DatapointCount,
 		DatapointMemory: s.DatapointMemory,
 	}

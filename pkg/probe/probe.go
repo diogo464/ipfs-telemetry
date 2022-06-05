@@ -6,8 +6,10 @@ import (
 	"time"
 
 	pb "github.com/diogo464/telemetry/pkg/proto/probe"
+	"github.com/diogo464/telemetry/pkg/telemetry/pbutils"
 	"github.com/diogo464/telemetry/pkg/walker"
 	"github.com/gammazero/deque"
+	"github.com/gogo/protobuf/types"
 	"github.com/ipfs/go-cid"
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p-core/host"
@@ -16,9 +18,6 @@ import (
 	dht "github.com/libp2p/go-libp2p-kad-dht"
 	dht_pb "github.com/libp2p/go-libp2p-kad-dht/pb"
 	"github.com/sirupsen/logrus"
-	"google.golang.org/protobuf/types/known/durationpb"
-	"google.golang.org/protobuf/types/known/emptypb"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type probeSessionID uint64
@@ -277,11 +276,11 @@ func (s *ProbeServer) startNewProbeSession() {
 
 // grpc
 
-func (s *ProbeServer) ProbeGetName(context.Context, *emptypb.Empty) (*pb.ProbeGetNameResponse, error) {
+func (s *ProbeServer) ProbeGetName(context.Context, *types.Empty) (*pb.ProbeGetNameResponse, error) {
 	return &pb.ProbeGetNameResponse{Name: s.opts.probeName}, nil
 }
 
-func (s *ProbeServer) ProbeSetCids(ctx context.Context, req *pb.ProbeSetCidsRequest) (*emptypb.Empty, error) {
+func (s *ProbeServer) ProbeSetCids(ctx context.Context, req *pb.ProbeSetCidsRequest) (*types.Empty, error) {
 	cids := make([]cid.Cid, 0)
 	for _, cidStr := range req.Cids {
 		c, err := cid.Decode(cidStr)
@@ -292,13 +291,13 @@ func (s *ProbeServer) ProbeSetCids(ctx context.Context, req *pb.ProbeSetCidsRequ
 	}
 	select {
 	case s.csetcids <- cids:
-		return &emptypb.Empty{}, nil
+		return &types.Empty{}, nil
 	case <-ctx.Done():
 		return nil, ctx.Err()
 	}
 }
 
-func (s *ProbeServer) ProbeResults(req *emptypb.Empty, stream pb.Probe_ProbeResultsServer) error {
+func (s *ProbeServer) ProbeResults(req *types.Empty, stream pb.Probe_ProbeResultsServer) error {
 	observer := make(chan *ProbeResult, 128)
 	s.observers_mu.Lock()
 	s.observers[observer] = struct{}{}
@@ -311,8 +310,8 @@ func (s *ProbeServer) ProbeResults(req *emptypb.Empty, stream pb.Probe_ProbeResu
 			errorStr = result.Error.Error()
 		}
 		err = stream.Send(&pb.ProbeResultResponse{
-			RequestStart:    timestamppb.New(result.RequestStart),
-			RequestDuration: durationpb.New(result.RequestDuration),
+			RequestStart:    pbutils.TimeToPB(&result.RequestStart),
+			RequestDuration: pbutils.DurationToPB(&result.RequestDuration),
 			Peer:            result.Peer.String(),
 			Error:           errorStr,
 		})

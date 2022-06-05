@@ -4,7 +4,7 @@ import (
 	"time"
 
 	pb "github.com/diogo464/telemetry/pkg/proto/datapoint"
-	"google.golang.org/protobuf/types/known/timestamppb"
+	"github.com/diogo464/telemetry/pkg/telemetry/pbutils"
 )
 
 var _ Datapoint = (*Bitswap)(nil)
@@ -35,7 +35,7 @@ func (b *Bitswap) ToPB() *pb.Datapoint {
 
 func BitswapFromPB(in *pb.Bitswap) (*Bitswap, error) {
 	return &Bitswap{
-		Timestamp:          in.Timestamp.AsTime(),
+		Timestamp:          pbutils.TimeFromPB(in.Timestamp),
 		DiscoverySucceeded: in.GetDiscoverySucceeded(),
 		DiscoveryFailed:    in.GetDiscoveryFailed(),
 		MessagesIn:         in.GetMessagesIn(),
@@ -45,7 +45,7 @@ func BitswapFromPB(in *pb.Bitswap) (*Bitswap, error) {
 
 func BitswapToPB(bs *Bitswap) *pb.Bitswap {
 	return &pb.Bitswap{
-		Timestamp:          timestamppb.New(bs.Timestamp),
+		Timestamp:          pbutils.TimeToPB(&bs.Timestamp),
 		DiscoverySucceeded: bs.DiscoverySucceeded,
 		DiscoveryFailed:    bs.DiscoveryFailed,
 		MessagesIn:         bs.MessagesIn,

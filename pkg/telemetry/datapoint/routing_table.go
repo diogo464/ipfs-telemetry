@@ -4,8 +4,8 @@ import (
 	"time"
 
 	pb "github.com/diogo464/telemetry/pkg/proto/datapoint"
+	"github.com/diogo464/telemetry/pkg/telemetry/pbutils"
 	"github.com/libp2p/go-libp2p-core/peer"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 var _ Datapoint = (*RoutingTable)(nil)
@@ -49,7 +49,7 @@ func RoutingTableFromPB(in *pb.RoutingTable) (*RoutingTable, error) {
 		buckets = append(buckets, bucket)
 	}
 	return &RoutingTable{
-		Timestamp: in.GetTimestamp().AsTime(),
+		Timestamp: pbutils.TimeFromPB(in.GetTimestamp()),
 		Buckets:   buckets,
 	}, nil
 }
@@ -66,7 +66,7 @@ func RoutingTableToPB(r *RoutingTable) *pb.RoutingTable {
 		})
 	}
 	return &pb.RoutingTable{
-		Timestamp: timestamppb.New(r.Timestamp),
+		Timestamp: pbutils.TimeToPB(&r.Timestamp),
 		Buckets:   buckets,
 	}
 }

@@ -8,10 +8,10 @@ import (
 	"github.com/diogo464/telemetry/pkg/telemetry"
 	"github.com/diogo464/telemetry/pkg/utils"
 	"github.com/diogo464/telemetry/pkg/walker"
+	"github.com/gogo/protobuf/types"
 	"github.com/libp2p/go-libp2p-core/host"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"go.uber.org/atomic"
-	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 var _ (walker.Observer) = (*Crawler)(nil)
@@ -116,7 +116,7 @@ func (c *Crawler) ObserveError(*walker.Error) {
 	c.errors.Inc()
 }
 
-func (c *Crawler) Subscribe(req *emptypb.Empty, stream pb.Crawler_SubscribeServer) error {
+func (c *Crawler) Subscribe(req *types.Empty, stream pb.Crawler_SubscribeServer) error {
 	csubscribe := make(chan peer.ID, DEFAULT_CHANNEL_BUFFER_SIZE)
 	c.subscribers_mu.Lock()
 	c.subscribers[csubscribe] = struct{}{}
