@@ -25,7 +25,7 @@
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
   "id": 2,
-  "iteration": 1654335756619,
+  "iteration": 1654417947682,
   "links": [],
   "liveNow": false,
   "panels": [
@@ -273,7 +273,7 @@
             "type": "influxdb",
             "uid": "P951FEA4DE68E13C5"
           },
-          "query": "from(bucket: \"telemetry\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"session_info\" and r.peer == \"${peer}\")\n  |> limit(n: 1)\n  |> map(fn: (r) => ({\n      r with _value: int(v: now()) - int(v: time(v: r._value))\n  }))\n  |> keep(columns: [\"_value\"])",
+          "query": "from(bucket: \"telemetry\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"session_info\" and r.peer == \"12D3KooWEnc1JCGqygw3BgQQD51zpmU1Gd2dwcL7QDybRfDoXMhx\" and r._field == \"boot_time\")\n  |> drop(columns: [\"session\", \"peer\"])\n  |> bottom(n: 1, columns: [\"_time\"])\n  |> map(fn: (r) => ({\n      r with _value: int(v: now()) - int(v: time(v: r._value))\n  }))\n  |> keep(columns: [\"_value\"])",
           "refId": "A"
         }
       ],
@@ -822,8 +822,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -909,8 +908,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -997,8 +995,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1084,8 +1081,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1123,6 +1119,30 @@
               {
                 "id": "unit",
                 "value": "percent"
+              }
+            ]
+          },
+          {
+            "__systemRef": "hideSeriesFrom",
+            "matcher": {
+              "id": "byNames",
+              "options": {
+                "mode": "exclude",
+                "names": [
+                  "memory_used"
+                ],
+                "prefix": "All except:",
+                "readOnly": true
+              }
+            },
+            "properties": [
+              {
+                "id": "custom.hideFrom",
+                "value": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": true
+                }
               }
             ]
           }
@@ -1202,8 +1222,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1392,8 +1411,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "blue",
-                "value": null
+                "color": "blue"
               }
             ]
           },
@@ -1472,6 +1490,6 @@
   "timezone": "",
   "title": "Peer",
   "uid": "NkRv8RQnk",
-  "version": 3,
+  "version": 5,
   "weekStart": ""
 }
