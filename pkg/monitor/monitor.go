@@ -13,20 +13,22 @@ import (
 )
 
 const (
-	ActionDiscover = iota
-	ActionTelemetry
-	ActionBandwidth
-	ActionProviderRecords
-	ActionRemovePeer
+	ActionDiscover        = "discover"
+	ActionTelemetry       = "telemetry"
+	ActionBandwidth       = "bandwidth"
+	ActionProviderRecords = "provider_records"
+	ActionRemovePeer      = "remove_peer"
 )
 
+type actionKind string
+
 type action struct {
-	kind int
+	kind actionKind
 	pid  peer.ID
 }
 
 type taskResult struct {
-	kind   int
+	kind   actionKind
 	pid    peer.ID
 	result interface{}
 }
@@ -266,11 +268,13 @@ func (s *Monitor) taskCollectTelemetry(pctx context.Context, pid peer.ID, lastSe
 		lastSession = session.Session
 	}
 
+	logrus.WithField("peer", pid).Debug("exporting datapoints from ", nextSeqN)
+
+	beginSeqN := nextSeqN
 	stream := make(chan telemetry.DatapointStreamItem)
 	go func() {
 		for item := range stream {
 			nextSeqN = item.NextSeqN
-			logrus.WithField("peer", pid).Debug("exporting ", len(item.Datapoints), " datapoint.")
 			s.exporter.ExportDatapoints(pid, session.Session, item.Datapoints)
 		}
 	}()
@@ -280,6 +284,8 @@ func (s *Monitor) taskCollectTelemetry(pctx context.Context, pid peer.ID, lastSe
 		return &taskTelemetryResult{err: err}
 	}
 	close(stream)
+
+	logrus.WithField("peer", pid).Debug("exported ", nextSeqN-beginSeqN, " datapoints")
 
 	return &taskTelemetryResult{
 		session:  session.Session,
@@ -354,9 +360,10 @@ func (s *Monitor) onTaskResultProviderRecords(pid peer.ID, tresult *taskProvider
 	s.onTaskResultCommon(pid, ActionProviderRecords, s.opts.ProviderRecordsPeriod, tresult.err)
 }
 
-func (s *Monitor) onTaskResultCommon(pid peer.ID, kind int, interval time.Duration, err error) {
+func (s *Monitor) onTaskResultCommon(pid peer.ID, kind actionKind, interval time.Duration, err error) {
 	if state, ok := s.peers[pid]; ok {
 		if err == nil {
+			logrus.WithField("peer", pid).Debug("running action ", kind, " in ", interval)
 			state.failedAttemps = 0
 			s.actions.Push(actionqueue.After(&action{
 				kind: kind,
@@ -364,12 +371,14 @@ func (s *Monitor) onTaskResultCommon(pid peer.ID, kind int, interval time.Durati
 			}, interval))
 		} else {
 			state.failedAttemps += 1
+			logrus.WithField("peer", pid).Debug("removing peer")
 			if state.failedAttemps >= s.opts.MaxFailedAttemps {
 				s.actions.Push(actionqueue.Now(&action{
 					kind: ActionRemovePeer,
 					pid:  pid,
 				}))
 			} else {
+				logrus.WithField("peer", pid).Debug("retrying action ", kind, " in ", s.opts.RetryInterval)
 				s.actions.Push(actionqueue.After(&action{
 					kind: kind,
 					pid:  pid,
