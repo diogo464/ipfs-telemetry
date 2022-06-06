@@ -14,12 +14,9 @@ message SystemInfo {
 }
 
 message ProviderRecord {
-    message Entry {
-        string peer                                 = 1;
-        google.protobuf.Timestamp last_refresh      = 2;
-    }
-    bytes key               = 1;
-    repeated Entry entries  = 2;
+    bytes key                               = 1;
+    bytes peer                              = 2;
+    google.protobuf.Timestamp last_refresh  = 3;
 }
 
 service Telemetry {

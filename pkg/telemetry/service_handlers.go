@@ -89,18 +89,16 @@ func (s *TelemetryService) GetProviderRecords(_ *types.Empty, stream pb.Telemetr
 		defer s.requestBlocker.block(TAG_GETRECORDS, publicIp, BLOCK_DURATION_GETRECORDPROVIDERS)
 	}
 
-	for _, record := range records {
-		pbentries := make([]*pb.ProviderRecord_Entry, len(record.Entries))
-		for i, entry := range record.Entries {
-			pbentries[i] = &pb.ProviderRecord_Entry{
-				Peer:        entry.Peer.String(),
-				LastRefresh: pbutils.TimeToPB(&entry.LastRefresh),
-			}
+	for record := range records {
+		pid, err := record.Peer.MarshalBinary()
+		if err != nil {
+			return err
 		}
 
 		err = stream.Send(&pb.ProviderRecord{
-			Key:     record.Key,
-			Entries: pbentries,
+			Key:         record.Key,
+			Peer:        pid,
+			LastRefresh: pbutils.TimeToPB(&record.LastRefresh),
 		})
 
 		if err != nil {

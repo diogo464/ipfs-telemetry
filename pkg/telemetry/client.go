@@ -230,22 +230,15 @@ func (c *Client) ProviderRecords(ctx context.Context) ([]ProviderRecord, error) 
 			return nil, err
 		}
 
-		entries := make([]ProviderRecordEntry, 0, len(pbrecord.GetEntries()))
-		for _, pbentry := range pbrecord.GetEntries() {
-			pid, err := peer.Decode(pbentry.Peer)
-			if err != nil {
-				return nil, err
-			}
-
-			entries = append(entries, ProviderRecordEntry{
-				Peer:        pid,
-				LastRefresh: pbutils.TimeFromPB(pbentry.GetLastRefresh()),
-			})
+		pid, err := peer.IDFromBytes(pbrecord.Peer)
+		if err != nil {
+			return nil, err
 		}
 
 		records = append(records, ProviderRecord{
-			Key:     pbrecord.GetKey(),
-			Entries: entries,
+			Key:         pbrecord.Key,
+			Peer:        pid,
+			LastRefresh: pbutils.TimeFromPB(pbrecord.GetLastRefresh()),
 		})
 	}
 

@@ -36,12 +36,8 @@ type Bandwidth struct {
 	DownloadRate uint32 `json:"download_rate"`
 }
 
-type ProviderRecordEntry struct {
+type ProviderRecord struct {
+	Key         []byte    `json:"key"`
 	Peer        peer.ID   `json:"peer"`
 	LastRefresh time.Time `json:"last_refresh"`
-}
-
-type ProviderRecord struct {
-	Key     []byte                `json:"key"`
-	Entries []ProviderRecordEntry `json:"entries"`
 }
