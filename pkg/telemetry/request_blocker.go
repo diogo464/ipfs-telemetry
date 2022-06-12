@@ -9,33 +9,24 @@ import (
 )
 
 type requestBlocker struct {
-	mu       sync.Mutex
-	services map[string]*ttlmap.Map[string, struct{}]
+	mu     sync.Mutex
+	blocks *ttlmap.Map[string, struct{}]
 }
 
 func newRequestBlocker() *requestBlocker {
 	return &requestBlocker{
-		services: make(map[string]*ttlmap.Map[string, struct{}]),
+		blocks: ttlmap.New[string, struct{}](),
 	}
 }
 
-func (r *requestBlocker) isBlocked(tag string, ip net.IP) bool {
+func (r *requestBlocker) isBlocked(ip net.IP) bool {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	if m, ok := r.services[tag]; ok {
-		ips := ip.String()
-		return m.Contains(ips)
-	} else {
-		return false
-	}
+	return r.blocks.Contains(ip.String())
 }
 
-func (r *requestBlocker) block(tag string, ip net.IP, dur time.Duration) {
+func (r *requestBlocker) block(ip net.IP, dur time.Duration) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	ips := ip.String()
-	if r.services[tag] == nil {
-		r.services[tag] = ttlmap.New[string, struct{}]()
-	}
-	r.services[tag].Insert(ips, struct{}{}, dur)
+	r.blocks.Insert(ip.String(), struct{}{}, dur)
 }

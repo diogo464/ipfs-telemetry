@@ -7,9 +7,9 @@ import (
 )
 
 const (
-	ID_TELEMETRY               = "/telemetry/telemetry/0.0.0"
-	ID_UPLOAD                  = "/telemetry/upload/0.0.0"
-	ID_DOWNLOAD                = "/telemetry/download/0.0.0"
+	ID_TELEMETRY               = "/telemetry/telemetry/0.2.0"
+	ID_UPLOAD                  = "/telemetry/upload/0.2.0"
+	ID_DOWNLOAD                = "/telemetry/download/0.2.0"
 	DEFAULT_PAYLOAD_SIZE       = 32 * 1024 * 1024
 	MAX_PAYLOAD_SIZE           = 128 * 1024 * 1024
 	DATAPOINT_FETCH_BLOCK_SIZE = 128
@@ -17,7 +17,7 @@ const (
 
 	BLOCK_DURATION_BANDWIDTH          = time.Minute * 5
 	BLOCK_DURATION_GETRECORDPROVIDERS = time.Minute * 5
-	BLOCK_DURATION_GETDATAPOINTS      = time.Minute * 5
+	BLOCK_DURATION_STREAM             = time.Minute * 5
 )
 
 type SystemInfo struct {
@@ -40,4 +40,14 @@ type ProviderRecord struct {
 	Key         []byte    `json:"key"`
 	Peer        peer.ID   `json:"peer"`
 	LastRefresh time.Time `json:"last_refresh"`
+}
+
+type DebugStream struct {
+	Name      string `json:"name"`
+	UsedSize  uint32 `json:"used_size"`
+	TotalSize uint32 `json:"total_size"`
+}
+
+type Debug struct {
+	Streams []DebugStream
 }

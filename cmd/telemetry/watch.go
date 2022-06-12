@@ -1,15 +1,15 @@
 package main
 
 import (
-	"strings"
+	"fmt"
 	"time"
 
+	"github.com/diogo464/telemetry/pkg/datapoint"
 	"github.com/diogo464/telemetry/pkg/telemetry"
-	"github.com/diogo464/telemetry/pkg/utils"
 	"github.com/urfave/cli/v2"
 )
 
-var FLAG_TYPE = &cli.StringFlag{Name: "type"}
+var FLAG_TYPE = &cli.StringFlag{Name: "type", Required: true}
 var FLAG_SINCE = &cli.Int64Flag{Name: "since", Value: 0}
 
 var CommandWatch = &cli.Command{
@@ -28,33 +28,34 @@ func actionWatch(c *cli.Context) error {
 	}
 	defer client.Close()
 
-	datapointTypes := strings.Split(c.String(FLAG_TYPE.Name), ",")
-	if datapointTypes[0] == "" {
-		datapointTypes = []string{}
+	decoder, ok := datapoint.Decoders[c.String(FLAG_TYPE.Name)]
+	if !ok {
+		return fmt.Errorf("Unknown datapoint type")
 	}
 
-	var since uint64 = uint64(c.Int64(FLAG_SINCE.Name))
+	var since uint32 = uint32(c.Int64(FLAG_SINCE.Name))
 	ticker := time.NewTicker(time.Second)
 LOOP:
 	for {
 		select {
 		case <-ticker.C:
-			cdatapoints := make(chan telemetry.DatapointStreamItem)
-			go func() {
-				for item := range cdatapoints {
-					for _, s := range item.Datapoints {
-						since = item.NextSeqN
-						if len(datapointTypes) == 0 || utils.SliceAny(datapointTypes, func(t string) bool {
-							return t == s.GetName()
-						}) {
-							printAsJson(s)
-						}
-					}
-				}
-			}()
-			err := client.Datapoints(c.Context, since, cdatapoints)
+			segments, err := client.Stream(c.Context, since, c.String(FLAG_TYPE.Name))
 			if err != nil {
 				return err
+			}
+
+			for _, segment := range segments {
+				if uint32(segment.SeqN+1) > since {
+					since = uint32(segment.SeqN + 1)
+				}
+
+				dps, err := telemetry.StreamSegmentDecode(decoder, segment)
+				if err != nil {
+					return err
+				}
+				for _, dp := range dps {
+					printAsJson(dp)
+				}
 			}
 		case <-c.Context.Done():
 			break LOOP

@@ -2,11 +2,12 @@ package main
 
 import (
 	"encoding/json"
+	"reflect"
 	"time"
 
+	"github.com/diogo464/telemetry/pkg/datapoint"
 	"github.com/diogo464/telemetry/pkg/monitor"
 	"github.com/diogo464/telemetry/pkg/telemetry"
-	"github.com/diogo464/telemetry/pkg/telemetry/datapoint"
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/influxdata/influxdb-client-go/v2/api"
 	"github.com/influxdata/influxdb-client-go/v2/api/write"
@@ -101,6 +102,7 @@ func (e *InfluxExporter) ExportDatapoints(p peer.ID, sess telemetry.Session, sna
 		case *datapoint.HolePunch:
 			e.exportHolePunch(p, sess, v)
 		default:
+			logrus.Warn("no exporter found for: ", reflect.TypeOf(snap))
 		}
 	}
 }
@@ -128,7 +130,7 @@ func (e *InfluxExporter) exportPing(p peer.ID, sess telemetry.Session, snap *dat
 	data, _ := json.Marshal(snap)
 	point := influxdb2.NewPointWithMeasurement("ping").
 		AddField("data", data)
-	e.writePoint(p, sess, snap, point)
+	e.writePointWithTime(p, sess, snap.Timestamp, point)
 }
 
 func (e *InfluxExporter) exportConnections(p peer.ID, sess telemetry.Session, snap *datapoint.Connections) {
@@ -142,7 +144,7 @@ func (e *InfluxExporter) exportConnections(p peer.ID, sess telemetry.Session, sn
 			AddField("data", data).
 			AddField("count", len(snap.Connections)).
 			AddField("latencies", latencies)
-		e.writePoint(p, sess, snap, point)
+		e.writePointWithTime(p, sess, snap.Timestamp, point)
 	}
 	{
 		streamCounts := make(map[string]uint32)
@@ -159,7 +161,7 @@ func (e *InfluxExporter) exportConnections(p peer.ID, sess telemetry.Session, sn
 			point := influxdb2.NewPointWithMeasurement("streams").
 				AddTag("protocol", protocol).
 				AddField("count", count)
-			e.writePoint(p, sess, snap, point)
+			e.writePointWithTime(p, sess, snap.Timestamp, point)
 		}
 	}
 }
@@ -174,7 +176,7 @@ func (e *InfluxExporter) exportRoutingTable(p peer.ID, sess telemetry.Session, s
 		AddField("data", data).
 		AddField("buckets", len(snap.Buckets)).
 		AddField("peers", peers)
-	e.writePoint(p, sess, snap, point)
+	e.writePointWithTime(p, sess, snap.Timestamp, point)
 }
 
 func (e *InfluxExporter) exportNetwork(p peer.ID, sess telemetry.Session, snap *datapoint.Network) {
@@ -183,7 +185,7 @@ func (e *InfluxExporter) exportNetwork(p peer.ID, sess telemetry.Session, snap *
 			AddField("conns", snap.NumConns).
 			AddField("low_water", snap.LowWater).
 			AddField("high_water", snap.HighWater)
-		e.writePoint(p, sess, snap, point)
+		e.writePointWithTime(p, sess, snap.Timestamp, point)
 	}
 	{
 		for protocol, stats := range snap.StatsByProtocol {
@@ -193,7 +195,7 @@ func (e *InfluxExporter) exportNetwork(p peer.ID, sess telemetry.Session, snap *
 				AddField("total_out", stats.TotalOut).
 				AddField("rate_in", stats.RateIn).
 				AddField("rate_out", stats.RateOut)
-			e.writePoint(p, sess, snap, point)
+			e.writePointWithTime(p, sess, snap.Timestamp, point)
 		}
 	}
 }
@@ -206,14 +208,14 @@ func (e *InfluxExporter) exportResources(p peer.ID, sess telemetry.Session, snap
 		AddField("memory_free", snap.MemoryFree).
 		AddField("memory_total", snap.MemoryTotal).
 		AddField("goroutines", snap.Goroutines)
-	e.writePoint(p, sess, snap, point)
+	e.writePointWithTime(p, sess, snap.Timestamp, point)
 }
 
 func (e *InfluxExporter) exportTraceRoute(p peer.ID, sess telemetry.Session, snap *datapoint.TraceRoute) {
 	data, _ := json.Marshal(snap)
 	point := influxdb2.NewPointWithMeasurement("traceroute").
 		AddField("data", data)
-	e.writePoint(p, sess, snap, point)
+	e.writePointWithTime(p, sess, snap.Timestamp, point)
 }
 
 func (e *InfluxExporter) exportKademlia(p peer.ID, sess telemetry.Session, snap *datapoint.Kademlia) {
@@ -223,7 +225,7 @@ func (e *InfluxExporter) exportKademlia(p peer.ID, sess telemetry.Session, snap 
 				AddTag("direction", dir).
 				AddTag("type", datapoint.KademliaMessageTypeString[ty]).
 				AddField("count", count)
-			e.writePoint(p, sess, snap, point)
+			e.writePointWithTime(p, sess, snap.Timestamp, point)
 		}
 	}
 	exportWithDirection(snap.MessagesIn, "in")
@@ -235,7 +237,7 @@ func (e *InfluxExporter) exportKademliaQuery(p peer.ID, sess telemetry.Session, 
 		AddTag("remote_peer", snap.Peer.Pretty()).
 		AddField("type", datapoint.KademliaMessageTypeString[snap.QueryType]).
 		AddField("duration", snap.Duration.Nanoseconds())
-	e.writePoint(p, sess, snap, point)
+	e.writePointWithTime(p, sess, snap.Timestamp, point)
 }
 
 func (e *InfluxExporter) exportKademliaHandler(p peer.ID, sess telemetry.Session, snap *datapoint.KademliaHandler) {
@@ -244,7 +246,7 @@ func (e *InfluxExporter) exportKademliaHandler(p peer.ID, sess telemetry.Session
 		AddField("handler", snap.HandlerDuration.Nanoseconds()).
 		AddField("write", snap.WriteDuration.Nanoseconds()).
 		AddField("total", (snap.WriteDuration + snap.HandlerDuration).Nanoseconds())
-	e.writePoint(p, sess, snap, point)
+	e.writePointWithTime(p, sess, snap.Timestamp, point)
 }
 
 func (e *InfluxExporter) exportBitswap(p peer.ID, sess telemetry.Session, snap *datapoint.Bitswap) {
@@ -253,7 +255,7 @@ func (e *InfluxExporter) exportBitswap(p peer.ID, sess telemetry.Session, snap *
 		AddField("messages_out", snap.MessagesOut).
 		AddField("discovery_succeeded", snap.DiscoverySucceeded).
 		AddField("discovery_failed", snap.DiscoveryFailed)
-	e.writePoint(p, sess, snap, point)
+	e.writePointWithTime(p, sess, snap.Timestamp, point)
 }
 
 func (e *InfluxExporter) exportStorage(p peer.ID, sess telemetry.Session, snap *datapoint.Storage) {
@@ -261,7 +263,7 @@ func (e *InfluxExporter) exportStorage(p peer.ID, sess telemetry.Session, snap *
 		AddField("storage_used", snap.StorageUsed).
 		AddField("storage_total", snap.StorageTotal).
 		AddField("num_objects", snap.NumObjects)
-	e.writePoint(p, sess, snap, point)
+	e.writePointWithTime(p, sess, snap.Timestamp, point)
 }
 
 func (e *InfluxExporter) exportWindow(p peer.ID, sess telemetry.Session, snap *datapoint.Window) {
@@ -270,28 +272,28 @@ func (e *InfluxExporter) exportWindow(p peer.ID, sess telemetry.Session, snap *d
 		for k, v := range snap.DatapointCount {
 			point.AddField(k, v)
 		}
-		e.writePoint(p, sess, snap, point)
+		e.writePointWithTime(p, sess, snap.Timestamp, point)
 	}
 	{
 		point := influxdb2.NewPointWithMeasurement("window_memory")
 		for k, v := range snap.DatapointMemory {
 			point.AddField(k, v)
 		}
-		e.writePoint(p, sess, snap, point)
+		e.writePointWithTime(p, sess, snap.Timestamp, point)
 	}
 }
 
 func (e *InfluxExporter) exportRelayReservation(p peer.ID, sess telemetry.Session, v *datapoint.RelayReservation) {
 	point := influxdb2.NewPointWithMeasurement("relay_reservation").
 		AddField("initiator", v.Peer.String())
-	e.writePoint(p, sess, v, point)
+	e.writePointWithTime(p, sess, v.Timestamp, point)
 }
 
 func (e *InfluxExporter) exportRelayConnection(p peer.ID, sess telemetry.Session, v *datapoint.RelayConnection) {
 	point := influxdb2.NewPointWithMeasurement("relay_connection").
 		AddField("initiator", v.Initiator.String()).
 		AddField("target", v.Target.String())
-	e.writePoint(p, sess, v, point)
+	e.writePointWithTime(p, sess, v.Timestamp, point)
 }
 
 func (e *InfluxExporter) exportRelayComplete(p peer.ID, sess telemetry.Session, v *datapoint.RelayComplete) {
@@ -300,7 +302,7 @@ func (e *InfluxExporter) exportRelayComplete(p peer.ID, sess telemetry.Session, 
 		AddField("initiator", v.Initiator.String()).
 		AddField("target", v.Target.String()).
 		AddField("bytes_released", v.BytesRelayed)
-	e.writePoint(p, sess, v, point)
+	e.writePointWithTime(p, sess, v.Timestamp, point)
 }
 
 func (e *InfluxExporter) exportRelayStats(p peer.ID, sess telemetry.Session, v *datapoint.RelayStats) {
@@ -309,18 +311,14 @@ func (e *InfluxExporter) exportRelayStats(p peer.ID, sess telemetry.Session, v *
 		AddField("connections", v.Connections).
 		AddField("bytes_relayed", v.BytesRelayed).
 		AddField("active_connections", v.ActiveConnections)
-	e.writePoint(p, sess, v, point)
+	e.writePointWithTime(p, sess, v.Timestamp, point)
 }
 
 func (e *InfluxExporter) exportHolePunch(p peer.ID, sess telemetry.Session, v *datapoint.HolePunch) {
 	point := influxdb2.NewPointWithMeasurement("holepunch").
 		AddField("success", v.Success).
 		AddField("failure", v.Failure)
-	e.writePoint(p, sess, v, point)
-}
-
-func (e *InfluxExporter) writePoint(p peer.ID, sess telemetry.Session, snap datapoint.Datapoint, point *write.Point) {
-	e.writePointWithTime(p, sess, snap.GetTimestamp(), point)
+	e.writePointWithTime(p, sess, v.Timestamp, point)
 }
 
 func (e *InfluxExporter) writePointWithTime(p peer.ID, sess telemetry.Session, t time.Time, point *write.Point) {

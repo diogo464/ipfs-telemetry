@@ -23,6 +23,7 @@ func main() {
 			CommandWatch,
 			CommandTraceRoute,
 			CommandProviderRecords,
+			CommandDebug,
 		},
 	}
 	if err := app.Run(os.Args); err != nil {

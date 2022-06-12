@@ -23,6 +23,8 @@ services:
       MONITOR_INFLUXDB_ORG: "adc"
       MONITOR_INFLUXDB_BUCKET: "telemetry"
       MONITOR_ADDRESS: ":5600"
+      MONITOR_PROVIDER_RECORDS_ENABLED: "false"
+      MONITOR_COLLECT_PERIOD: 300
     depends_on:
       - influxdb
       - prometheus

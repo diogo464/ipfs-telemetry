@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/diogo464/telemetry/pkg/actionqueue"
+	"github.com/diogo464/telemetry/pkg/datapoint"
 	pb "github.com/diogo464/telemetry/pkg/proto/monitor"
 	"github.com/diogo464/telemetry/pkg/telemetry"
 	"github.com/libp2p/go-libp2p-core/host"
@@ -22,6 +23,8 @@ const (
 
 type actionKind string
 
+type Cursors = map[string]uint32
+
 type action struct {
 	kind actionKind
 	pid  peer.ID
@@ -34,9 +37,9 @@ type taskResult struct {
 }
 
 type taskTelemetryResult struct {
-	session  telemetry.Session
-	nextSeqN uint64
-	err      error
+	session telemetry.Session
+	cursors map[string]uint32
+	err     error
 }
 
 type taskBandwidthResult struct {
@@ -51,7 +54,7 @@ type peerState struct {
 	id            peer.ID
 	failedAttemps int
 	lastSession   telemetry.Session
-	nextSeqN      uint64
+	cursors       Cursors
 	ctx           context.Context
 	cancel        context.CancelFunc
 }
@@ -171,7 +174,7 @@ func (s *Monitor) onActionDiscover(p peer.ID) {
 			id:            p,
 			failedAttemps: 0,
 			lastSession:   telemetry.InvalidSession,
-			nextSeqN:      0,
+			cursors:       make(map[string]uint32),
 			ctx:           ctx,
 			cancel:        cancel,
 		}
@@ -202,7 +205,7 @@ func (s *Monitor) onActionDiscover(p peer.ID) {
 func (s *Monitor) onActionTelemetry(p peer.ID) {
 	if state, ok := s.peers[p]; ok {
 		go func() {
-			result := s.taskCollectTelemetry(state.ctx, state.id, state.lastSession, state.nextSeqN)
+			result := s.taskCollectTelemetry(state.ctx, state.id, state.lastSession, state.cursors)
 			s.cresult <- &taskResult{
 				kind:   ActionTelemetry,
 				pid:    p,
@@ -245,7 +248,7 @@ func (s *Monitor) onActionRemove(p peer.ID) {
 	}
 }
 
-func (s *Monitor) taskCollectTelemetry(pctx context.Context, pid peer.ID, lastSession telemetry.Session, nextSeqN uint64) *taskTelemetryResult {
+func (s *Monitor) taskCollectTelemetry(pctx context.Context, pid peer.ID, lastSession telemetry.Session, cursors Cursors) *taskTelemetryResult {
 	ctx, cancel := context.WithTimeout(pctx, s.opts.CollectTimeout)
 	defer cancel()
 
@@ -270,40 +273,58 @@ func (s *Monitor) taskCollectTelemetry(pctx context.Context, pid peer.ID, lastSe
 	}
 	s.exporter.ExportSystemInfo(pid, session.Session, *system)
 
-	since := nextSeqN
 	if session.Session != lastSession {
-		since = 0
+		cursors = make(map[string]uint32)
 		lastSession = session.Session
 	}
 
-	logrus.WithField("peer", pid).Debug("exporting datapoints from ", nextSeqN)
+	logrus.WithField("peer", pid).Debug("exporting datapoints from ", cursors)
 
-	exportCount := 0
-	stream := make(chan telemetry.DatapointStreamItem)
-	go func(next *uint64, count *int) {
-		for item := range stream {
-			*next = item.NextSeqN
-			*count += len(item.Datapoints)
-			s.exporter.ExportDatapoints(pid, session.Session, item.Datapoints)
-		}
-	}(&nextSeqN, &exportCount)
-
-	err = client.Datapoints(ctx, since, stream)
+	streamNames, err := client.AvailableStreams(ctx)
 	if err != nil {
 		return &taskTelemetryResult{err: err}
 	}
-	close(stream)
+
+	datapointCounts := make(map[string]int)
+	datapoints := make([]datapoint.Datapoint, 0)
+	for _, streamName := range streamNames {
+		if decoder, ok := datapoint.Decoders[streamName]; ok {
+			since := cursors[streamName]
+
+			segments, err := client.Stream(ctx, since, streamName)
+			if err != nil {
+				return &taskTelemetryResult{err: err}
+			}
+
+			for _, segment := range segments {
+				if uint32(segment.SeqN+1) > since {
+					since = uint32(segment.SeqN + 1)
+				}
+				values, err := telemetry.StreamSegmentDecode(decoder, segment)
+				if err != nil {
+					return &taskTelemetryResult{err: err}
+				}
+				for _, v := range values {
+					datapointCounts[streamName] += 1
+					datapoints = append(datapoints, v)
+				}
+			}
+
+			cursors[streamName] = since
+		}
+	}
+
+	s.exporter.ExportDatapoints(pid, session.Session, datapoints)
 
 	logrus.
 		WithField("peer", pid).
-		WithField("since", since).
-		WithField("nextSeqN", nextSeqN).
-		Debug("exported ", exportCount, " datapoints")
+		WithField("total", len(datapoints)).
+		Debug("exported ", datapointCounts)
 
 	return &taskTelemetryResult{
-		session:  session.Session,
-		nextSeqN: nextSeqN,
-		err:      nil,
+		session: session.Session,
+		cursors: cursors,
+		err:     nil,
 	}
 }
 
@@ -347,12 +368,23 @@ func (s *Monitor) taskProviderRecords(pctx context.Context, pid peer.ID) *taskPr
 		return &taskProviderRecordsResult{err: err}
 	}
 
-	records, err := client.ProviderRecords(ctx)
+	crecords, err := client.ProviderRecords(ctx)
 	if err != nil {
 		return &taskProviderRecordsResult{err: err}
 	}
 
-	s.exporter.ExportProviderRecords(pid, session.Session, records)
+	recordBufSize := 1024
+	recordBuf := make([]telemetry.ProviderRecord, 0, recordBufSize)
+	for record := range crecords {
+		recordBuf = append(recordBuf, record)
+		if len(recordBuf) >= recordBufSize {
+			s.exporter.ExportProviderRecords(pid, session.Session, recordBuf)
+			recordBuf = make([]telemetry.ProviderRecord, recordBufSize)
+		}
+	}
+	if len(recordBuf) > 0 {
+		s.exporter.ExportProviderRecords(pid, session.Session, recordBuf)
+	}
 
 	return &taskProviderRecordsResult{err: nil}
 }
@@ -360,7 +392,7 @@ func (s *Monitor) taskProviderRecords(pctx context.Context, pid peer.ID) *taskPr
 func (s *Monitor) onTaskResultTelemetry(pid peer.ID, tresult *taskTelemetryResult) {
 	s.onTaskResultCommon(pid, ActionTelemetry, s.opts.CollectPeriod, tresult.err)
 	if state, ok := s.peers[pid]; ok && tresult.err == nil {
-		state.nextSeqN = tresult.nextSeqN
+		state.cursors = tresult.cursors
 		state.lastSession = tresult.session
 	}
 }
@@ -391,7 +423,7 @@ func (s *Monitor) onTaskResultCommon(pid peer.ID, kind actionKind, interval time
 					pid:  pid,
 				}))
 			} else {
-				logrus.WithField("peer", pid).Debug("retrying action ", kind, " in ", s.opts.RetryInterval)
+				logrus.WithField("peer", pid).Debug("retrying action ", kind, " in ", s.opts.RetryInterval, ". error: ", err)
 				s.actions.Push(actionqueue.After(&action{
 					kind: kind,
 					pid:  pid,

@@ -1,7 +1,6 @@
 syntax = "proto3";
 package telemetry;
 
-import "datapoint.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 
@@ -19,11 +18,29 @@ message ProviderRecord {
     google.protobuf.Timestamp last_refresh  = 3;
 }
 
+message TelemetryDebug {
+    message Stream {
+        string name     = 1;
+        uint32 used     = 2;
+        uint32 total    = 3;
+    }
+
+    google.protobuf.Timestamp timestamp     = 1;
+    repeated Stream streams                 = 2;
+}
+
+message StreamSegment {
+    uint32 seqn = 1;
+    bytes data  = 2;
+}
+
 service Telemetry {
     rpc GetSessionInfo(google.protobuf.Empty) returns (GetSessionInfoResponse);
     rpc GetSystemInfo(google.protobuf.Empty) returns (SystemInfo);
-    rpc GetDatapoints(GetDatapointsRequest) returns (stream GetDatapointsResponse);
-    rpc GetProviderRecords(google.protobuf.Empty) returns (stream ProviderRecord);
+    rpc GetAvailableStreams(GetAvailableStreamsRequest) returns (GetAvailableStreamsResponse);
+    rpc GetStream(GetStreamRequest) returns (stream StreamSegment);
+    rpc GetProviderRecords(GetProviderRecordsRequest) returns (stream ProviderRecord);
+    rpc GetDebug(google.protobuf.Empty) returns (TelemetryDebug);
 }
 
 message GetSessionInfoResponse  {
@@ -31,11 +48,15 @@ message GetSessionInfoResponse  {
     google.protobuf.Timestamp boot_time = 2;
 }
 
-message GetDatapointsRequest {
-    uint64 since    = 1;
+message GetAvailableStreamsRequest {}
+
+message GetAvailableStreamsResponse {
+    repeated string streams = 1;
 }
 
-message GetDatapointsResponse {
-    uint64 next                             = 1;
-    repeated datapoint.Datapoint datapoints = 2;
+message GetStreamRequest {
+    string stream   = 1;
+    uint32 seqn     = 2;
 }
+
+message GetProviderRecordsRequest {}

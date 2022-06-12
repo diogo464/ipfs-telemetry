@@ -7,7 +7,6 @@ import (
 	"net"
 
 	pb "github.com/diogo464/telemetry/pkg/proto/telemetry"
-	"github.com/diogo464/telemetry/pkg/telemetry/datapoint"
 	"github.com/diogo464/telemetry/pkg/telemetry/pbutils"
 	"github.com/diogo464/telemetry/pkg/utils"
 	"github.com/gogo/protobuf/types"
@@ -19,11 +18,6 @@ import (
 )
 
 var ErrInvalidResponse = fmt.Errorf("invalid response")
-
-type DatapointStreamItem struct {
-	NextSeqN   uint64
-	Datapoints []datapoint.Datapoint
-}
 
 type Client struct {
 	h host.Host
@@ -95,41 +89,49 @@ func (c *Client) SessionInfo(ctx context.Context) (*SessionInfo, error) {
 	}, nil
 }
 
-func (c *Client) Datapoints(ctx context.Context, since uint64, css chan<- DatapointStreamItem) error {
+func (c *Client) AvailableStreams(ctx context.Context) ([]string, error) {
 	client, err := c.newGrpcClient()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	stream, err := client.GetDatapoints(ctx, &pb.GetDatapointsRequest{
-		Since: since,
+	resp, err := client.GetAvailableStreams(ctx, &pb.GetAvailableStreamsRequest{})
+	if err != nil {
+		return nil, err
+	}
+
+	return resp.GetStreams(), nil
+}
+
+func (c *Client) Stream(ctx context.Context, since uint32, stream string) ([]StreamSegment, error) {
+	client, err := c.newGrpcClient()
+	if err != nil {
+		return nil, err
+	}
+
+	srv, err := client.GetStream(ctx, &pb.GetStreamRequest{
+		Stream: stream,
+		Seqn:   since,
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
+	segments := make([]StreamSegment, 0)
+
 	for {
-		response, err := stream.Recv()
+		seg, err := srv.Recv()
 		if err == io.EOF {
 			break
 		}
-		if err != nil {
-			return err
-		}
 
-		datapointspb := response.GetDatapoints()
-		datapoints, err := datapoint.FromArrayPB(datapointspb)
-		if err != nil {
-			return err
-		}
-
-		css <- DatapointStreamItem{
-			NextSeqN:   response.GetNext(),
-			Datapoints: datapoints,
-		}
+		segments = append(segments, StreamSegment{
+			SeqN: int(seg.GetSeqn()),
+			Data: seg.GetData(),
+		})
 	}
 
-	return nil
+	return segments, nil
 }
 
 func (c *Client) SystemInfo(ctx context.Context) (*SystemInfo, error) {
@@ -209,40 +211,69 @@ func (c *Client) Bandwidth(ctx context.Context, payload uint32) (Bandwidth, erro
 	}, nil
 }
 
-func (c *Client) ProviderRecords(ctx context.Context) ([]ProviderRecord, error) {
+func (c *Client) ProviderRecords(ctx context.Context) (<-chan ProviderRecord, error) {
 	client, err := c.newGrpcClient()
 	if err != nil {
 		return nil, err
 	}
 
-	stream, err := client.GetProviderRecords(ctx, &types.Empty{})
+	stream, err := client.GetProviderRecords(ctx, &pb.GetProviderRecordsRequest{})
 	if err != nil {
 		return nil, err
 	}
 
-	records := make([]ProviderRecord, 0)
-	for {
-		pbrecord, err := stream.Recv()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return nil, err
-		}
+	crecords := make(chan ProviderRecord)
+	go func() {
+		defer close(crecords)
 
-		pid, err := peer.IDFromBytes(pbrecord.Peer)
-		if err != nil {
-			return nil, err
-		}
+		for {
+			pbrecord, err := stream.Recv()
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				return
+			}
 
-		records = append(records, ProviderRecord{
-			Key:         pbrecord.Key,
-			Peer:        pid,
-			LastRefresh: pbutils.TimeFromPB(pbrecord.GetLastRefresh()),
+			pid, err := peer.IDFromBytes(pbrecord.Peer)
+			if err != nil {
+				return
+			}
+
+			crecords <- ProviderRecord{
+				Key:         pbrecord.Key,
+				Peer:        pid,
+				LastRefresh: pbutils.TimeFromPB(pbrecord.GetLastRefresh()),
+			}
+		}
+	}()
+
+	return crecords, nil
+}
+
+func (c *Client) Debug(ctx context.Context) (*Debug, error) {
+	client, err := c.newGrpcClient()
+	if err != nil {
+		return nil, err
+	}
+
+	pbdbg, err := client.GetDebug(ctx, &types.Empty{})
+	if err != nil {
+		return nil, err
+	}
+
+	streams := make([]DebugStream, 0, len(pbdbg.GetStreams()))
+	for _, pbs := range pbdbg.GetStreams() {
+		streams = append(streams, DebugStream{
+			Name:      pbs.Name,
+			UsedSize:  pbs.Used,
+			TotalSize: pbs.Total,
 		})
 	}
 
-	return records, nil
+	return &Debug{
+		Streams: streams,
+	}, nil
 }
 
 func (c *Client) newGrpcClient() (pb.TelemetryClient, error) {
