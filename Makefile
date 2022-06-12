@@ -38,6 +38,7 @@ tools:
 	$(GOCC) install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 	$(GOCC) install honnef.co/go/tools/cmd/staticcheck@latest 
 	$(GOCC) install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+	$(GOCC) install github.com/gogo/protobuf/protoc-gen-gogofast
 	mkdir -p bin/ && cd third_party/go-sumtype && $(GOCC) build -o ../../bin
 
 .PHONY: clean
