@@ -53,6 +53,21 @@ func TestStreamBufferPool(t *testing.T) {
 	assert.Equal(t, 0, pool.len())
 }
 
+func TestStreamBufferPoolPutGet(t *testing.T) {
+	allocSize := 1024
+	pool := newStreamBufferPool(allocSize)
+
+	b1 := pool.get(allocSize)
+	b2 := pool.get(allocSize)
+	b3 := pool.get(allocSize)
+	b4 := pool.get(allocSize)
+
+	pool.put(b1)
+	pool.put(b2)
+	pool.put(b3)
+	pool.put(b4)
+}
+
 func testSliceSameAddress(s1 []byte, s2 []byte) bool {
 	return reflect.ValueOf(s1).Pointer() == reflect.ValueOf(s2).Pointer()
 }
