@@ -7,8 +7,6 @@ import (
 	"github.com/diogo464/telemetry/pkg/datapoint"
 	"github.com/diogo464/telemetry/pkg/telemetry"
 	"github.com/ipfs/go-ipfs/core"
-	"github.com/libp2p/go-libp2p-core/metrics"
-	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/libp2p/go-libp2p/p2p/net/connmgr"
 )
 
@@ -56,18 +54,18 @@ func newNetworkFromNode(n *core.IpfsNode, collectBandwidthByPeer bool) *datapoin
 	reporter := n.Reporter
 	cmgr := n.PeerHost.ConnManager().(*connmgr.BasicConnMgr)
 	info := cmgr.GetInfo()
-	var bandwidthByPeer map[peer.ID]metrics.Stats = nil
-	if collectBandwidthByPeer {
-		bandwidthByPeer = reporter.GetBandwidthByPeer()
-	}
+	//var bandwidthByPeer map[peer.ID]metrics.Stats = nil
+	//if collectBandwidthByPeer {
+	//	bandwidthByPeer = reporter.GetBandwidthByPeer()
+	//}
 	return &datapoint.Network{
 		Timestamp:       datapoint.NewTimestamp(),
 		Addresses:       n.PeerHost.Addrs(),
 		Overall:         reporter.GetBandwidthTotals(),
 		StatsByProtocol: reporter.GetBandwidthByProtocol(),
-		StatsByPeer:     bandwidthByPeer,
-		NumConns:        uint32(info.ConnCount),
-		LowWater:        uint32(info.LowWater),
-		HighWater:       uint32(info.HighWater),
+		//StatsByPeer:     bandwidthByPeer,
+		NumConns:  uint32(info.ConnCount),
+		LowWater:  uint32(info.LowWater),
+		HighWater: uint32(info.HighWater),
 	}
 }

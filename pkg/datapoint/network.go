@@ -19,10 +19,10 @@ type Network struct {
 	Addresses       []multiaddr.Multiaddr         `json:"addresses"`
 	Overall         metrics.Stats                 `json:"overall"`
 	StatsByProtocol map[protocol.ID]metrics.Stats `json:"stats_by_protocol"`
-	StatsByPeer     map[peer.ID]metrics.Stats     `json:"stats_by_peer"`
-	NumConns        uint32                        `json:"numconns"`
-	LowWater        uint32                        `json:"lowwater"`
-	HighWater       uint32                        `json:"highwater"`
+	//StatsByPeer     map[peer.ID]metrics.Stats     `json:"stats_by_peer"`
+	NumConns  uint32 `json:"numconns"`
+	LowWater  uint32 `json:"lowwater"`
+	HighWater uint32 `json:"highwater"`
 }
 
 func NetworkSerialize(in *Network, stream *telemetry.Stream) error {
@@ -30,20 +30,29 @@ func NetworkSerialize(in *Network, stream *telemetry.Stream) error {
 	for k, v := range in.StatsByProtocol {
 		byprotocol[string(k)] = pbutils.MetricsStatsToPB(&v)
 	}
-	bypeer := make(map[string]*pb.Network_Stats)
-	for k, v := range in.StatsByPeer {
-		bypeer[k.Pretty()] = pbutils.MetricsStatsToPB(&v)
-	}
+
+	//bypeer := make([]*pb.Network_PeerStats, 0, len(in.StatsByPeer))
+	//for k, v := range in.StatsByPeer {
+	//	pid, err := k.MarshalBinary()
+	//	if err != nil {
+	//		return err
+	//	}
+
+	//	bypeer = append(bypeer, &pb.Network_PeerStats{
+	//		Peer:  pid,
+	//		Stats: pbutils.MetricsStatsToPB(&v),
+	//	})
+	//}
 
 	inpb := &pb.Network{
 		Timestamp:       pbutils.TimeToPB(&in.Timestamp),
 		Addresses:       pbutils.MultiAddrsToPB(in.Addresses),
 		StatsOverall:    pbutils.MetricsStatsToPB(&in.Overall),
 		StatsByProtocol: byprotocol,
-		StatsByPeer:     bypeer,
-		NumConns:        in.NumConns,
-		LowWater:        in.LowWater,
-		HighWater:       in.HighWater,
+		//StatsByPeer:     bypeer,
+		NumConns:  in.NumConns,
+		LowWater:  in.LowWater,
+		HighWater: in.HighWater,
 	}
 
 	return stream.AllocAndWrite(inpb.Size(), func(b []byte) error {
@@ -64,12 +73,12 @@ func NetworkDeserialize(in []byte) (*Network, error) {
 		byprotocol[protocol.ID(k)] = pbutils.MetricsStatsFromPB(v)
 	}
 	bypeer := make(map[peer.ID]metrics.Stats, len(inpb.GetStatsByPeer()))
-	for k, v := range inpb.GetStatsByPeer() {
-		p, err := peer.Decode(k)
+	for _, ps := range inpb.GetStatsByPeer() {
+		p, err := peer.IDFromBytes(ps.GetPeer())
 		if err != nil {
 			return nil, err
 		}
-		bypeer[p] = pbutils.MetricsStatsFromPB(v)
+		bypeer[p] = pbutils.MetricsStatsFromPB(ps.GetStats())
 	}
 	addresses := make([]multiaddr.Multiaddr, 0, len(inpb.GetAddresses()))
 	for _, a := range inpb.GetAddresses() {
@@ -85,9 +94,9 @@ func NetworkDeserialize(in []byte) (*Network, error) {
 		Addresses:       addresses,
 		Overall:         pbutils.MetricsStatsFromPB(inpb.GetStatsOverall()),
 		StatsByProtocol: byprotocol,
-		StatsByPeer:     bypeer,
-		NumConns:        inpb.GetNumConns(),
-		LowWater:        inpb.GetLowWater(),
-		HighWater:       inpb.GetHighWater(),
+		//StatsByPeer:     bypeer,
+		NumConns:  inpb.GetNumConns(),
+		LowWater:  inpb.GetLowWater(),
+		HighWater: inpb.GetHighWater(),
 	}, nil
 }

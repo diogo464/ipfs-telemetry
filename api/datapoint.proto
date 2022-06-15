@@ -60,6 +60,11 @@ message Network {
         uint64 rate_out     = 4;
     }
 
+    message PeerStats {
+        bytes peer  = 1;
+        Stats stats = 2;
+    }
+
     google.protobuf.Timestamp timestamp     = 1;
     // multiaddresses of this peer
     repeated string addresses               = 2;
@@ -68,7 +73,7 @@ message Network {
     map<string, Stats> stats_by_protocol    = 4;
     // PeerID -> Stats.
     // Not allways present.
-    map<string, Stats> stats_by_peer        = 5;
+    repeated PeerStats stats_by_peer        = 5;
     uint32 num_conns                        = 6;
     uint32 low_water                        = 7;
     uint32 high_water                       = 8;
