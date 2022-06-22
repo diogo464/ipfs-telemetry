@@ -19,10 +19,12 @@ func actionProviderRecords(c *cli.Context) error {
 	}
 	defer client.Close()
 
-	info, err := client.ProviderRecords(context.Background())
+	crecords, err := client.ProviderRecords(context.Background())
 	if err != nil {
 		return err
 	}
-	printAsJson(info)
+	for record := range crecords {
+		printAsJson(record)
+	}
 	return nil
 }
