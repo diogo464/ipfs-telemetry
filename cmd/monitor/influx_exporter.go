@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"reflect"
 	"time"
@@ -116,13 +117,13 @@ func (e *InfluxExporter) ExportBandwidth(p peer.ID, sess telemetry.Session, bw t
 }
 
 func (e *InfluxExporter) ExportProviderRecords(p peer.ID, sess telemetry.Session, records []telemetry.ProviderRecord) {
-	if data, err := json.Marshal(records); err == nil {
-		point := influxdb2.NewPointWithMeasurement("provider_records").
-			AddField("count", len(records)).
-			AddField("data", data)
-		e.writePointWithTime(p, sess, time.Now(), point)
-	} else {
-		logrus.Error("failed to encode provider records: ", err)
+	now := time.Now()
+	for _, record := range records {
+		point := influxdb2.NewPointWithMeasurement("provider_record").
+			AddTag("key", base64.StdEncoding.EncodeToString(record.Key)).
+			AddField("provider", record.Peer.String()).
+			AddField("last_refresh", record.LastRefresh)
+		e.writePointWithTime(p, sess, now, point)
 	}
 }
 
