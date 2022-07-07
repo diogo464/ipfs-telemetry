@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/diogo464/telemetry/pkg/crawler"
@@ -45,29 +46,47 @@ func main() {
 
 func mainAction(c *cli.Context) error {
 	for {
-		monitor_conn, err := grpc.Dial(c.String(FLAG_MONITOR.Name), grpc.WithTransportCredentials(insecure.NewCredentials()))
+		var monitor_conn *grpc.ClientConn
+		var crawler_conn *grpc.ClientConn
+		var mon monitor.Client
+		var crw *crawler.Client
+		var peers chan peer.ID
+		var wg *sync.WaitGroup = new(sync.WaitGroup)
+		var err error
+
+		monitor_conn, err = grpc.Dial(c.String(FLAG_MONITOR.Name), grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
-			return err
+			goto end
 		}
 
-		crawler_conn, err := grpc.Dial(c.String(FLAG_CRAWLER.Name), grpc.WithTransportCredentials(insecure.NewCredentials()))
+		crawler_conn, err = grpc.Dial(c.String(FLAG_CRAWLER.Name), grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
-			return err
+			goto end
 		}
 
-		mon := monitor.NewClient(monitor_conn)
-		crw := crawler.NewClient(crawler_conn)
-		peers := make(chan peer.ID)
+		wg.Add(1)
+		mon = monitor.NewClient(monitor_conn)
+		crw = crawler.NewClient(crawler_conn)
+		peers = make(chan peer.ID)
 		go func() {
 			for p := range peers {
-				if err := mon.Discover(c.Context, p); err != nil {
+				if err = mon.Discover(c.Context, p); err != nil {
 					fmt.Println(err)
 					break
+				} else {
+					fmt.Println("Discovered", p)
 				}
 			}
+			wg.Done()
 		}()
 
-		err = crw.Subscribe(c.Context, peers)
+		go func() {
+			err = crw.Subscribe(c.Context, peers)
+			wg.Done()
+		}()
+
+		wg.Wait()
+	end:
 		if err != nil {
 			fmt.Println(err)
 		}
