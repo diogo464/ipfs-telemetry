@@ -1,9 +1,9 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
-	"sync"
 	"time"
 
 	"github.com/diogo464/telemetry/pkg/crawler"
@@ -44,52 +44,50 @@ func main() {
 	fmt.Println("Finished")
 }
 
-func mainAction(c *cli.Context) error {
-	for {
-		var monitor_conn *grpc.ClientConn
-		var crawler_conn *grpc.ClientConn
-		var mon monitor.Client
-		var crw *crawler.Client
-		var peers chan peer.ID
-		var wg *sync.WaitGroup = new(sync.WaitGroup)
-		var err error
+func notifyMonitor(c *cli.Context) error {
+	fmt.Println("connecting to monitor")
+	monitor_conn, err := grpc.Dial(c.String(FLAG_MONITOR.Name), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		return err
+	}
+	defer monitor_conn.Close()
 
-		monitor_conn, err = grpc.Dial(c.String(FLAG_MONITOR.Name), grpc.WithTransportCredentials(insecure.NewCredentials()))
-		if err != nil {
-			goto end
-		}
+	fmt.Println("connecting to crawler")
+	crawler_conn, err := grpc.Dial(c.String(FLAG_CRAWLER.Name), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		return err
+	}
+	defer crawler_conn.Close()
 
-		crawler_conn, err = grpc.Dial(c.String(FLAG_CRAWLER.Name), grpc.WithTransportCredentials(insecure.NewCredentials()))
-		if err != nil {
-			goto end
-		}
-
-		wg.Add(1)
-		mon = monitor.NewClient(monitor_conn)
-		crw = crawler.NewClient(crawler_conn)
-		peers = make(chan peer.ID)
-		go func() {
-			for p := range peers {
-				if err = mon.Discover(c.Context, p); err != nil {
-					fmt.Println(err)
-					break
-				} else {
-					fmt.Println("Discovered", p)
-				}
-			}
-			wg.Done()
-		}()
-
-		go func() {
-			err = crw.Subscribe(c.Context, peers)
-			wg.Done()
-		}()
-
-		wg.Wait()
-	end:
-		if err != nil {
+	fmt.Println("creating clients")
+	mon := monitor.NewClient(monitor_conn)
+	crw := crawler.NewClient(crawler_conn)
+	peers := make(chan peer.ID)
+	fmt.Println("subscribing to crawler")
+	go func() {
+		ctx, cancel := context.WithTimeout(c.Context, time.Second*5)
+		defer cancel()
+		if err := crw.Subscribe(ctx, peers); err != nil {
 			fmt.Println(err)
 		}
-		time.Sleep(time.Second)
+	}()
+
+	for p := range peers {
+		if err := mon.Discover(c.Context, p); err != nil {
+			return err
+		} else {
+			fmt.Println("Discovered", p)
+		}
+	}
+
+	return nil
+}
+
+func mainAction(c *cli.Context) error {
+	for {
+		if err := notifyMonitor(c); err != nil {
+			fmt.Println(err)
+		}
+		time.Sleep(time.Second * 5)
 	}
 }

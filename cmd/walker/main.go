@@ -141,7 +141,7 @@ func mainAction(c *cli.Context) error {
 
 	file, err := os.Create(c.String(FLAG_OUTPUT.Name))
 	if err != nil {
-		return err
+		return nil
 	}
 	defer file.Close()
 
