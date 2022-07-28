@@ -1,7 +1,6 @@
 package telemetry
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -19,6 +18,34 @@ import (
 
 var ErrInvalidResponse = fmt.Errorf("invalid response")
 var ErrNotUsingLibp2p = fmt.Errorf("not using libp2p")
+
+var _ io.Reader = (*propertyReader)(nil)
+
+type propertyReader struct {
+	b []byte
+	c pb.Telemetry_GetPropertyClient
+}
+
+func newPropertyReader(c pb.Telemetry_GetPropertyClient) *propertyReader {
+	return &propertyReader{c: c, b: []byte{}}
+}
+
+// Read implements io.Reader
+func (r *propertyReader) Read(p []byte) (n int, err error) {
+	for len(p) > 0 {
+		if len(r.b) == 0 {
+			seg, err := r.c.Recv()
+			if err != nil {
+				return n, err
+			}
+			r.b = seg.GetData()
+		}
+		n += copy(p, r.b)
+		p = p[n:]
+		r.b = r.b[n:]
+	}
+	return n, nil
+}
 
 type Client struct {
 	// Can be null if we are not connected using libp2p
@@ -209,7 +236,7 @@ func (c *Client) AvailableProperties(ctx context.Context) ([]PropertyDescriptor,
 	return properties, nil
 }
 
-func (c *Client) Property(ctx context.Context, property string) ([]byte, error) {
+func (c *Client) Property(ctx context.Context, property string) (io.Reader, error) {
 	client, err := c.newGrpcClient()
 	if err != nil {
 		return nil, err
@@ -222,18 +249,7 @@ func (c *Client) Property(ctx context.Context, property string) ([]byte, error) 
 		return nil, err
 	}
 
-	var writer bytes.Buffer
-	for {
-		data, err := response.Recv()
-		if err != nil {
-			if err == io.EOF || err == ctx.Err() {
-				break
-			}
-			return nil, err
-		}
-		writer.Write(data.GetData())
-	}
-	return writer.Bytes(), nil
+	return newPropertyReader(response), nil
 }
 
 func (c *Client) SystemInfo(ctx context.Context) (*SystemInfo, error) {

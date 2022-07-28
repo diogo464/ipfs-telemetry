@@ -1,15 +1,33 @@
 package main
 
 import (
-	telemetry_cli "github.com/diogo464/telemetry/cli"
 	"github.com/urfave/cli/v2"
 )
+
+// Type erased stream decoder
+type streamDecoder func([]byte) (interface{}, error)
+
+var FLAGS = []cli.Flag{
+	FLAG_CONN_TYPE,
+	FLAG_HOST,
+}
+
+var COMMANDS = []*cli.Command{
+	CommandUpload,
+	CommandDownload,
+	CommandDebug,
+	CommandSessionInfo,
+	CommandSystemInfo,
+	CommandStreams,
+	CommandProperties,
+	CommandWalk,
+}
 
 func main() {
 	app := &cli.App{
 		Name:     "telemetry",
-		Flags:    telemetry_cli.FLAGS,
-		Commands: telemetry_cli.COMMANDS,
+		Flags:    FLAGS,
+		Commands: COMMANDS,
 	}
 	app.RunAndExitOnError()
 }

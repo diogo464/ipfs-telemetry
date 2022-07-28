@@ -1,4 +1,4 @@
-package cli
+package main
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-var commandStreams = &cli.Command{
+var CommandStreams = &cli.Command{
 	Name:        "streams",
 	Description: "Show available streams",
 	Action:      actionStreams,

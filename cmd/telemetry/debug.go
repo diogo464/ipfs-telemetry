@@ -1,4 +1,4 @@
-package cli
+package main
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-var commandDebug = &cli.Command{
+var CommandDebug = &cli.Command{
 	Name:   "debug",
 	Action: actionDebug,
 }

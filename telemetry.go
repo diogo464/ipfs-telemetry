@@ -4,7 +4,6 @@ import (
 	"time"
 
 	logging "github.com/ipfs/go-log"
-	"github.com/libp2p/go-libp2p-core/peer"
 )
 
 // log is the command logger
@@ -42,12 +41,6 @@ type SessionInfo struct {
 type Bandwidth struct {
 	UploadRate   uint32 `json:"upload_rate"`
 	DownloadRate uint32 `json:"download_rate"`
-}
-
-type ProviderRecord struct {
-	Key         []byte    `json:"key"`
-	Peer        peer.ID   `json:"peer"`
-	LastRefresh time.Time `json:"last_refresh"`
 }
 
 type DebugStream struct {

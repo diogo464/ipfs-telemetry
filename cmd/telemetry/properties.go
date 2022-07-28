@@ -1,4 +1,4 @@
-package cli
+package main
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-var commandProperties = &cli.Command{
+var CommandProperties = &cli.Command{
 	Name:        "properties",
 	Description: "Show available properties",
 	Action:      actionProperties,

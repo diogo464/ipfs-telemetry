@@ -13,12 +13,6 @@ message SystemInfo {
     uint32 numcpu   = 3;
 }
 
-message ProviderRecord {
-    bytes key                               = 1;
-    bytes peer                              = 2;
-    google.protobuf.Timestamp last_refresh  = 3;
-}
-
 message TelemetryDebug {
     message Stream {
         string name     = 1;
