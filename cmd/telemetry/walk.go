@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 
-	"git.d464.sh/uni/telemetry"
-	"git.d464.sh/uni/telemetry/walker"
+	"github.com/diogo464/telemetry"
+	"github.com/diogo464/telemetry/walker"
 	"github.com/libp2p/go-libp2p"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/urfave/cli/v2"

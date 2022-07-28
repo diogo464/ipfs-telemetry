@@ -1,4 +1,4 @@
-module git.d464.sh/uni/telemetry
+module github.com/diogo464/telemetry
 
 go 1.18
 

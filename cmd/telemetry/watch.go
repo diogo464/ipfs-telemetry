@@ -4,7 +4,7 @@ package main
 //	"fmt"
 //	"time"
 //
-//	"git.d464.sh/uni/telemetry"
+//	"github.com/diogo464/telemetry"
 //	"github.com/diogo464/telemetry/pkg/datapoint"
 //	"github.com/urfave/cli/v2"
 //)

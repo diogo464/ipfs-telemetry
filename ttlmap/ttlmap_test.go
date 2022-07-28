@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"git.d464.sh/uni/telemetry/ttlmap"
+	"github.com/diogo464/telemetry/ttlmap"
 )
 
 func TestTTLMap(t *testing.T) {

@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"git.d464.sh/uni/telemetry/pb"
+	"github.com/diogo464/telemetry/pb"
 	"github.com/libp2p/go-libp2p-core/host"
 	gostream "github.com/libp2p/go-libp2p-gostream"
 	"google.golang.org/grpc"

@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 
-	"git.d464.sh/uni/telemetry/vecdeque"
-	"git.d464.sh/uni/telemetry/walker/preimage"
+	"github.com/diogo464/telemetry/vecdeque"
+	"github.com/diogo464/telemetry/walker/preimage"
 	"github.com/libp2p/go-libp2p-core/host"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/libp2p/go-libp2p-core/peerstore"

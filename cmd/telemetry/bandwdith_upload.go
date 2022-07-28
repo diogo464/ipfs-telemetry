@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"git.d464.sh/uni/telemetry"
+	"github.com/diogo464/telemetry"
 	"github.com/urfave/cli/v2"
 )
 

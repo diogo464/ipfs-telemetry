@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 
-	"git.d464.sh/uni/telemetry/rle"
-	"git.d464.sh/uni/telemetry/vecdeque"
+	"github.com/diogo464/telemetry/rle"
+	"github.com/diogo464/telemetry/vecdeque"
 )
 
 type StreamDecoder[T any] func([]byte) (T, error)

@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	"git.d464.sh/uni/telemetry"
+	"github.com/diogo464/telemetry"
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p-core/host"
 	"github.com/urfave/cli/v2"

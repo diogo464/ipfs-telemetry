@@ -7,8 +7,8 @@ import (
 	"io"
 	"net"
 
-	"git.d464.sh/uni/telemetry/pb"
-	"git.d464.sh/uni/telemetry/utils"
+	"github.com/diogo464/telemetry/pb"
+	"github.com/diogo464/telemetry/utils"
 	"github.com/gogo/protobuf/types"
 	"github.com/libp2p/go-libp2p-core/host"
 	"github.com/libp2p/go-libp2p-core/peer"

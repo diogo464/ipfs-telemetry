@@ -4,7 +4,7 @@ import (
 	"io"
 	"time"
 
-	"git.d464.sh/uni/telemetry/rle"
+	"github.com/diogo464/telemetry/rle"
 	"github.com/gogo/protobuf/types"
 	"github.com/multiformats/go-multiaddr"
 	"google.golang.org/protobuf/proto"
