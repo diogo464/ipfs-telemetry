@@ -10,9 +10,9 @@ import (
 var log = logging.Logger("telemetry")
 
 const (
-	ID_TELEMETRY               = "/telemetry/telemetry/0.2.0"
-	ID_UPLOAD                  = "/telemetry/upload/0.2.0"
-	ID_DOWNLOAD                = "/telemetry/download/0.2.0"
+	ID_TELEMETRY               = "/telemetry/telemetry/0.3.0"
+	ID_UPLOAD                  = "/telemetry/upload/0.3.0"
+	ID_DOWNLOAD                = "/telemetry/download/0.3.0"
 	DEFAULT_PAYLOAD_SIZE       = 32 * 1024 * 1024
 	MAX_PAYLOAD_SIZE           = 128 * 1024 * 1024
 	DATAPOINT_FETCH_BLOCK_SIZE = 128
