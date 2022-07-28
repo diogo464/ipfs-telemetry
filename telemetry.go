@@ -3,8 +3,12 @@ package telemetry
 import (
 	"time"
 
+	logging "github.com/ipfs/go-log"
 	"github.com/libp2p/go-libp2p-core/peer"
 )
+
+// log is the command logger
+var log = logging.Logger("telemetry")
 
 const (
 	ID_TELEMETRY               = "/telemetry/telemetry/0.2.0"

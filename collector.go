@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"time"
-
-	"github.com/sirupsen/logrus"
 )
 
 var ErrCollectorAlreadyRegistered = fmt.Errorf("collector already registered")
@@ -83,7 +81,7 @@ LOOP:
 		case <-ticker.C:
 			latestSeqN := stream.LatestSeqN()
 			if err := collector.Collect(ctx, stream); err != nil {
-				logrus.Error("collector error[", descriptor.Name, "]: ", err)
+				log.Errorf("collector error[", descriptor.Name, "]: ", err)
 			}
 			if latestSeqN != stream.LatestSeqN() {
 				s.notifyObservers(descriptor.Name)
