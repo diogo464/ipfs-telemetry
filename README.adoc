@@ -8,7 +8,7 @@
 [source, bash]
 ----
 $ # Example for Ubuntu x64
-$ wget https://github.com/diogo464/telemetry/releases/latest/download/ipfs_linux-amd64.deb
+$ wget https://github.com/diogo464/ipfs_telemetry/releases/latest/download/ipfs_linux-amd64.deb
 $ sudo apt install -f ./ipfs_linux-amd64.deb
 $ ipfs init --profile server
 $ systemctl --user enable --now ipfs
@@ -25,6 +25,6 @@ Use the image `ghcr.io/diogo464/ipfs:latest`
 To check the installation is working
 [source, bash]
 ----
-$ docker run --rm --network host -i ghcr.io/diogo464/telemetry:latest telemetry info /ip4/127.0.0.1/tcp/4001/p2p/<peer id>
+$ docker run --rm --network host -i ghcr.io/diogo464/ipfs_telemetry:latest telemetry info /ip4/127.0.0.1/tcp/4001/p2p/<peer id>
 ----
 
