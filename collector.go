@@ -81,7 +81,7 @@ LOOP:
 		case <-ticker.C:
 			latestSeqN := stream.LatestSeqN()
 			if err := collector.Collect(ctx, stream); err != nil {
-				log.Errorf("collector error[", descriptor.Name, "]: ", err)
+				log.Warnf("collector error[", descriptor.Name, "]: ", err)
 			}
 			if latestSeqN != stream.LatestSeqN() {
 				s.notifyObservers(descriptor.Name)
