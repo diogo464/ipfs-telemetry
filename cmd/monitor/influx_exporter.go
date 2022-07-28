@@ -116,7 +116,7 @@ func (e *InfluxExporter) ExportBandwidth(p peer.ID, sess telemetry.Session, bw t
 	e.writePointWithTime(p, sess, time.Now(), point)
 }
 
-func (e *InfluxExporter) ExportProviderRecords(p peer.ID, sess telemetry.Session, records []telemetry.ProviderRecord) {
+func (e *InfluxExporter) ExportProviderRecords(p peer.ID, sess telemetry.Session, records []datapoint.ProviderRecord) {
 	now := time.Now()
 	for _, record := range records {
 		point := influxdb2.NewPointWithMeasurement("provider_record").

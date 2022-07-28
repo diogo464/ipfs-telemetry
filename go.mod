@@ -3,7 +3,7 @@ module github.com/diogo464/ipfs_telemetry
 go 1.18
 
 require (
-	github.com/diogo464/telemetry v0.0.0-20220728142438-c455c741e0ad
+	github.com/diogo464/telemetry v0.0.0-20220728210440-7117ed84d39d
 	github.com/gammazero/deque v0.1.1
 	github.com/gogo/protobuf v1.3.2
 	github.com/influxdata/influxdb-client-go/v2 v2.8.2

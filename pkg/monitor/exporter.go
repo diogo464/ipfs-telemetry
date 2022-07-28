@@ -14,7 +14,7 @@ type Exporter interface {
 	ExportSystemInfo(peer.ID, telemetry.Session, telemetry.SystemInfo)
 	ExportDatapoints(peer.ID, telemetry.Session, []datapoint.Datapoint)
 	ExportBandwidth(peer.ID, telemetry.Session, telemetry.Bandwidth)
-	ExportProviderRecords(peer.ID, telemetry.Session, []telemetry.ProviderRecord)
+	ExportProviderRecords(peer.ID, telemetry.Session, []datapoint.ProviderRecord)
 }
 
 type fnExporter struct {
@@ -27,7 +27,7 @@ func (e *fnExporter) ExportDatapoints(peer peer.ID, session telemetry.Session, d
 	e.fn(peer, session, datapoints)
 }
 func (e *fnExporter) ExportBandwidth(peer.ID, telemetry.Session, telemetry.Bandwidth)              {}
-func (e *fnExporter) ExportProviderRecords(peer.ID, telemetry.Session, []telemetry.ProviderRecord) {}
+func (e *fnExporter) ExportProviderRecords(peer.ID, telemetry.Session, []datapoint.ProviderRecord) {}
 
 func NewExporterFn(fn func(peer.ID, telemetry.Session, []datapoint.Datapoint)) Exporter {
 	return &fnExporter{fn}
@@ -36,7 +36,7 @@ func NewExporterFn(fn func(peer.ID, telemetry.Session, []datapoint.Datapoint)) E
 type NullExporter struct{}
 
 // ExportProviderRecords implements Exporter
-func (*NullExporter) ExportProviderRecords(peer.ID, telemetry.Session, []telemetry.ProviderRecord) {
+func (*NullExporter) ExportProviderRecords(peer.ID, telemetry.Session, []datapoint.ProviderRecord) {
 }
 
 // ExportBandwidth implements Exporter

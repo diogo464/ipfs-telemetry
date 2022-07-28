@@ -192,6 +192,12 @@ message HolePunch {
     uint32 failure                              = 3;
 }
 
+message ProviderRecord {
+    bytes key                               = 1;
+    bytes peer                              = 2;
+    google.protobuf.Timestamp last_refresh  = 3;
+}
+
 message Window {
     google.protobuf.Timestamp timestamp         = 1;
     google.protobuf.Duration window_duration    = 2;
@@ -220,5 +226,6 @@ message Datapoint  {
         RelayComplete relay_complete        = 15;
         RelayStats relay_stats              = 16;
         HolePunch holepunch                 = 17;
+        ProviderRecord provider_record      = 18;
     }
 }
