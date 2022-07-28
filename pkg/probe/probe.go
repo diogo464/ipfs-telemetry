@@ -5,9 +5,9 @@ import (
 	"sync"
 	"time"
 
-	pb "github.com/diogo464/telemetry/pkg/proto/probe"
-	"github.com/diogo464/telemetry/pkg/telemetry/pbutils"
-	"github.com/diogo464/telemetry/pkg/walker"
+	"github.com/diogo464/ipfs_telemetry/pkg/pbutils"
+	pb "github.com/diogo464/ipfs_telemetry/pkg/proto/probe"
+	"github.com/diogo464/telemetry/walker"
 	"github.com/gammazero/deque"
 	"github.com/gogo/protobuf/types"
 	"github.com/ipfs/go-cid"

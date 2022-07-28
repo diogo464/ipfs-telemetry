@@ -5,8 +5,8 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/diogo464/telemetry/pkg/datapoint"
-	"github.com/diogo464/telemetry/pkg/telemetry"
+	"github.com/diogo464/ipfs_telemetry/pkg/datapoint"
+	"github.com/diogo464/telemetry"
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/mem"
 	"github.com/shirou/gopsutil/process"
@@ -36,9 +36,15 @@ func Resources() (telemetry.Collector, error) {
 	}, nil
 }
 
-// Name implements telemetry.Collector
-func (*resourcesCollector) Name() string {
-	return "Resources"
+// Descriptor implements telemetry.Collector
+func (*resourcesCollector) Descriptor() telemetry.CollectorDescriptor {
+	return telemetry.CollectorDescriptor{
+		Name: datapoint.ResourceName,
+	}
+}
+
+// Open implements telemetry.Collector
+func (*resourcesCollector) Open() {
 }
 
 // Close implements Collector

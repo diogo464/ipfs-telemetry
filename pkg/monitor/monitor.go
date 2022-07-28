@@ -4,10 +4,10 @@ import (
 	"context"
 	"time"
 
-	"github.com/diogo464/telemetry/pkg/actionqueue"
-	"github.com/diogo464/telemetry/pkg/datapoint"
-	pb "github.com/diogo464/telemetry/pkg/proto/monitor"
-	"github.com/diogo464/telemetry/pkg/telemetry"
+	"github.com/diogo464/ipfs_telemetry/pkg/actionqueue"
+	"github.com/diogo464/ipfs_telemetry/pkg/datapoint"
+	pb "github.com/diogo464/ipfs_telemetry/pkg/proto/monitor"
+	"github.com/diogo464/telemetry"
 	"github.com/libp2p/go-libp2p-core/host"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/sirupsen/logrus"
@@ -23,7 +23,7 @@ const (
 
 type actionKind string
 
-type Cursors = map[string]uint32
+type Cursors = map[string]int
 
 type action struct {
 	kind actionKind
@@ -38,7 +38,7 @@ type taskResult struct {
 
 type taskTelemetryResult struct {
 	session telemetry.Session
-	cursors map[string]uint32
+	cursors Cursors
 	err     error
 }
 
@@ -174,7 +174,7 @@ func (s *Monitor) onActionDiscover(p peer.ID) {
 			id:            p,
 			failedAttemps: 0,
 			lastSession:   telemetry.InvalidSession,
-			cursors:       make(map[string]uint32),
+			cursors:       make(map[string]int),
 			ctx:           ctx,
 			cancel:        cancel,
 		}
@@ -274,31 +274,32 @@ func (s *Monitor) taskCollectTelemetry(pctx context.Context, pid peer.ID, lastSe
 	s.exporter.ExportSystemInfo(pid, session.Session, *system)
 
 	if session.Session != lastSession {
-		cursors = make(map[string]uint32)
+		cursors = make(map[string]int)
 		lastSession = session.Session
 	}
 
 	logrus.WithField("peer", pid).Debug("exporting datapoints from ", cursors)
 
-	streamNames, err := client.AvailableStreams(ctx)
+	streamDescriptors, err := client.AvailableStreams(ctx)
 	if err != nil {
 		return &taskTelemetryResult{err: err}
 	}
 
 	datapointCounts := make(map[string]int)
 	datapoints := make([]datapoint.Datapoint, 0)
-	for _, streamName := range streamNames {
+	for _, descriptor := range streamDescriptors {
+		streamName := descriptor.Name
 		if decoder, ok := datapoint.Decoders[streamName]; ok {
 			since := cursors[streamName]
 
-			segments, err := client.Stream(ctx, since, streamName)
+			segments, err := client.Segments(ctx, streamName, since)
 			if err != nil {
 				return &taskTelemetryResult{err: err}
 			}
 
 			for _, segment := range segments {
-				if uint32(segment.SeqN+1) > since {
-					since = uint32(segment.SeqN + 1)
+				if segment.SeqN+1 > since {
+					since = segment.SeqN + 1
 				}
 				values, err := telemetry.StreamSegmentDecode(decoder, segment)
 				if err != nil {
@@ -354,37 +355,38 @@ func (s *Monitor) taskBandwidth(pctx context.Context, pid peer.ID) *taskBandwidt
 }
 
 func (s *Monitor) taskProviderRecords(pctx context.Context, pid peer.ID) *taskProviderRecordsResult {
-	ctx, cancel := context.WithTimeout(pctx, s.opts.ProviderRecordsTimeout)
-	defer cancel()
+	// TODO(d464): fix provider records
+	//ctx, cancel := context.WithTimeout(pctx, s.opts.ProviderRecordsTimeout)
+	//defer cancel()
 
-	client, err := telemetry.NewClient(s.h, pid)
-	if err != nil {
-		return &taskProviderRecordsResult{err: err}
-	}
-	defer client.Close()
+	//client, err := telemetry.NewClient(s.h, pid)
+	//if err != nil {
+	//	return &taskProviderRecordsResult{err: err}
+	//}
+	//defer client.Close()
 
-	session, err := client.SessionInfo(ctx)
-	if err != nil {
-		return &taskProviderRecordsResult{err: err}
-	}
+	//session, err := client.SessionInfo(ctx)
+	//if err != nil {
+	//	return &taskProviderRecordsResult{err: err}
+	//}
 
-	crecords, err := client.ProviderRecords(ctx)
-	if err != nil {
-		return &taskProviderRecordsResult{err: err}
-	}
+	//crecords, err := client.ProviderRecords(ctx)
+	//if err != nil {
+	//	return &taskProviderRecordsResult{err: err}
+	//}
 
-	recordBufSize := 1024
-	recordBuf := make([]telemetry.ProviderRecord, 0, recordBufSize)
-	for record := range crecords {
-		recordBuf = append(recordBuf, record)
-		if len(recordBuf) >= recordBufSize {
-			s.exporter.ExportProviderRecords(pid, session.Session, recordBuf)
-			recordBuf = make([]telemetry.ProviderRecord, recordBufSize)
-		}
-	}
-	if len(recordBuf) > 0 {
-		s.exporter.ExportProviderRecords(pid, session.Session, recordBuf)
-	}
+	//recordBufSize := 1024
+	//recordBuf := make([]telemetry.ProviderRecord, 0, recordBufSize)
+	//for record := range crecords {
+	//	recordBuf = append(recordBuf, record)
+	//	if len(recordBuf) >= recordBufSize {
+	//		s.exporter.ExportProviderRecords(pid, session.Session, recordBuf)
+	//		recordBuf = make([]telemetry.ProviderRecord, recordBufSize)
+	//	}
+	//}
+	//if len(recordBuf) > 0 {
+	//	s.exporter.ExportProviderRecords(pid, session.Session, recordBuf)
+	//}
 
 	return &taskProviderRecordsResult{err: nil}
 }

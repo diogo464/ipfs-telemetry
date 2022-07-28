@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/diogo464/telemetry/pkg/monitor"
+	"github.com/diogo464/ipfs_telemetry/pkg/monitor"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/urfave/cli/v2"
 	"google.golang.org/grpc"

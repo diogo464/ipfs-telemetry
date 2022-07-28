@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/diogo464/telemetry/pkg/telemetry"
+	"github.com/diogo464/telemetry"
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p-core/host"
 	"github.com/libp2p/go-libp2p-core/peer"
@@ -22,7 +22,7 @@ func init() {
 
 func main() {
 	h := createHost()
-	client, err := telemetry.Connect(context.Background(), h, LOCAL_PEER)
+	client, err := telemetry.NewClient(h, LOCAL_PEER)
 	die(err)
 
 	for {

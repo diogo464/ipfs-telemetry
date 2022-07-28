@@ -3,9 +3,9 @@ package datapoint
 import (
 	"time"
 
-	pb "github.com/diogo464/telemetry/pkg/proto/datapoint"
-	"github.com/diogo464/telemetry/pkg/telemetry"
-	"github.com/diogo464/telemetry/pkg/telemetry/pbutils"
+	"github.com/diogo464/ipfs_telemetry/pkg/pbutils"
+	pb "github.com/diogo464/ipfs_telemetry/pkg/proto/datapoint"
+	"github.com/diogo464/telemetry"
 )
 
 const BitswapName = "bitswap"

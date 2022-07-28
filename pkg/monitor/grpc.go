@@ -3,8 +3,8 @@ package monitor
 import (
 	"context"
 
-	"github.com/diogo464/telemetry/pkg/actionqueue"
-	pb "github.com/diogo464/telemetry/pkg/proto/monitor"
+	"github.com/diogo464/ipfs_telemetry/pkg/actionqueue"
+	pb "github.com/diogo464/ipfs_telemetry/pkg/proto/monitor"
 	"github.com/gogo/protobuf/types"
 	"github.com/libp2p/go-libp2p-core/peer"
 )

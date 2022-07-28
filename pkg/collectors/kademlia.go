@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/diogo464/telemetry/pkg/datapoint"
-	"github.com/diogo464/telemetry/pkg/telemetry"
-	"github.com/diogo464/telemetry/pkg/telemetry/measurements"
+	"github.com/diogo464/ipfs_telemetry/pkg/datapoint"
+	"github.com/diogo464/ipfs_telemetry/pkg/measurements"
+	"github.com/diogo464/telemetry"
 	"github.com/libp2p/go-libp2p-core/peer"
 	pb "github.com/libp2p/go-libp2p-kad-dht/pb"
 	"go.uber.org/atomic"
@@ -58,6 +58,17 @@ func (*kademliaCollector) PushHandler(p peer.ID, m pb.Message_MessageType, handl
 func (*kademliaCollector) PushQuery(peer.ID, pb.Message_MessageType, time.Duration) {
 }
 
+// Descriptor implements telemetry.Collector
+func (*kademliaCollector) Descriptor() telemetry.CollectorDescriptor {
+	return telemetry.CollectorDescriptor{
+		Name: datapoint.KademliaName,
+	}
+}
+
+// Open implements telemetry.Collector
+func (*kademliaCollector) Open() {
+}
+
 // Close implements telemetry.Collector
 func (*kademliaCollector) Close() {
 }
@@ -72,11 +83,6 @@ func (c *kademliaCollector) Collect(_ context.Context, stream *telemetry.Stream)
 	}
 	c.kadpb.Timestamp = datapoint.NewTimestamp()
 	return datapoint.KademliaSerialize(&c.kadpb, stream)
-}
-
-// Name implements telemetry.Collector
-func (*kademliaCollector) Name() string {
-	return "Kademlia"
 }
 
 func ConvertKademliaMessageType(in pb.Message_MessageType) datapoint.KademliaMessageType {

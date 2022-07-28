@@ -4,11 +4,11 @@ import (
 	"context"
 	"time"
 
-	"github.com/diogo464/telemetry/pkg/datapoint"
-	"github.com/diogo464/telemetry/pkg/telemetry"
-	"github.com/diogo464/telemetry/pkg/telemetry/measurements"
+	"github.com/diogo464/ipfs_telemetry/pkg/datapoint"
+	"github.com/diogo464/ipfs_telemetry/pkg/measurements"
+	"github.com/diogo464/telemetry"
 	"github.com/ipfs/go-bitswap"
-	"github.com/ipfs/go-ipfs/core"
+	"github.com/ipfs/kubo/core"
 	"go.uber.org/atomic"
 )
 
@@ -41,9 +41,15 @@ func Bitswap(n *core.IpfsNode) telemetry.Collector {
 	return c
 }
 
-// Name implements telemetry.Collector
-func (*bitswapCollector) Name() string {
-	return "Bitswap"
+// Descriptor implements telemetry.Collector
+func (*bitswapCollector) Descriptor() telemetry.CollectorDescriptor {
+	return telemetry.CollectorDescriptor{
+		Name: datapoint.BitswapName,
+	}
+}
+
+// Open implements telemetry.Collector
+func (*bitswapCollector) Open() {
 }
 
 // Close implements Collector

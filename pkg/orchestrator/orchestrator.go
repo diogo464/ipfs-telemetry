@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/diogo464/telemetry/pkg/probe"
-	"github.com/diogo464/telemetry/pkg/utils"
+	"github.com/diogo464/ipfs_telemetry/pkg/probe"
+	"github.com/diogo464/ipfs_telemetry/pkg/utils"
 	"github.com/ipfs/go-cid"
 	"github.com/ipfs/go-datastore"
 	"github.com/libp2p/go-libp2p"

@@ -1,54 +1,19 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
-	"os"
-
-	"github.com/diogo464/telemetry/pkg/telemetry"
-	"github.com/libp2p/go-libp2p"
-	"github.com/libp2p/go-libp2p-core/peer"
-	"github.com/libp2p/go-libp2p-core/peerstore"
+	"github.com/diogo464/ipfs_telemetry/pkg/datapoint"
+	telemetry_cli "github.com/diogo464/telemetry/cli"
 	"github.com/urfave/cli/v2"
 )
 
 func main() {
+	for name, decoder := range datapoint.Decoders {
+		telemetry_cli.RegisterStreamDecoder(name, decoder)
+	}
 	app := &cli.App{
-		Name: "telemetry",
-		Commands: []*cli.Command{
-			CommandSystemInfo,
-			CommandSessionInfo,
-			CommandUpload,
-			CommandDownload,
-			CommandWatch,
-			CommandTraceRoute,
-			CommandProviderRecords,
-			CommandDebug,
-		},
+		Name:     "telemetry",
+		Flags:    telemetry_cli.FLAGS,
+		Commands: telemetry_cli.COMMANDS,
 	}
-	if err := app.Run(os.Args); err != nil {
-		panic(err)
-	}
-}
-
-func clientFromAddr(addr string) (*telemetry.Client, error) {
-	info, err := peer.AddrInfoFromString(addr)
-	if err != nil {
-		return nil, err
-	}
-	h, err := libp2p.New(libp2p.NoListenAddrs)
-	if err != nil {
-		return nil, err
-	}
-	fmt.Println(info)
-	h.Peerstore().AddAddrs(info.ID, info.Addrs, peerstore.PermanentAddrTTL)
-	return telemetry.NewClient(h, info.ID)
-}
-
-func printAsJson(v interface{}) {
-	marshaled, err := json.MarshalIndent(v, "", "  ")
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println(string(marshaled))
+	app.RunAndExitOnError()
 }

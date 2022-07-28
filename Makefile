@@ -27,9 +27,8 @@ proto:
 	protoc $(GOGOPROTO_FLAGS) api/datapoint.proto
 	protoc $(GOGOPROTO_FLAGS) api/monitor.proto
 	protoc $(GOGOPROTO_FLAGS) api/probe.proto
-	protoc $(GOGOPROTO_FLAGS) api/telemetry.proto
 	rm -rf pkg/proto
-	mv github.com/diogo464/telemetry/pkg/proto pkg/
+	mv github.com/diogo464/ipfs_telemetry/pkg/proto pkg/
 	rm -rf github.com
 
 .PHONY: tools

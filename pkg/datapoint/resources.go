@@ -3,11 +3,12 @@ package datapoint
 import (
 	"time"
 
-	pb "github.com/diogo464/telemetry/pkg/proto/datapoint"
-	"github.com/diogo464/telemetry/pkg/telemetry"
-	"github.com/diogo464/telemetry/pkg/telemetry/pbutils"
+	"github.com/diogo464/ipfs_telemetry/pkg/pbutils"
+	pb "github.com/diogo464/ipfs_telemetry/pkg/proto/datapoint"
+	"github.com/diogo464/telemetry"
 )
 
+// TODO(d464): rename to ResourcesName
 const ResourceName = "resources"
 
 type Resources struct {

@@ -3,9 +3,9 @@ package datapoint
 import (
 	"time"
 
-	pb "github.com/diogo464/telemetry/pkg/proto/datapoint"
-	"github.com/diogo464/telemetry/pkg/telemetry"
-	"github.com/diogo464/telemetry/pkg/telemetry/pbutils"
+	pb "github.com/diogo464/ipfs_telemetry/pkg/proto/datapoint"
+	"github.com/diogo464/telemetry"
+	"github.com/diogo464/ipfs_telemetry/pkg/pbutils"
 	"github.com/libp2p/go-libp2p-core/metrics"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/libp2p/go-libp2p-core/protocol"

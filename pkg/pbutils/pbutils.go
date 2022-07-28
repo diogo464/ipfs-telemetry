@@ -4,9 +4,9 @@ import (
 	"io"
 	"time"
 
-	pbc "github.com/diogo464/telemetry/pkg/proto/common"
-	pbs "github.com/diogo464/telemetry/pkg/proto/datapoint"
-	"github.com/diogo464/telemetry/pkg/rle"
+	pbc "github.com/diogo464/ipfs_telemetry/pkg/proto/common"
+	pbs "github.com/diogo464/ipfs_telemetry/pkg/proto/datapoint"
+	"github.com/diogo464/ipfs_telemetry/pkg/rle"
 	"github.com/gogo/protobuf/types"
 	"github.com/libp2p/go-libp2p-core/metrics"
 	"github.com/libp2p/go-libp2p-core/peer"

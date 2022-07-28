@@ -5,9 +5,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/diogo464/telemetry/pkg/datapoint"
-	"github.com/diogo464/telemetry/pkg/telemetry"
-	"github.com/diogo464/telemetry/pkg/telemetry/measurements"
+	"github.com/diogo464/ipfs_telemetry/pkg/datapoint"
+	"github.com/diogo464/ipfs_telemetry/pkg/measurements"
+	"github.com/diogo464/telemetry"
 	"github.com/libp2p/go-libp2p-core/peer"
 	pb "github.com/libp2p/go-libp2p-kad-dht/pb"
 )
@@ -67,6 +67,17 @@ func (c *kademliaHandlerCollector) PushHandler(p peer.ID, m pb.Message_MessageTy
 func (*kademliaHandlerCollector) PushQuery(p peer.ID, t pb.Message_MessageType, d time.Duration) {
 }
 
+// Descriptor implements telemetry.Collector
+func (*kademliaHandlerCollector) Descriptor() telemetry.CollectorDescriptor {
+	return telemetry.CollectorDescriptor{
+		Name: datapoint.KademliaHandlerName,
+	}
+}
+
+// Open implements telemetry.Collector
+func (*kademliaHandlerCollector) Open() {
+}
+
 // Close implements telemetry.Collector
 func (c *kademliaHandlerCollector) Close() {
 	c.cancel()
@@ -92,11 +103,6 @@ func (c *kademliaHandlerCollector) Collect(_ context.Context, stream *telemetry.
 	c.handlers = make([]kademliaHandlerTiming, 0, len(c.handlers))
 
 	return nil
-}
-
-// Name implements telemetry.Collector
-func (*kademliaHandlerCollector) Name() string {
-	return "Kademlia Handlers"
 }
 
 func (c *kademliaHandlerCollector) chanLoop() {

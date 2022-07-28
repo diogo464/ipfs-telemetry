@@ -3,7 +3,7 @@ package datapoint
 import (
 	"time"
 
-	"github.com/diogo464/telemetry/pkg/telemetry"
+	"github.com/diogo464/telemetry"
 )
 
 type Datapoint interface{}

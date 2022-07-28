@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/diogo464/telemetry/pkg/datapoint"
-	"github.com/diogo464/telemetry/pkg/telemetry"
+	"github.com/diogo464/ipfs_telemetry/pkg/datapoint"
+	"github.com/diogo464/telemetry"
 	"github.com/libp2p/go-libp2p-core/host"
 	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/libp2p/go-libp2p-core/peer"
@@ -33,9 +33,15 @@ func Ping(h host.Host, opts PingOptions) telemetry.Collector {
 	}
 }
 
-// Name implements telemetry.Collector
-func (*pingCollector) Name() string {
-	return "Ping"
+// Descriptor implements telemetry.Collector
+func (*pingCollector) Descriptor() telemetry.CollectorDescriptor {
+	return telemetry.CollectorDescriptor{
+		Name: datapoint.PingName,
+	}
+}
+
+// Open implements telemetry.Collector
+func (*pingCollector) Open() {
 }
 
 // Close implements Collector

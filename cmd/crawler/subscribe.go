@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/diogo464/telemetry/pkg/crawler"
+	"github.com/diogo464/ipfs_telemetry/pkg/crawler"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/urfave/cli/v2"
 	"google.golang.org/grpc"

@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/diogo464/telemetry/pkg/walker"
+	"github.com/diogo464/telemetry/walker"
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/multiformats/go-multiaddr"

@@ -3,8 +3,8 @@ package collectors
 import (
 	"context"
 
-	"github.com/diogo464/telemetry/pkg/datapoint"
-	"github.com/diogo464/telemetry/pkg/telemetry"
+	"github.com/diogo464/ipfs_telemetry/pkg/datapoint"
+	"github.com/diogo464/telemetry"
 	"github.com/libp2p/go-libp2p-core/host"
 )
 
@@ -20,9 +20,15 @@ func Connections(h host.Host) telemetry.Collector {
 	}
 }
 
-// Name implements telemetry.Collector
-func (*connectionsCollector) Name() string {
-	return "Connections"
+// Descriptor implements telemetry.Collector
+func (*connectionsCollector) Descriptor() telemetry.CollectorDescriptor {
+	return telemetry.CollectorDescriptor{
+		Name: datapoint.ConnectionsName,
+	}
+}
+
+// Open implements telemetry.Collector
+func (*connectionsCollector) Open() {
 }
 
 // Close implements Collector

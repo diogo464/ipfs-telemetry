@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/diogo464/telemetry/pkg/datapoint"
-	"github.com/diogo464/telemetry/pkg/telemetry"
-	"github.com/ipfs/go-ipfs/core"
+	"github.com/diogo464/ipfs_telemetry/pkg/datapoint"
+	"github.com/diogo464/telemetry"
+	"github.com/ipfs/kubo/core"
 	"github.com/libp2p/go-libp2p/p2p/net/connmgr"
 )
 
@@ -30,9 +30,15 @@ func Network(n *core.IpfsNode, opts NetworkOptions) telemetry.Collector {
 	}
 }
 
-// Name implements telemetry.Collector
-func (*networkCollector) Name() string {
-	return "Network"
+// Descriptor implements telemetry.Collector
+func (*networkCollector) Descriptor() telemetry.CollectorDescriptor {
+	return telemetry.CollectorDescriptor{
+		Name: datapoint.NetworkName,
+	}
+}
+
+// Open implements telemetry.Collector
+func (*networkCollector) Open() {
 }
 
 // Close implements Collector

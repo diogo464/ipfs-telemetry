@@ -1,7 +1,7 @@
 syntax = "proto3";
 package telemetry;
 
-option go_package = "github.com/diogo464/telemetry/pkg/proto/common";
+option go_package = "github.com/diogo464/ipfs_telemetry/pkg/proto/common";
 
 message AddrInfo {
     string id               = 1;

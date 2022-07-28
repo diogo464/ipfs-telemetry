@@ -3,10 +3,10 @@ package collectors
 import (
 	"context"
 
-	"github.com/diogo464/telemetry/pkg/datapoint"
-	"github.com/diogo464/telemetry/pkg/telemetry"
-	"github.com/diogo464/telemetry/pkg/traceroute"
-	"github.com/diogo464/telemetry/pkg/utils"
+	"github.com/diogo464/ipfs_telemetry/pkg/datapoint"
+	"github.com/diogo464/ipfs_telemetry/pkg/traceroute"
+	"github.com/diogo464/ipfs_telemetry/pkg/utils"
+	"github.com/diogo464/telemetry"
 	"github.com/libp2p/go-libp2p-core/host"
 	"github.com/libp2p/go-libp2p-core/peer"
 )
@@ -25,10 +25,15 @@ func TraceRoute(h host.Host) telemetry.Collector {
 	}
 }
 
-// Name implements telemetry.Collector
-func (*tracerouteCollector) Name() string {
-	return "TraceRoute"
+// Descriptor implements telemetry.Collector
+func (*tracerouteCollector) Descriptor() telemetry.CollectorDescriptor {
+	return telemetry.CollectorDescriptor{
+		Name: datapoint.TraceRouteName,
+	}
 }
+
+// Open implements telemetry.Collector
+func (*tracerouteCollector) Open() {}
 
 // Close implements Collector
 func (c *tracerouteCollector) Close() {

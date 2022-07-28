@@ -3,7 +3,7 @@ package crawler
 import (
 	"context"
 
-	pb "github.com/diogo464/telemetry/pkg/proto/crawler"
+	pb "github.com/diogo464/ipfs_telemetry/pkg/proto/crawler"
 	"github.com/gogo/protobuf/types"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"google.golang.org/grpc"

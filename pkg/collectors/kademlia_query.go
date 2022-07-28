@@ -5,9 +5,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/diogo464/telemetry/pkg/datapoint"
-	"github.com/diogo464/telemetry/pkg/telemetry"
-	"github.com/diogo464/telemetry/pkg/telemetry/measurements"
+	"github.com/diogo464/ipfs_telemetry/pkg/datapoint"
+	"github.com/diogo464/ipfs_telemetry/pkg/measurements"
+	"github.com/diogo464/telemetry"
 	"github.com/libp2p/go-libp2p-core/peer"
 	pb "github.com/libp2p/go-libp2p-kad-dht/pb"
 )
@@ -65,6 +65,17 @@ func (c *kademliaQueryCollector) PushQuery(p peer.ID, t pb.Message_MessageType, 
 	}
 }
 
+// Descriptor implements telemetry.Collector
+func (*kademliaQueryCollector) Descriptor() telemetry.CollectorDescriptor {
+	return telemetry.CollectorDescriptor{
+		Name: datapoint.KademliaQueryName,
+	}
+}
+
+// Open implements telemetry.Collector
+func (*kademliaQueryCollector) Open() {
+}
+
 // Close implements telemetry.Collector
 func (c *kademliaQueryCollector) Close() {
 	c.cancel()
@@ -90,11 +101,6 @@ func (c *kademliaQueryCollector) Collect(_ context.Context, stream *telemetry.St
 	c.queries = make([]kademliaQueryTiming, 0, len(c.queries))
 
 	return nil
-}
-
-// Name implements telemetry.Collector
-func (*kademliaQueryCollector) Name() string {
-	return "Kademlia Queries"
 }
 
 func (c *kademliaQueryCollector) chanLoop() {
