@@ -134,6 +134,9 @@ func (c *Client) AvailableStreams(ctx context.Context) ([]StreamDescriptor, erro
 		if err != nil {
 			return nil, err
 		}
+		if avail.GetPeriod() == nil {
+			return nil, ErrInvalidResponse
+		}
 		streams = append(streams, StreamDescriptor{
 			Name:     avail.GetName(),
 			Period:   utils.DurationFromPB(avail.GetPeriod()),
