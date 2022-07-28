@@ -1,4 +1,4 @@
-package main
+package cli
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-var CommandUpload = &cli.Command{
+var commandUpload = &cli.Command{
 	Name:   "upload",
 	Action: actionUpload,
 }

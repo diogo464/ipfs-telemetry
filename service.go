@@ -154,6 +154,9 @@ func (s *Service) RegisterProperty(property Property, opts ...PropertyOption) er
 	if config.overrideEncoding != nil {
 		descriptor.Encoding = *config.overrideEncoding
 	}
+	if descriptor.Encoding == "" {
+		descriptor.Encoding = ENCODING_UNKNOWN
+	}
 
 	s.properties[descriptor.Name] = &servicePropertyEntry{
 		property:   property,

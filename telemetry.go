@@ -18,8 +18,10 @@ const (
 	BLOCK_DURATION_BANDWIDTH = time.Minute * 5
 	BLOCK_DURATION_STREAM    = time.Minute * 5
 
-	ENCODING_JSON    = "json"
-	ENCODING_UNKNOWN = "unknown"
+	ENCODING_JSON     = "json"
+	ENCODING_PROTOBUF = "protobuf"
+	ENCODING_CUSTOM   = "custom"
+	ENCODING_UNKNOWN  = "unknown"
 )
 
 type SystemInfo struct {

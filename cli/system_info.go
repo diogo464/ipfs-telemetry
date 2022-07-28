@@ -1,4 +1,4 @@
-package main
+package cli
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-var CommandSystemInfo = &cli.Command{
+var commandSystemInfo = &cli.Command{
 	Name:    "system-info",
 	Aliases: []string{"system"},
 	Action:  actionSystemInfo,

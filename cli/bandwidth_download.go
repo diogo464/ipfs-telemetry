@@ -1,4 +1,4 @@
-package main
+package cli
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-var CommandDownload = &cli.Command{
+var commandDownload = &cli.Command{
 	Name:   "download",
 	Action: actionDownload,
 }

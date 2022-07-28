@@ -1,4 +1,4 @@
-package main
+package cli
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-var CommandSessionInfo = &cli.Command{
+var commandSessionInfo = &cli.Command{
 	Name:    "session-info",
 	Aliases: []string{"session"},
 	Action:  actionSessionInfo,

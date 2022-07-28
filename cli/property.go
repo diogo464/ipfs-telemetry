@@ -1,4 +1,4 @@
-package main
+package cli
 
 import (
 	"encoding/json"
@@ -7,7 +7,7 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-var CommandProperty = &cli.Command{
+var commandProperty = &cli.Command{
 	Name:        "property",
 	Description: "retreive a property from a node",
 	Action:      actionProperty,

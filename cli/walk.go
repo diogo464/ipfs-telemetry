@@ -1,4 +1,4 @@
-package main
+package cli
 
 import (
 	"fmt"
@@ -10,17 +10,17 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-var FLAG_WALK_PROTOCOL = &cli.StringFlag{
+var fLAG_WALK_PROTOCOL = &cli.StringFlag{
 	Name:  "protocol",
 	Value: telemetry.ID_TELEMETRY,
 	Usage: "The protocol to search for",
 }
 
-var CommandWalk = &cli.Command{
+var commandWalk = &cli.Command{
 	Name:        "walk",
 	Description: "walk dht to find peer supporting the telemetry protocol",
 	Action:      actionWalk,
-	Flags:       []cli.Flag{FLAG_WALK_PROTOCOL},
+	Flags:       []cli.Flag{fLAG_WALK_PROTOCOL},
 }
 
 func actionWalk(c *cli.Context) error {
@@ -29,7 +29,7 @@ func actionWalk(c *cli.Context) error {
 		return err
 	}
 
-	targetProto := c.String(FLAG_WALK_PROTOCOL.Name)
+	targetProto := c.String(fLAG_WALK_PROTOCOL.Name)
 	w, err := walker.New(
 		h,
 		walker.WithObserver(walker.NewPeerObserverFn(func(p *walker.Peer) {

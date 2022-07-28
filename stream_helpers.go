@@ -4,6 +4,15 @@ import (
 	"encoding/json"
 )
 
+func JsonObjStreamDecoder(encoded []byte) (map[string]interface{}, error) {
+	var obj map[string]interface{}
+	err := json.Unmarshal(encoded, &obj)
+	if err != nil {
+		return nil, err
+	}
+	return obj, nil
+}
+
 func JsonStreamDecoder(encoded []byte) (string, error) {
 	var obj map[string]interface{}
 	err := json.Unmarshal(encoded, &obj)
