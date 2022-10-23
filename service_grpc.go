@@ -12,9 +12,9 @@ import (
 	"github.com/diogo464/telemetry/pb"
 	"github.com/diogo464/telemetry/utils"
 	"github.com/gogo/protobuf/types"
-	"github.com/libp2p/go-libp2p-core/host"
-	"github.com/libp2p/go-libp2p-core/network"
-	"github.com/libp2p/go-libp2p-core/peer"
+	"github.com/libp2p/go-libp2p/core/host"
+	"github.com/libp2p/go-libp2p/core/network"
+	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/multiformats/go-multiaddr"
 	grpc_peer "google.golang.org/grpc/peer"
 )

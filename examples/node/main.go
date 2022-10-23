@@ -8,7 +8,7 @@ import (
 
 	"github.com/diogo464/telemetry"
 	"github.com/libp2p/go-libp2p"
-	"github.com/libp2p/go-libp2p-core/host"
+	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/urfave/cli/v2"
 )
 

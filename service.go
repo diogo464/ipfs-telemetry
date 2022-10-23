@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/diogo464/telemetry/pb"
-	"github.com/libp2p/go-libp2p-core/host"
 	gostream "github.com/libp2p/go-libp2p-gostream"
+	"github.com/libp2p/go-libp2p/core/host"
 	"google.golang.org/grpc"
 )
 
