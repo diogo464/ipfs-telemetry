@@ -16,9 +16,10 @@ var COMMANDS = []*cli.Command{
 	CommandUpload,
 	CommandDownload,
 	CommandDebug,
-	CommandSessionInfo,
-	CommandSystemInfo,
+	CommandSession,
+	CommandStream,
 	CommandStreams,
+	CommandProperty,
 	CommandProperties,
 	CommandWalk,
 }

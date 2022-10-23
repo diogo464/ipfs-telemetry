@@ -6,7 +6,6 @@ import (
 	"io"
 	"math"
 	"net"
-	"runtime"
 	"time"
 
 	"github.com/diogo464/telemetry/pb"
@@ -61,29 +60,17 @@ func (w propertyWriter) Write(p []byte) (n int, err error) {
 	return written, nil
 }
 
-func (s *Service) GetSessionInfo(context.Context, *types.Empty) (*pb.GetSessionInfoResponse, error) {
-	response := &pb.GetSessionInfoResponse{
-		Session:  s.session.String(),
-		BootTime: utils.TimeToPB(&s.bootTime),
-	}
-	return response, nil
-}
-
-func (s *Service) GetSystemInfo(context.Context, *types.Empty) (*pb.SystemInfo, error) {
-	response := &pb.SystemInfo{
-		Os:     runtime.GOOS,
-		Arch:   runtime.GOARCH,
-		Numcpu: uint32(runtime.NumCPU()),
-	}
-	return response, nil
+func (s *Service) GetSession(ctx context.Context, req *pb.GetSessionRequest) (*pb.GetSessionResponse, error) {
+	return &pb.GetSessionResponse{
+		Uuid: s.session.String(),
+	}, nil
 }
 
 func (s *Service) GetAvailableStreams(req *pb.GetAvailableStreamsRequest, srv pb.Telemetry_GetAvailableStreamsServer) error {
 	for _, entry := range s.streams {
 		srv.Send(&pb.AvailableStream{
 			Name:     entry.descriptor.Name,
-			Period:   utils.DurationToPB(&entry.descriptor.Period),
-			Encoding: entry.descriptor.Encoding,
+			Encoding: uint32(entry.descriptor.Encoding),
 		})
 	}
 	return nil
@@ -159,7 +146,7 @@ func (s *Service) GetAvailableProperties(req *pb.GetAvailablePropertiesRequest, 
 	for _, entry := range s.properties {
 		err := srv.Send(&pb.AvailableProperty{
 			Name:     entry.descriptor.Name,
-			Encoding: entry.descriptor.Encoding,
+			Encoding: uint32(entry.descriptor.Encoding),
 		})
 		if err != nil {
 			return err

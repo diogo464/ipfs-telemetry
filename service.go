@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net"
 	"sync"
-	"time"
 
 	"github.com/diogo464/telemetry/pb"
 	gostream "github.com/libp2p/go-libp2p-gostream"
@@ -36,7 +35,6 @@ type Service struct {
 	ctx        context.Context
 	cancel     context.CancelFunc
 	grpcServer *grpc.Server
-	bootTime   time.Time
 
 	// all modifications should be done at the start so that no locking is required
 	streams    map[string]*serviceStreamEntry
@@ -56,12 +54,11 @@ func NewService(h host.Host, os ...ServiceOption) (*Service, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	session := RandomSession()
 	t := &Service{
-		session:  session,
-		opts:     opts,
-		h:        h,
-		ctx:      ctx,
-		cancel:   cancel,
-		bootTime: time.Now().UTC(),
+		session: session,
+		opts:    opts,
+		h:       h,
+		ctx:     ctx,
+		cancel:  cancel,
 
 		streams:    make(map[string]*serviceStreamEntry),
 		properties: make(map[string]*servicePropertyEntry),
@@ -104,7 +101,7 @@ func (s *Service) Context() context.Context {
 	return s.ctx
 }
 
-func (s *Service) RegisterCollector(collector Collector, opts ...CollectorOption) error {
+func (s *Service) Register(collector Collector, opts ...CollectorOption) error {
 	config := collectorConfigDefaults()
 	if err := collectorConfigApply(config, opts...); err != nil {
 		return err
@@ -115,14 +112,14 @@ func (s *Service) RegisterCollector(collector Collector, opts ...CollectorOption
 		return ErrCollectorAlreadyRegistered
 	}
 
-	if config.overrideName != nil {
-		descriptor.Name = *config.overrideName
+	if config.name != nil {
+		descriptor.Name = *config.name
 	}
-	if config.overridePeriod != nil {
-		descriptor.Period = *config.overridePeriod
+	if config.period != nil {
+		descriptor.Period = *config.period
 	}
-	if config.overrideEncoding != nil {
-		descriptor.Encoding = *config.overrideEncoding
+	if config.encoding != nil {
+		descriptor.Encoding = *config.encoding
 	}
 
 	stream := NewStream(s.opts.defaultStreamOptions...)
@@ -153,9 +150,6 @@ func (s *Service) RegisterProperty(property Property, opts ...PropertyOption) er
 	}
 	if config.overrideEncoding != nil {
 		descriptor.Encoding = *config.overrideEncoding
-	}
-	if descriptor.Encoding == "" {
-		descriptor.Encoding = ENCODING_UNKNOWN
 	}
 
 	s.properties[descriptor.Name] = &servicePropertyEntry{

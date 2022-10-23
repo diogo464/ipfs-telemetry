@@ -21,7 +21,7 @@ func streamDefault() *streamOptions {
 	return &streamOptions{
 		maxSize:              8 * 1024 * 1024,
 		maxWriteSize:         1 * 1024 * 1024,
-		defaultBufferSize:    128 * 1024,
+		defaultBufferSize:    4 * 1024,
 		activeBufferLifetime: time.Minute * 5,
 		segmentLifetime:      time.Minute * 30,
 	}

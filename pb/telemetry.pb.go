@@ -27,69 +27,6 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-type SystemInfo struct {
-	Os                   string   `protobuf:"bytes,1,opt,name=os,proto3" json:"os,omitempty"`
-	Arch                 string   `protobuf:"bytes,2,opt,name=arch,proto3" json:"arch,omitempty"`
-	Numcpu               uint32   `protobuf:"varint,3,opt,name=numcpu,proto3" json:"numcpu,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *SystemInfo) Reset()         { *m = SystemInfo{} }
-func (m *SystemInfo) String() string { return proto.CompactTextString(m) }
-func (*SystemInfo) ProtoMessage()    {}
-func (*SystemInfo) Descriptor() ([]byte, []int) {
-	return fileDescriptor_32310995d0f6af31, []int{0}
-}
-func (m *SystemInfo) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *SystemInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_SystemInfo.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *SystemInfo) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_SystemInfo.Merge(m, src)
-}
-func (m *SystemInfo) XXX_Size() int {
-	return m.Size()
-}
-func (m *SystemInfo) XXX_DiscardUnknown() {
-	xxx_messageInfo_SystemInfo.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_SystemInfo proto.InternalMessageInfo
-
-func (m *SystemInfo) GetOs() string {
-	if m != nil {
-		return m.Os
-	}
-	return ""
-}
-
-func (m *SystemInfo) GetArch() string {
-	if m != nil {
-		return m.Arch
-	}
-	return ""
-}
-
-func (m *SystemInfo) GetNumcpu() uint32 {
-	if m != nil {
-		return m.Numcpu
-	}
-	return 0
-}
-
 type TelemetryDebug struct {
 	Timestamp            *types.Timestamp         `protobuf:"bytes,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
 	Streams              []*TelemetryDebug_Stream `protobuf:"bytes,2,rep,name=streams,proto3" json:"streams,omitempty"`
@@ -102,7 +39,7 @@ func (m *TelemetryDebug) Reset()         { *m = TelemetryDebug{} }
 func (m *TelemetryDebug) String() string { return proto.CompactTextString(m) }
 func (*TelemetryDebug) ProtoMessage()    {}
 func (*TelemetryDebug) Descriptor() ([]byte, []int) {
-	return fileDescriptor_32310995d0f6af31, []int{1}
+	return fileDescriptor_32310995d0f6af31, []int{0}
 }
 func (m *TelemetryDebug) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -158,7 +95,7 @@ func (m *TelemetryDebug_Stream) Reset()         { *m = TelemetryDebug_Stream{} }
 func (m *TelemetryDebug_Stream) String() string { return proto.CompactTextString(m) }
 func (*TelemetryDebug_Stream) ProtoMessage()    {}
 func (*TelemetryDebug_Stream) Descriptor() ([]byte, []int) {
-	return fileDescriptor_32310995d0f6af31, []int{1, 0}
+	return fileDescriptor_32310995d0f6af31, []int{0, 0}
 }
 func (m *TelemetryDebug_Stream) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -208,6 +145,92 @@ func (m *TelemetryDebug_Stream) GetTotal() uint32 {
 	return 0
 }
 
+type GetSessionRequest struct {
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *GetSessionRequest) Reset()         { *m = GetSessionRequest{} }
+func (m *GetSessionRequest) String() string { return proto.CompactTextString(m) }
+func (*GetSessionRequest) ProtoMessage()    {}
+func (*GetSessionRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_32310995d0f6af31, []int{1}
+}
+func (m *GetSessionRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetSessionRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetSessionRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *GetSessionRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetSessionRequest.Merge(m, src)
+}
+func (m *GetSessionRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetSessionRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetSessionRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetSessionRequest proto.InternalMessageInfo
+
+type GetSessionResponse struct {
+	Uuid                 string   `protobuf:"bytes,1,opt,name=uuid,proto3" json:"uuid,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *GetSessionResponse) Reset()         { *m = GetSessionResponse{} }
+func (m *GetSessionResponse) String() string { return proto.CompactTextString(m) }
+func (*GetSessionResponse) ProtoMessage()    {}
+func (*GetSessionResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_32310995d0f6af31, []int{2}
+}
+func (m *GetSessionResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetSessionResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetSessionResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *GetSessionResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetSessionResponse.Merge(m, src)
+}
+func (m *GetSessionResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetSessionResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetSessionResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetSessionResponse proto.InternalMessageInfo
+
+func (m *GetSessionResponse) GetUuid() string {
+	if m != nil {
+		return m.Uuid
+	}
+	return ""
+}
+
 type StreamSegment struct {
 	Seqn                 uint32   `protobuf:"varint,1,opt,name=seqn,proto3" json:"seqn,omitempty"`
 	Data                 []byte   `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`
@@ -220,7 +243,7 @@ func (m *StreamSegment) Reset()         { *m = StreamSegment{} }
 func (m *StreamSegment) String() string { return proto.CompactTextString(m) }
 func (*StreamSegment) ProtoMessage()    {}
 func (*StreamSegment) Descriptor() ([]byte, []int) {
-	return fileDescriptor_32310995d0f6af31, []int{2}
+	return fileDescriptor_32310995d0f6af31, []int{3}
 }
 func (m *StreamSegment) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -259,61 +282,6 @@ func (m *StreamSegment) GetSeqn() uint32 {
 func (m *StreamSegment) GetData() []byte {
 	if m != nil {
 		return m.Data
-	}
-	return nil
-}
-
-type GetSessionInfoResponse struct {
-	Session              string           `protobuf:"bytes,1,opt,name=session,proto3" json:"session,omitempty"`
-	BootTime             *types.Timestamp `protobuf:"bytes,2,opt,name=boot_time,json=bootTime,proto3" json:"boot_time,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
-	XXX_unrecognized     []byte           `json:"-"`
-	XXX_sizecache        int32            `json:"-"`
-}
-
-func (m *GetSessionInfoResponse) Reset()         { *m = GetSessionInfoResponse{} }
-func (m *GetSessionInfoResponse) String() string { return proto.CompactTextString(m) }
-func (*GetSessionInfoResponse) ProtoMessage()    {}
-func (*GetSessionInfoResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_32310995d0f6af31, []int{3}
-}
-func (m *GetSessionInfoResponse) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *GetSessionInfoResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_GetSessionInfoResponse.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *GetSessionInfoResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_GetSessionInfoResponse.Merge(m, src)
-}
-func (m *GetSessionInfoResponse) XXX_Size() int {
-	return m.Size()
-}
-func (m *GetSessionInfoResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_GetSessionInfoResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_GetSessionInfoResponse proto.InternalMessageInfo
-
-func (m *GetSessionInfoResponse) GetSession() string {
-	if m != nil {
-		return m.Session
-	}
-	return ""
-}
-
-func (m *GetSessionInfoResponse) GetBootTime() *types.Timestamp {
-	if m != nil {
-		return m.BootTime
 	}
 	return nil
 }
@@ -358,12 +326,11 @@ func (m *GetAvailableStreamsRequest) XXX_DiscardUnknown() {
 var xxx_messageInfo_GetAvailableStreamsRequest proto.InternalMessageInfo
 
 type AvailableStream struct {
-	Name                 string          `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Period               *types.Duration `protobuf:"bytes,2,opt,name=period,proto3" json:"period,omitempty"`
-	Encoding             string          `protobuf:"bytes,3,opt,name=encoding,proto3" json:"encoding,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
-	XXX_unrecognized     []byte          `json:"-"`
-	XXX_sizecache        int32           `json:"-"`
+	Name                 string   `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Encoding             uint32   `protobuf:"varint,2,opt,name=encoding,proto3" json:"encoding,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
 func (m *AvailableStream) Reset()         { *m = AvailableStream{} }
@@ -406,18 +373,11 @@ func (m *AvailableStream) GetName() string {
 	return ""
 }
 
-func (m *AvailableStream) GetPeriod() *types.Duration {
-	if m != nil {
-		return m.Period
-	}
-	return nil
-}
-
-func (m *AvailableStream) GetEncoding() string {
+func (m *AvailableStream) GetEncoding() uint32 {
 	if m != nil {
 		return m.Encoding
 	}
-	return ""
+	return 0
 }
 
 type GetStreamRequest struct {
@@ -528,7 +488,7 @@ var xxx_messageInfo_GetAvailablePropertiesRequest proto.InternalMessageInfo
 
 type AvailableProperty struct {
 	Name                 string   `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Encoding             string   `protobuf:"bytes,2,opt,name=encoding,proto3" json:"encoding,omitempty"`
+	Encoding             uint32   `protobuf:"varint,2,opt,name=encoding,proto3" json:"encoding,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -574,11 +534,11 @@ func (m *AvailableProperty) GetName() string {
 	return ""
 }
 
-func (m *AvailableProperty) GetEncoding() string {
+func (m *AvailableProperty) GetEncoding() uint32 {
 	if m != nil {
 		return m.Encoding
 	}
-	return ""
+	return 0
 }
 
 type GetPropertyRequest struct {
@@ -677,11 +637,11 @@ func (m *PropertySegment) GetData() []byte {
 }
 
 func init() {
-	proto.RegisterType((*SystemInfo)(nil), "telemetry.SystemInfo")
 	proto.RegisterType((*TelemetryDebug)(nil), "telemetry.TelemetryDebug")
 	proto.RegisterType((*TelemetryDebug_Stream)(nil), "telemetry.TelemetryDebug.Stream")
+	proto.RegisterType((*GetSessionRequest)(nil), "telemetry.GetSessionRequest")
+	proto.RegisterType((*GetSessionResponse)(nil), "telemetry.GetSessionResponse")
 	proto.RegisterType((*StreamSegment)(nil), "telemetry.StreamSegment")
-	proto.RegisterType((*GetSessionInfoResponse)(nil), "telemetry.GetSessionInfoResponse")
 	proto.RegisterType((*GetAvailableStreamsRequest)(nil), "telemetry.GetAvailableStreamsRequest")
 	proto.RegisterType((*AvailableStream)(nil), "telemetry.AvailableStream")
 	proto.RegisterType((*GetStreamRequest)(nil), "telemetry.GetStreamRequest")
@@ -694,50 +654,42 @@ func init() {
 func init() { proto.RegisterFile("pb/telemetry.proto", fileDescriptor_32310995d0f6af31) }
 
 var fileDescriptor_32310995d0f6af31 = []byte{
-	// 673 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x7c, 0x55, 0xdd, 0x6e, 0xd3, 0x4c,
-	0x10, 0x95, 0xd3, 0x7e, 0x69, 0x3c, 0xfd, 0xd2, 0xc2, 0x02, 0x55, 0xba, 0x4d, 0xd3, 0x60, 0xa9,
-	0x52, 0xc4, 0x85, 0x13, 0x4a, 0x45, 0x11, 0x12, 0x48, 0x40, 0x21, 0xfc, 0xdc, 0x20, 0xa7, 0x57,
-	0x15, 0x12, 0xb2, 0x9b, 0x69, 0x6a, 0x35, 0xf6, 0xba, 0xde, 0x75, 0xa5, 0x3e, 0x12, 0x6f, 0xc2,
-	0x15, 0xe2, 0x11, 0x50, 0x9f, 0x04, 0xed, 0x7a, 0xed, 0x6c, 0xdc, 0x84, 0xbb, 0x9d, 0x99, 0xb3,
-	0x33, 0x73, 0x66, 0xce, 0xda, 0x40, 0x92, 0xa0, 0x2f, 0x70, 0x8a, 0x11, 0x8a, 0xf4, 0xc6, 0x4d,
-	0x52, 0x26, 0x18, 0xb1, 0x4b, 0x07, 0xdd, 0x99, 0x30, 0x36, 0x99, 0x62, 0x5f, 0x05, 0x82, 0xec,
-	0xbc, 0x8f, 0x51, 0x22, 0x34, 0x8e, 0x76, 0xaa, 0xc1, 0x71, 0x96, 0xfa, 0x22, 0x64, 0xb1, 0x8e,
-	0xef, 0x55, 0xe3, 0x22, 0x8c, 0x90, 0x0b, 0x3f, 0x4a, 0x72, 0x80, 0xf3, 0x11, 0x60, 0x74, 0xc3,
-	0x05, 0x46, 0x9f, 0xe2, 0x73, 0x46, 0x36, 0xa0, 0xc6, 0x78, 0xcb, 0xea, 0x5a, 0x3d, 0xdb, 0xab,
-	0x31, 0x4e, 0x08, 0xac, 0xfa, 0xe9, 0xd9, 0x45, 0xab, 0xa6, 0x3c, 0xea, 0x4c, 0xb6, 0xa0, 0x1e,
-	0x67, 0xd1, 0x59, 0x92, 0xb5, 0x56, 0xba, 0x56, 0xaf, 0xe9, 0x69, 0xcb, 0xf9, 0x65, 0xc1, 0xc6,
-	0x49, 0xd1, 0xf5, 0x31, 0x06, 0xd9, 0x84, 0xbc, 0x00, 0xbb, 0xac, 0xa7, 0xb2, 0xae, 0x1f, 0x50,
-	0x37, 0xef, 0xc8, 0x2d, 0x3a, 0x72, 0x4f, 0x0a, 0x84, 0x37, 0x03, 0x93, 0x97, 0xb0, 0xc6, 0x45,
-	0x8a, 0x7e, 0xc4, 0x5b, 0xb5, 0xee, 0x4a, 0x6f, 0xfd, 0xa0, 0xeb, 0xce, 0x46, 0x34, 0x5f, 0xc5,
-	0x1d, 0x29, 0xa0, 0x57, 0x5c, 0xa0, 0x1f, 0xa0, 0x9e, 0xbb, 0x64, 0xfb, 0xb1, 0x1f, 0xa1, 0x26,
-	0xa4, 0xce, 0xd2, 0x97, 0x71, 0x1c, 0x2b, 0x4a, 0x4d, 0x4f, 0x9d, 0xc9, 0x43, 0xf8, 0x4f, 0x30,
-	0xe1, 0x4f, 0x35, 0xa3, 0xdc, 0x70, 0x8e, 0xa0, 0x99, 0xe7, 0x19, 0xe1, 0x24, 0xc2, 0x58, 0xc8,
-	0xab, 0x1c, 0xaf, 0x62, 0x95, 0xae, 0xe9, 0xa9, 0xb3, 0xf4, 0x8d, 0x7d, 0xe1, 0xab, 0x74, 0xff,
-	0x7b, 0xea, 0xec, 0x5c, 0xc2, 0xd6, 0x10, 0xc5, 0x08, 0x39, 0x0f, 0x59, 0x2c, 0xe7, 0xea, 0x21,
-	0x4f, 0x58, 0xcc, 0x91, 0xb4, 0x60, 0x8d, 0xe7, 0x6e, 0xdd, 0x53, 0x61, 0x92, 0x23, 0xb0, 0x03,
-	0xc6, 0xc4, 0x77, 0x39, 0x02, 0x95, 0xec, 0xdf, 0xa3, 0x6a, 0x48, 0xb0, 0x34, 0x9d, 0x36, 0xd0,
-	0x21, 0x8a, 0x37, 0xd7, 0x7e, 0x38, 0xf5, 0x83, 0x29, 0xe6, 0x1d, 0x73, 0x0f, 0xaf, 0x32, 0xe4,
-	0xc2, 0x11, 0xb0, 0x59, 0x09, 0x2d, 0x1c, 0xca, 0x53, 0xa8, 0x27, 0x98, 0x86, 0x6c, 0xac, 0x4b,
-	0x6f, 0xdf, 0x29, 0x7d, 0xac, 0x75, 0xe5, 0x69, 0x20, 0xa1, 0xd0, 0xc0, 0xf8, 0x8c, 0x8d, 0xc3,
-	0x78, 0xa2, 0xc6, 0x66, 0x7b, 0xa5, 0xed, 0x7c, 0x83, 0x7b, 0x72, 0x00, 0xf9, 0x5e, 0xf2, 0x4e,
-	0xa4, 0x6c, 0xf2, 0x05, 0xe9, 0xc2, 0xda, 0x2a, 0x87, 0x5a, 0x33, 0x86, 0xda, 0x06, 0xfb, 0x12,
-	0x31, 0xf1, 0xa7, 0xe1, 0x35, 0xea, 0x9d, 0xcc, 0x1c, 0xce, 0x1e, 0xec, 0x9a, 0x8c, 0xbf, 0xa6,
-	0x2c, 0xc1, 0x54, 0x84, 0x58, 0x92, 0x7e, 0x07, 0xf7, 0xab, 0xd1, 0x9b, 0x85, 0xb4, 0x4d, 0x0e,
-	0xb5, 0x0a, 0x87, 0x01, 0x90, 0x21, 0x8a, 0xe2, 0x7a, 0xc1, 0x82, 0x42, 0x23, 0xd1, 0x2e, 0x9d,
-	0xa9, 0xb4, 0x9d, 0x7d, 0xd8, 0x2c, 0xe0, 0x86, 0x62, 0x94, 0x3a, 0xac, 0x99, 0x3a, 0x0e, 0x7e,
-	0xac, 0x82, 0x5d, 0x2a, 0x98, 0x7c, 0x81, 0x8d, 0x79, 0xad, 0x90, 0xad, 0x3b, 0xb3, 0x7f, 0x2f,
-	0x1f, 0x3c, 0x7d, 0x6c, 0xbc, 0x80, 0x25, 0xf2, 0x7a, 0x0d, 0x4d, 0x19, 0x99, 0xbd, 0xe7, 0x65,
-	0xb9, 0x1e, 0x19, 0xb9, 0x0c, 0xf8, 0x29, 0x3c, 0x58, 0xa0, 0x25, 0xb2, 0x3f, 0x5f, 0x79, 0x89,
-	0xd6, 0x28, 0x35, 0x60, 0x15, 0xcc, 0xc0, 0x22, 0xc7, 0x60, 0x97, 0x9a, 0x20, 0x3b, 0x15, 0x2e,
-	0xa6, 0x52, 0x68, 0xcb, 0x6c, 0xce, 0x7c, 0x80, 0x03, 0x8b, 0x04, 0xea, 0x69, 0x2d, 0xd8, 0x3d,
-	0xe9, 0x2d, 0x69, 0xf2, 0x8e, 0x3c, 0x68, 0x7b, 0x51, 0x9f, 0xc5, 0xe6, 0x06, 0x16, 0xf9, 0x0c,
-	0xeb, 0xc6, 0xe6, 0xc9, 0xee, 0x7c, 0xe2, 0x8a, 0x22, 0xe6, 0x58, 0x57, 0xd6, 0x3f, 0xb0, 0xc8,
-	0x2b, 0x68, 0x0c, 0x51, 0xe4, 0x5f, 0xc3, 0x65, 0xcb, 0xd8, 0x5e, 0xfa, 0x69, 0x7b, 0xfb, 0xe4,
-	0xe7, 0x6d, 0xc7, 0xfa, 0x7d, 0xdb, 0xb1, 0xfe, 0xdc, 0x76, 0xac, 0xd3, 0xf6, 0x24, 0x14, 0xee,
-	0xf8, 0xf0, 0xf9, 0xa1, 0xcb, 0x2f, 0xfa, 0x59, 0x1c, 0xce, 0xfe, 0x1a, 0xfd, 0x24, 0x08, 0xea,
-	0x2a, 0xed, 0xb3, 0xbf, 0x01, 0x00, 0x00, 0xff, 0xff, 0xe7, 0x36, 0x73, 0x9c, 0x4f, 0x06, 0x00,
-	0x00,
+	// 559 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x54, 0x4d, 0x6f, 0xd3, 0x40,
+	0x10, 0xd5, 0x36, 0x10, 0xe2, 0x09, 0xa1, 0x74, 0x8b, 0xa2, 0xb0, 0x4d, 0xd3, 0xc8, 0x52, 0xa5,
+	0x88, 0x83, 0x13, 0x85, 0x0a, 0x10, 0x12, 0x87, 0x42, 0x21, 0x82, 0x13, 0x72, 0x7a, 0xaa, 0xb8,
+	0xd8, 0x64, 0x30, 0x16, 0xfe, 0x6a, 0x76, 0x5d, 0xa9, 0xff, 0x90, 0x13, 0xe2, 0x27, 0xa0, 0x5c,
+	0xf8, 0x1b, 0xc8, 0xbb, 0x5e, 0x7f, 0x35, 0x39, 0x70, 0x9b, 0x9d, 0x79, 0x7e, 0x9e, 0x37, 0x6f,
+	0x34, 0x40, 0x13, 0x77, 0x2a, 0x30, 0xc0, 0x10, 0xc5, 0xfa, 0xd6, 0x4a, 0xd6, 0xb1, 0x88, 0xa9,
+	0x51, 0x24, 0xd8, 0x91, 0x17, 0xc7, 0x5e, 0x80, 0x53, 0x59, 0x70, 0xd3, 0x6f, 0x53, 0x0c, 0x13,
+	0x91, 0xe3, 0xd8, 0x49, 0xb3, 0x28, 0xfc, 0x10, 0xb9, 0x70, 0xc2, 0x44, 0x01, 0xcc, 0x5f, 0x04,
+	0x1e, 0x5d, 0x6a, 0xae, 0x0b, 0x74, 0x53, 0x8f, 0xbe, 0x02, 0xa3, 0x40, 0x0d, 0xc8, 0x98, 0x4c,
+	0xba, 0x73, 0x66, 0x29, 0x1e, 0x4b, 0xf3, 0x58, 0x97, 0x1a, 0x61, 0x97, 0x60, 0xfa, 0x1a, 0x1e,
+	0x70, 0xb1, 0x46, 0x27, 0xe4, 0x83, 0xbd, 0x71, 0x6b, 0xd2, 0x9d, 0x8f, 0xad, 0xb2, 0xf1, 0xfa,
+	0x5f, 0xac, 0xa5, 0x04, 0xda, 0xfa, 0x03, 0xf6, 0x01, 0xda, 0x2a, 0x45, 0x29, 0xdc, 0x8b, 0x9c,
+	0x10, 0xe5, 0xaf, 0x0d, 0x5b, 0xc6, 0x59, 0x2e, 0xe5, 0xb8, 0x1a, 0xec, 0x8d, 0xc9, 0xa4, 0x67,
+	0xcb, 0x98, 0x3e, 0x81, 0xfb, 0x22, 0x16, 0x4e, 0x30, 0x68, 0xc9, 0xa4, 0x7a, 0x98, 0x87, 0x70,
+	0xb0, 0x40, 0xb1, 0x44, 0xce, 0xfd, 0x38, 0xb2, 0xf1, 0x3a, 0x45, 0x2e, 0xcc, 0x09, 0xd0, 0x6a,
+	0x92, 0x27, 0x71, 0xc4, 0x15, 0x69, 0xea, 0xaf, 0xf4, 0x8f, 0xb2, 0xd8, 0x7c, 0x09, 0x3d, 0xd5,
+	0xc6, 0x12, 0xbd, 0x10, 0x23, 0x91, 0x81, 0x38, 0x5e, 0x47, 0x12, 0xd4, 0xb3, 0x65, 0x9c, 0xe5,
+	0x56, 0x8e, 0x70, 0x64, 0x37, 0x0f, 0x6d, 0x19, 0x9b, 0x43, 0x60, 0x0b, 0x14, 0xe7, 0x37, 0x8e,
+	0x1f, 0x38, 0x6e, 0x80, 0x8a, 0x84, 0xeb, 0x06, 0xce, 0x61, 0xbf, 0x51, 0xda, 0x2a, 0x93, 0x41,
+	0x07, 0xa3, 0xaf, 0xf1, 0xca, 0x8f, 0xbc, 0x5c, 0x6a, 0xf1, 0x36, 0xbf, 0xc0, 0xe3, 0x4c, 0x83,
+	0x1a, 0x9b, 0xa2, 0xa5, 0x7d, 0x68, 0xab, 0xf9, 0xe5, 0x2c, 0xf9, 0xab, 0x68, 0x7a, 0xaf, 0xd2,
+	0xf4, 0x10, 0x8c, 0x1f, 0x88, 0x89, 0x13, 0xf8, 0x37, 0x98, 0x8f, 0xac, 0x4c, 0x98, 0x27, 0x70,
+	0x5c, 0x6d, 0xff, 0xf3, 0x3a, 0x4e, 0x70, 0x2d, 0x7c, 0x2c, 0x14, 0xbc, 0x83, 0x83, 0x66, 0xf5,
+	0xf6, 0xbf, 0x35, 0xcc, 0xa4, 0x0f, 0xfa, 0x73, 0xad, 0x82, 0x41, 0x27, 0xc9, 0x53, 0x39, 0x53,
+	0xf1, 0x36, 0x4f, 0x61, 0x5f, 0xc3, 0x2b, 0x8e, 0xc8, 0xe9, 0x93, 0x72, 0xfa, 0xf3, 0xbf, 0x2d,
+	0x30, 0x8a, 0x05, 0xa3, 0x57, 0x70, 0xb8, 0xc5, 0x0b, 0x7a, 0x5a, 0xd9, 0xc6, 0xdd, 0x5e, 0x31,
+	0x56, 0x81, 0x35, 0x30, 0x33, 0x42, 0x3f, 0x02, 0x94, 0xab, 0x44, 0x87, 0x75, 0xca, 0xfa, 0xda,
+	0xb1, 0xe3, 0x1d, 0xd5, 0x7c, 0xff, 0x2e, 0xc0, 0x28, 0x1c, 0xa5, 0x47, 0x0d, 0x6c, 0xd5, 0x67,
+	0x36, 0xa8, 0x14, 0x6b, 0xeb, 0x39, 0x23, 0xd4, 0x85, 0xfe, 0x76, 0xe7, 0xe8, 0x64, 0x87, 0xde,
+	0x3b, 0xe6, 0xb2, 0xe1, 0x36, 0xc9, 0x7a, 0xee, 0x33, 0x42, 0x3f, 0x41, 0xb7, 0xe2, 0x1b, 0x6d,
+	0xe8, 0x6a, 0xf8, 0x59, 0x1b, 0x60, 0xc3, 0xbc, 0x19, 0xa1, 0x6f, 0xa0, 0xb3, 0x40, 0xa1, 0x4e,
+	0x4d, 0xff, 0xce, 0x5d, 0x79, 0x9f, 0x1d, 0x2f, 0xf6, 0x74, 0xe7, 0xdd, 0x78, 0xfb, 0xec, 0xe7,
+	0x66, 0x44, 0x7e, 0x6f, 0x46, 0xe4, 0xcf, 0x66, 0x44, 0xae, 0x86, 0x9e, 0x2f, 0xac, 0xd5, 0xd9,
+	0x8b, 0x33, 0x8b, 0x7f, 0x9f, 0xa6, 0x91, 0x5f, 0x1e, 0xca, 0x69, 0xe2, 0xba, 0x6d, 0x49, 0xfb,
+	0xfc, 0x5f, 0x00, 0x00, 0x00, 0xff, 0xff, 0x47, 0xb5, 0x6f, 0xf1, 0x42, 0x05, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -752,9 +704,8 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type TelemetryClient interface {
-	GetSessionInfo(ctx context.Context, in *types.Empty, opts ...grpc.CallOption) (*GetSessionInfoResponse, error)
-	GetSystemInfo(ctx context.Context, in *types.Empty, opts ...grpc.CallOption) (*SystemInfo, error)
 	GetAvailableStreams(ctx context.Context, in *GetAvailableStreamsRequest, opts ...grpc.CallOption) (Telemetry_GetAvailableStreamsClient, error)
+	GetSession(ctx context.Context, in *GetSessionRequest, opts ...grpc.CallOption) (*GetSessionResponse, error)
 	GetStream(ctx context.Context, in *GetStreamRequest, opts ...grpc.CallOption) (Telemetry_GetStreamClient, error)
 	GetAvailableProperties(ctx context.Context, in *GetAvailablePropertiesRequest, opts ...grpc.CallOption) (Telemetry_GetAvailablePropertiesClient, error)
 	GetProperty(ctx context.Context, in *GetPropertyRequest, opts ...grpc.CallOption) (Telemetry_GetPropertyClient, error)
@@ -767,24 +718,6 @@ type telemetryClient struct {
 
 func NewTelemetryClient(cc *grpc.ClientConn) TelemetryClient {
 	return &telemetryClient{cc}
-}
-
-func (c *telemetryClient) GetSessionInfo(ctx context.Context, in *types.Empty, opts ...grpc.CallOption) (*GetSessionInfoResponse, error) {
-	out := new(GetSessionInfoResponse)
-	err := c.cc.Invoke(ctx, "/telemetry.Telemetry/GetSessionInfo", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *telemetryClient) GetSystemInfo(ctx context.Context, in *types.Empty, opts ...grpc.CallOption) (*SystemInfo, error) {
-	out := new(SystemInfo)
-	err := c.cc.Invoke(ctx, "/telemetry.Telemetry/GetSystemInfo", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
 }
 
 func (c *telemetryClient) GetAvailableStreams(ctx context.Context, in *GetAvailableStreamsRequest, opts ...grpc.CallOption) (Telemetry_GetAvailableStreamsClient, error) {
@@ -817,6 +750,15 @@ func (x *telemetryGetAvailableStreamsClient) Recv() (*AvailableStream, error) {
 		return nil, err
 	}
 	return m, nil
+}
+
+func (c *telemetryClient) GetSession(ctx context.Context, in *GetSessionRequest, opts ...grpc.CallOption) (*GetSessionResponse, error) {
+	out := new(GetSessionResponse)
+	err := c.cc.Invoke(ctx, "/telemetry.Telemetry/GetSession", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *telemetryClient) GetStream(ctx context.Context, in *GetStreamRequest, opts ...grpc.CallOption) (Telemetry_GetStreamClient, error) {
@@ -926,9 +868,8 @@ func (c *telemetryClient) GetDebug(ctx context.Context, in *types.Empty, opts ..
 
 // TelemetryServer is the server API for Telemetry service.
 type TelemetryServer interface {
-	GetSessionInfo(context.Context, *types.Empty) (*GetSessionInfoResponse, error)
-	GetSystemInfo(context.Context, *types.Empty) (*SystemInfo, error)
 	GetAvailableStreams(*GetAvailableStreamsRequest, Telemetry_GetAvailableStreamsServer) error
+	GetSession(context.Context, *GetSessionRequest) (*GetSessionResponse, error)
 	GetStream(*GetStreamRequest, Telemetry_GetStreamServer) error
 	GetAvailableProperties(*GetAvailablePropertiesRequest, Telemetry_GetAvailablePropertiesServer) error
 	GetProperty(*GetPropertyRequest, Telemetry_GetPropertyServer) error
@@ -939,14 +880,11 @@ type TelemetryServer interface {
 type UnimplementedTelemetryServer struct {
 }
 
-func (*UnimplementedTelemetryServer) GetSessionInfo(ctx context.Context, req *types.Empty) (*GetSessionInfoResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetSessionInfo not implemented")
-}
-func (*UnimplementedTelemetryServer) GetSystemInfo(ctx context.Context, req *types.Empty) (*SystemInfo, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetSystemInfo not implemented")
-}
 func (*UnimplementedTelemetryServer) GetAvailableStreams(req *GetAvailableStreamsRequest, srv Telemetry_GetAvailableStreamsServer) error {
 	return status.Errorf(codes.Unimplemented, "method GetAvailableStreams not implemented")
+}
+func (*UnimplementedTelemetryServer) GetSession(ctx context.Context, req *GetSessionRequest) (*GetSessionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetSession not implemented")
 }
 func (*UnimplementedTelemetryServer) GetStream(req *GetStreamRequest, srv Telemetry_GetStreamServer) error {
 	return status.Errorf(codes.Unimplemented, "method GetStream not implemented")
@@ -963,42 +901,6 @@ func (*UnimplementedTelemetryServer) GetDebug(ctx context.Context, req *types.Em
 
 func RegisterTelemetryServer(s *grpc.Server, srv TelemetryServer) {
 	s.RegisterService(&_Telemetry_serviceDesc, srv)
-}
-
-func _Telemetry_GetSessionInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(types.Empty)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(TelemetryServer).GetSessionInfo(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/telemetry.Telemetry/GetSessionInfo",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TelemetryServer).GetSessionInfo(ctx, req.(*types.Empty))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Telemetry_GetSystemInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(types.Empty)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(TelemetryServer).GetSystemInfo(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/telemetry.Telemetry/GetSystemInfo",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TelemetryServer).GetSystemInfo(ctx, req.(*types.Empty))
-	}
-	return interceptor(ctx, in, info, handler)
 }
 
 func _Telemetry_GetAvailableStreams_Handler(srv interface{}, stream grpc.ServerStream) error {
@@ -1020,6 +922,24 @@ type telemetryGetAvailableStreamsServer struct {
 
 func (x *telemetryGetAvailableStreamsServer) Send(m *AvailableStream) error {
 	return x.ServerStream.SendMsg(m)
+}
+
+func _Telemetry_GetSession_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetSessionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TelemetryServer).GetSession(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/telemetry.Telemetry/GetSession",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TelemetryServer).GetSession(ctx, req.(*GetSessionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _Telemetry_GetStream_Handler(srv interface{}, stream grpc.ServerStream) error {
@@ -1108,12 +1028,8 @@ var _Telemetry_serviceDesc = grpc.ServiceDesc{
 	HandlerType: (*TelemetryServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "GetSessionInfo",
-			Handler:    _Telemetry_GetSessionInfo_Handler,
-		},
-		{
-			MethodName: "GetSystemInfo",
-			Handler:    _Telemetry_GetSystemInfo_Handler,
+			MethodName: "GetSession",
+			Handler:    _Telemetry_GetSession_Handler,
 		},
 		{
 			MethodName: "GetDebug",
@@ -1143,52 +1059,6 @@ var _Telemetry_serviceDesc = grpc.ServiceDesc{
 		},
 	},
 	Metadata: "pb/telemetry.proto",
-}
-
-func (m *SystemInfo) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *SystemInfo) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *SystemInfo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	if m.Numcpu != 0 {
-		i = encodeVarintTelemetry(dAtA, i, uint64(m.Numcpu))
-		i--
-		dAtA[i] = 0x18
-	}
-	if len(m.Arch) > 0 {
-		i -= len(m.Arch)
-		copy(dAtA[i:], m.Arch)
-		i = encodeVarintTelemetry(dAtA, i, uint64(len(m.Arch)))
-		i--
-		dAtA[i] = 0x12
-	}
-	if len(m.Os) > 0 {
-		i -= len(m.Os)
-		copy(dAtA[i:], m.Os)
-		i = encodeVarintTelemetry(dAtA, i, uint64(len(m.Os)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
 }
 
 func (m *TelemetryDebug) Marshal() (dAtA []byte, err error) {
@@ -1288,6 +1158,67 @@ func (m *TelemetryDebug_Stream) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *GetSessionRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetSessionRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GetSessionRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *GetSessionResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetSessionResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GetSessionResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if len(m.Uuid) > 0 {
+		i -= len(m.Uuid)
+		copy(dAtA[i:], m.Uuid)
+		i = encodeVarintTelemetry(dAtA, i, uint64(len(m.Uuid)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
 func (m *StreamSegment) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -1323,52 +1254,6 @@ func (m *StreamSegment) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i = encodeVarintTelemetry(dAtA, i, uint64(m.Seqn))
 		i--
 		dAtA[i] = 0x8
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *GetSessionInfoResponse) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *GetSessionInfoResponse) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *GetSessionInfoResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	if m.BootTime != nil {
-		{
-			size, err := m.BootTime.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintTelemetry(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x12
-	}
-	if len(m.Session) > 0 {
-		i -= len(m.Session)
-		copy(dAtA[i:], m.Session)
-		i = encodeVarintTelemetry(dAtA, i, uint64(len(m.Session)))
-		i--
-		dAtA[i] = 0xa
 	}
 	return len(dAtA) - i, nil
 }
@@ -1424,24 +1309,10 @@ func (m *AvailableStream) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i -= len(m.XXX_unrecognized)
 		copy(dAtA[i:], m.XXX_unrecognized)
 	}
-	if len(m.Encoding) > 0 {
-		i -= len(m.Encoding)
-		copy(dAtA[i:], m.Encoding)
-		i = encodeVarintTelemetry(dAtA, i, uint64(len(m.Encoding)))
+	if m.Encoding != 0 {
+		i = encodeVarintTelemetry(dAtA, i, uint64(m.Encoding))
 		i--
-		dAtA[i] = 0x1a
-	}
-	if m.Period != nil {
-		{
-			size, err := m.Period.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintTelemetry(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x12
+		dAtA[i] = 0x10
 	}
 	if len(m.Name) > 0 {
 		i -= len(m.Name)
@@ -1548,12 +1419,10 @@ func (m *AvailableProperty) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i -= len(m.XXX_unrecognized)
 		copy(dAtA[i:], m.XXX_unrecognized)
 	}
-	if len(m.Encoding) > 0 {
-		i -= len(m.Encoding)
-		copy(dAtA[i:], m.Encoding)
-		i = encodeVarintTelemetry(dAtA, i, uint64(len(m.Encoding)))
+	if m.Encoding != 0 {
+		i = encodeVarintTelemetry(dAtA, i, uint64(m.Encoding))
 		i--
-		dAtA[i] = 0x12
+		dAtA[i] = 0x10
 	}
 	if len(m.Name) > 0 {
 		i -= len(m.Name)
@@ -1644,29 +1513,6 @@ func encodeVarintTelemetry(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return base
 }
-func (m *SystemInfo) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = len(m.Os)
-	if l > 0 {
-		n += 1 + l + sovTelemetry(uint64(l))
-	}
-	l = len(m.Arch)
-	if l > 0 {
-		n += 1 + l + sovTelemetry(uint64(l))
-	}
-	if m.Numcpu != 0 {
-		n += 1 + sovTelemetry(uint64(m.Numcpu))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
-	return n
-}
-
 func (m *TelemetryDebug) Size() (n int) {
 	if m == nil {
 		return 0
@@ -1711,6 +1557,34 @@ func (m *TelemetryDebug_Stream) Size() (n int) {
 	return n
 }
 
+func (m *GetSessionRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *GetSessionResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Uuid)
+	if l > 0 {
+		n += 1 + l + sovTelemetry(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
 func (m *StreamSegment) Size() (n int) {
 	if m == nil {
 		return 0
@@ -1722,26 +1596,6 @@ func (m *StreamSegment) Size() (n int) {
 	}
 	l = len(m.Data)
 	if l > 0 {
-		n += 1 + l + sovTelemetry(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
-	return n
-}
-
-func (m *GetSessionInfoResponse) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = len(m.Session)
-	if l > 0 {
-		n += 1 + l + sovTelemetry(uint64(l))
-	}
-	if m.BootTime != nil {
-		l = m.BootTime.Size()
 		n += 1 + l + sovTelemetry(uint64(l))
 	}
 	if m.XXX_unrecognized != nil {
@@ -1772,13 +1626,8 @@ func (m *AvailableStream) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovTelemetry(uint64(l))
 	}
-	if m.Period != nil {
-		l = m.Period.Size()
-		n += 1 + l + sovTelemetry(uint64(l))
-	}
-	l = len(m.Encoding)
-	if l > 0 {
-		n += 1 + l + sovTelemetry(uint64(l))
+	if m.Encoding != 0 {
+		n += 1 + sovTelemetry(uint64(m.Encoding))
 	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
@@ -1830,9 +1679,8 @@ func (m *AvailableProperty) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovTelemetry(uint64(l))
 	}
-	l = len(m.Encoding)
-	if l > 0 {
-		n += 1 + l + sovTelemetry(uint64(l))
+	if m.Encoding != 0 {
+		n += 1 + sovTelemetry(uint64(m.Encoding))
 	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
@@ -1877,140 +1725,6 @@ func sovTelemetry(x uint64) (n int) {
 }
 func sozTelemetry(x uint64) (n int) {
 	return sovTelemetry(uint64((x << 1) ^ uint64((int64(x) >> 63))))
-}
-func (m *SystemInfo) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowTelemetry
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: SystemInfo: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: SystemInfo: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Os", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowTelemetry
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthTelemetry
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthTelemetry
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Os = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Arch", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowTelemetry
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthTelemetry
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthTelemetry
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Arch = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 3:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Numcpu", wireType)
-			}
-			m.Numcpu = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowTelemetry
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.Numcpu |= uint32(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		default:
-			iNdEx = preIndex
-			skippy, err := skipTelemetry(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthTelemetry
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
 }
 func (m *TelemetryDebug) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
@@ -2254,6 +1968,140 @@ func (m *TelemetryDebug_Stream) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
+func (m *GetSessionRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTelemetry
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetSessionRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetSessionRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTelemetry(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTelemetry
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetSessionResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTelemetry
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetSessionResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetSessionResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Uuid", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTelemetry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTelemetry
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTelemetry
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Uuid = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTelemetry(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTelemetry
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
 func (m *StreamSegment) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -2334,125 +2182,6 @@ func (m *StreamSegment) Unmarshal(dAtA []byte) error {
 			m.Data = append(m.Data[:0], dAtA[iNdEx:postIndex]...)
 			if m.Data == nil {
 				m.Data = []byte{}
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipTelemetry(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthTelemetry
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *GetSessionInfoResponse) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowTelemetry
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: GetSessionInfoResponse: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: GetSessionInfoResponse: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Session", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowTelemetry
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthTelemetry
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthTelemetry
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Session = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field BootTime", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowTelemetry
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthTelemetry
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthTelemetry
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.BootTime == nil {
-				m.BootTime = &types.Timestamp{}
-			}
-			if err := m.BootTime.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
 			}
 			iNdEx = postIndex
 		default:
@@ -2590,46 +2319,10 @@ func (m *AvailableStream) Unmarshal(dAtA []byte) error {
 			m.Name = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Period", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowTelemetry
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthTelemetry
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthTelemetry
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.Period == nil {
-				m.Period = &types.Duration{}
-			}
-			if err := m.Period.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
+			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Encoding", wireType)
 			}
-			var stringLen uint64
+			m.Encoding = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowTelemetry
@@ -2639,24 +2332,11 @@ func (m *AvailableStream) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				m.Encoding |= uint32(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthTelemetry
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthTelemetry
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Encoding = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipTelemetry(dAtA[iNdEx:])
@@ -2913,10 +2593,10 @@ func (m *AvailableProperty) Unmarshal(dAtA []byte) error {
 			m.Name = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
-			if wireType != 2 {
+			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Encoding", wireType)
 			}
-			var stringLen uint64
+			m.Encoding = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowTelemetry
@@ -2926,24 +2606,11 @@ func (m *AvailableProperty) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				m.Encoding |= uint32(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthTelemetry
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthTelemetry
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Encoding = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipTelemetry(dAtA[iNdEx:])

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 
+	"github.com/diogo464/telemetry"
 	"github.com/urfave/cli/v2"
 )
 
@@ -26,8 +27,7 @@ func actionStreams(c *cli.Context) error {
 
 	for _, stream := range streams {
 		fmt.Println(stream.Name)
-		fmt.Println("\tEncoding:", stream.Encoding)
-		fmt.Println("\tPeriod:", stream.Period)
+		fmt.Println("\tEncoding:", telemetry.ReadableEncoding(stream.Encoding))
 	}
 
 	return nil

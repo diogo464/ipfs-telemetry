@@ -6,7 +6,7 @@ all: telemetry example
 
 .PHONY: example
 example:
-	$(GOCC) build -o ./bin/node ./examples/node
+	$(GOCC) build -o ./bin/basic ./examples/basic
 
 .PHONY: telemetry
 telemetry:

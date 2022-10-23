@@ -8,6 +8,8 @@ import (
 
 var ErrPropertyAlreadyRegistered = fmt.Errorf("property already registered")
 
+type PropertyDecoder[T any] func(io.Reader) (T, error)
+
 type PropertyOption func(*propertyConfig) error
 
 type Property interface {
@@ -19,12 +21,12 @@ type Property interface {
 
 type PropertyDescriptor struct {
 	Name     string
-	Encoding string
+	Encoding Encoding
 }
 
 type propertyConfig struct {
 	overrideName     *string
-	overrideEncoding *string
+	overrideEncoding *Encoding
 }
 
 func propertyConfigDefaults() *propertyConfig {
@@ -43,14 +45,14 @@ func propertyConfigApply(c *propertyConfig, opts ...PropertyOption) error {
 	return nil
 }
 
-func WithPropertyOverrideName(name string) PropertyOption {
+func WithPropertyName(name string) PropertyOption {
 	return func(c *propertyConfig) error {
 		c.overrideName = &name
 		return nil
 	}
 }
 
-func WithPropertyOverrideEncoding(encoding string) PropertyOption {
+func WithPropertyEncoding(encoding Encoding) PropertyOption {
 	return func(c *propertyConfig) error {
 		c.overrideEncoding = &encoding
 		return nil

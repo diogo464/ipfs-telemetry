@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 
+	"github.com/diogo464/telemetry"
 	"github.com/urfave/cli/v2"
 )
 
@@ -26,7 +27,7 @@ func actionProperties(c *cli.Context) error {
 
 	for _, prop := range properties {
 		fmt.Println(prop.Name)
-		fmt.Println("\tEncoding:", prop.Encoding)
+		fmt.Println("\tEncoding:", telemetry.ReadableEncoding(prop.Encoding))
 	}
 
 	return nil

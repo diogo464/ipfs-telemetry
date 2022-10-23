@@ -8,6 +8,10 @@ import (
 
 var ErrCollectorAlreadyRegistered = fmt.Errorf("collector already registered")
 
+var (
+	collectorDefaultPeriod time.Duration = time.Second * 30
+)
+
 type CollectorOption func(*collectorConfig) error
 
 type Collector interface {
@@ -23,20 +27,20 @@ type Collector interface {
 type CollectorDescriptor struct {
 	Name     string
 	Period   time.Duration
-	Encoding string
+	Encoding Encoding
 }
 
 type collectorConfig struct {
-	overrideName     *string
-	overridePeriod   *time.Duration
-	overrideEncoding *string
+	name     *string
+	period   *time.Duration
+	encoding *Encoding
 }
 
 func collectorConfigDefaults() *collectorConfig {
 	return &collectorConfig{
-		overrideName:     nil,
-		overridePeriod:   nil,
-		overrideEncoding: nil,
+		name:     nil,
+		period:   nil,
+		encoding: nil,
 	}
 }
 
@@ -49,23 +53,23 @@ func collectorConfigApply(c *collectorConfig, opts ...CollectorOption) error {
 	return nil
 }
 
-func WithCollectorOverrideName(name string) CollectorOption {
+func WithCollectorName(name string) CollectorOption {
 	return func(c *collectorConfig) error {
-		c.overrideName = &name
+		c.name = &name
 		return nil
 	}
 }
 
-func WithCollectorOverridePeriod(period time.Duration) CollectorOption {
+func WithCollectorPeriod(period time.Duration) CollectorOption {
 	return func(c *collectorConfig) error {
-		c.overridePeriod = &period
+		c.period = &period
 		return nil
 	}
 }
 
-func WithCollectorOverrideEncoding(encoding string) CollectorOption {
+func WithCollectorEncoding(encoding Encoding) CollectorOption {
 	return func(c *collectorConfig) error {
-		c.overrideEncoding = &encoding
+		c.encoding = &encoding
 		return nil
 	}
 }

@@ -2,15 +2,17 @@ syntax = "proto3";
 package telemetry;
 
 import "google/protobuf/empty.proto";
-import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 
 option go_package = "git.d464.sh/uni/telemetry/pb";
 
-message SystemInfo {
-    string os       = 1; 
-    string arch     = 2;
-    uint32 numcpu   = 3;
+service Telemetry {
+    rpc GetAvailableStreams(GetAvailableStreamsRequest) returns (stream AvailableStream);
+	rpc GetSession(GetSessionRequest) returns (GetSessionResponse);
+    rpc GetStream(GetStreamRequest) returns (stream StreamSegment);
+    rpc GetAvailableProperties(GetAvailablePropertiesRequest) returns (stream AvailableProperty);
+    rpc GetProperty(GetPropertyRequest) returns (stream PropertySegment);
+    rpc GetDebug(google.protobuf.Empty) returns (TelemetryDebug);
 }
 
 message TelemetryDebug {
@@ -24,33 +26,22 @@ message TelemetryDebug {
     repeated Stream streams                 = 2;
 }
 
+message GetSessionRequest {}
+
+message GetSessionResponse {
+	string uuid = 1;
+}
 
 message StreamSegment {
     uint32 seqn = 1;
     bytes data  = 2;
 }
 
-service Telemetry {
-    rpc GetSessionInfo(google.protobuf.Empty) returns (GetSessionInfoResponse);
-    rpc GetSystemInfo(google.protobuf.Empty) returns (SystemInfo);
-    rpc GetAvailableStreams(GetAvailableStreamsRequest) returns (stream AvailableStream);
-    rpc GetStream(GetStreamRequest) returns (stream StreamSegment);
-    rpc GetAvailableProperties(GetAvailablePropertiesRequest) returns (stream AvailableProperty);
-    rpc GetProperty(GetPropertyRequest) returns (stream PropertySegment);
-    rpc GetDebug(google.protobuf.Empty) returns (TelemetryDebug);
-}
-
-message GetSessionInfoResponse  {
-    string session                      = 1;
-    google.protobuf.Timestamp boot_time = 2;
-}
-
 message GetAvailableStreamsRequest {}
 
 message AvailableStream {
     string name                         = 1;
-    google.protobuf.Duration period     = 2;
-    string encoding                     = 3;
+    uint32 encoding                     = 2;
 }
 
 message GetStreamRequest {
@@ -67,7 +58,7 @@ message GetAvailablePropertiesRequest {}
 
 message AvailableProperty {
     string name     = 1;
-    string encoding = 2;
+    uint32 encoding = 2;
 }
 
 message GetPropertyRequest {

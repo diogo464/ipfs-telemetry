@@ -9,10 +9,20 @@ import (
 // log is the command logger
 var log = logging.Logger("telemetry")
 
+type Encoding uint32
+
 const (
-	ID_TELEMETRY               = "/telemetry/telemetry/0.3.0"
-	ID_UPLOAD                  = "/telemetry/upload/0.3.0"
-	ID_DOWNLOAD                = "/telemetry/download/0.3.0"
+	EncodingBinary  = 0
+	EncodingInt64   = 1
+	EncodingFloat64 = 2
+	EncodingString  = 3
+	EncodingJson    = 4
+)
+
+const (
+	ID_TELEMETRY               = "/telemetry/telemetry/0.4.0"
+	ID_UPLOAD                  = "/telemetry/upload/0.4.0"
+	ID_DOWNLOAD                = "/telemetry/download/0.4.0"
 	DEFAULT_PAYLOAD_SIZE       = 32 * 1024 * 1024
 	MAX_PAYLOAD_SIZE           = 128 * 1024 * 1024
 	DATAPOINT_FETCH_BLOCK_SIZE = 128
@@ -20,22 +30,27 @@ const (
 
 	BLOCK_DURATION_BANDWIDTH = time.Minute * 5
 	BLOCK_DURATION_STREAM    = time.Minute * 5
-
-	ENCODING_JSON     = "json"
-	ENCODING_PROTOBUF = "protobuf"
-	ENCODING_CUSTOM   = "custom"
-	ENCODING_UNKNOWN  = "unknown"
 )
 
-type SystemInfo struct {
-	OS     string `json:"os"`
-	Arch   string `json:"arch"`
-	NumCPU uint32 `json:"numcpu"`
+func ReadableEncoding(e Encoding) string {
+	switch e {
+	case EncodingBinary:
+		return "binary"
+	case EncodingInt64:
+		return "int64"
+	case EncodingFloat64:
+		return "float64"
+	case EncodingString:
+		return "string"
+	case EncodingJson:
+		return "json"
+	default:
+		return "unknown"
+	}
 }
 
-type SessionInfo struct {
-	Session  Session   `json:"session"`
-	BootTime time.Time `json:"boottime"`
+func TimestampNow() uint64 {
+	return uint64(time.Now().UnixNano())
 }
 
 type Bandwidth struct {

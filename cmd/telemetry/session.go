@@ -1,15 +1,14 @@
 package main
 
 import (
-	"context"
+	"fmt"
 
 	"github.com/urfave/cli/v2"
 )
 
-var CommandSessionInfo = &cli.Command{
-	Name:    "session-info",
-	Aliases: []string{"session"},
-	Action:  actionSessionInfo,
+var CommandSession = &cli.Command{
+	Name:   "session",
+	Action: actionSessionInfo,
 }
 
 func actionSessionInfo(c *cli.Context) error {
@@ -19,10 +18,10 @@ func actionSessionInfo(c *cli.Context) error {
 	}
 	defer client.Close()
 
-	info, err := client.SessionInfo(context.Background())
+	sess, err := client.GetSession(c.Context)
 	if err != nil {
 		return err
 	}
-	printAsJson(info)
+	fmt.Println(sess.String())
 	return nil
 }

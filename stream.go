@@ -32,10 +32,14 @@ type StreamSegment struct {
 	Data []byte
 }
 
+type StreamMessage[T any] struct {
+	Timestamp time.Time
+	Value     T
+}
+
 type StreamDescriptor struct {
 	Name     string
-	Period   time.Duration
-	Encoding string
+	Encoding Encoding
 }
 
 // Sequence of RLE messages with a lifetime
@@ -83,11 +87,24 @@ func (s *Stream) Write(data []byte) error {
 	})
 }
 
+func (s *Stream) WriteWithTimestamp(timestamp uint64, data []byte) error {
+	return s.AllocAndWriteWithTimestamp(len(data), timestamp, func(buf []byte) error {
+		copy(buf, data)
+		return nil
+	})
+}
+
 func (s *Stream) AllocAndWrite(size int, write func([]byte) error) error {
+	return s.AllocAndWriteWithTimestamp(size, TimestampNow(), write)
+}
+
+func (s *Stream) AllocAndWriteWithTimestamp(size int, timestamp uint64, write func([]byte) error) error {
+	const HEADER_SIZE = 12 // 4 len + 8 timestamp
+
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	requiredSize := size + 4
+	requiredSize := size + HEADER_SIZE
 	availableSize := len(s.activeBuffer) - s.activeBufferSize
 	requiresNewBuffer := requiredSize > availableSize
 
@@ -113,9 +130,10 @@ func (s *Stream) AllocAndWrite(size int, write func([]byte) error) error {
 	}
 
 	// write message size
-	binary.BigEndian.PutUint32(s.activeBuffer[s.activeBufferSize:s.activeBufferSize+4], uint32(size))
+	binary.BigEndian.PutUint32(s.activeBuffer[s.activeBufferSize:s.activeBufferSize+4], uint32(size+8))
+	binary.BigEndian.PutUint64(s.activeBuffer[s.activeBufferSize+4:s.activeBufferSize+HEADER_SIZE], timestamp)
 
-	start := s.activeBufferSize + 4
+	start := s.activeBufferSize + HEADER_SIZE
 	end := start + size
 	buf := s.activeBuffer[start:end]
 	err := write(buf)
@@ -206,19 +224,26 @@ func (s *Stream) debug() streamDebug {
 	}
 }
 
-func StreamSegmentDecode[T any](decoder StreamDecoder[T], segment StreamSegment) ([]T, error) {
-	items := make([]T, 0)
+func StreamSegmentDecode[T any](decoder StreamDecoder[T], segment StreamSegment) ([]StreamMessage[T], error) {
+	items := make([]StreamMessage[T], 0)
 	reader := bytes.NewReader(segment.Data)
 	for {
 		buf, err := rle.Read(reader)
 		if err == io.EOF {
 			break
 		}
-		item, err := decoder(buf)
+		if len(buf) < 8 {
+			return nil, io.ErrUnexpectedEOF
+		}
+		timestamp := binary.BigEndian.Uint64(buf[:8])
+		item, err := decoder(buf[8:])
 		if err != nil {
 			return nil, err
 		}
-		items = append(items, item)
+		items = append(items, StreamMessage[T]{
+			Timestamp: time.Unix(int64(timestamp/1_000_000_000), int64(timestamp%1_000_000_000)),
+			Value:     item,
+		})
 	}
 	return items, nil
 }

@@ -9,9 +9,9 @@ import (
 	"github.com/diogo464/telemetry/pb"
 	"github.com/diogo464/telemetry/utils"
 	"github.com/gogo/protobuf/types"
+	gostream "github.com/libp2p/go-libp2p-gostream"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
-	gostream "github.com/libp2p/go-libp2p-gostream"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -92,26 +92,18 @@ func (c *Client) Close() {
 	c.c.Close()
 }
 
-func (c *Client) SessionInfo(ctx context.Context) (*SessionInfo, error) {
+func (c *Client) GetSession(ctx context.Context) (Session, error) {
 	client, err := c.newGrpcClient()
 	if err != nil {
-		return nil, err
+		return Session{}, err
 	}
 
-	response, err := client.GetSessionInfo(ctx, &types.Empty{})
+	response, err := client.GetSession(ctx, &pb.GetSessionRequest{})
 	if err != nil {
-		return nil, err
+		return Session{}, err
 	}
 
-	session, err := ParseSession(response.GetSession())
-	if err != nil {
-		return nil, err
-	}
-
-	return &SessionInfo{
-		Session:  session,
-		BootTime: utils.TimeFromPB(response.GetBootTime()),
-	}, nil
+	return ParseSession(response.GetUuid())
 }
 
 func (c *Client) AvailableStreams(ctx context.Context) ([]StreamDescriptor, error) {
@@ -134,13 +126,9 @@ func (c *Client) AvailableStreams(ctx context.Context) ([]StreamDescriptor, erro
 		if err != nil {
 			return nil, err
 		}
-		if avail.GetPeriod() == nil {
-			return nil, ErrInvalidResponse
-		}
 		streams = append(streams, StreamDescriptor{
 			Name:     avail.GetName(),
-			Period:   utils.DurationFromPB(avail.GetPeriod()),
-			Encoding: avail.GetEncoding(),
+			Encoding: Encoding(avail.GetEncoding()),
 		})
 	}
 
@@ -232,7 +220,7 @@ func (c *Client) AvailableProperties(ctx context.Context) ([]PropertyDescriptor,
 		}
 		properties = append(properties, PropertyDescriptor{
 			Name:     prop.GetName(),
-			Encoding: prop.GetEncoding(),
+			Encoding: Encoding(prop.GetEncoding()),
 		})
 	}
 
@@ -253,24 +241,6 @@ func (c *Client) Property(ctx context.Context, property string) (io.Reader, erro
 	}
 
 	return newPropertyReader(response), nil
-}
-
-func (c *Client) SystemInfo(ctx context.Context) (*SystemInfo, error) {
-	client, err := c.newGrpcClient()
-	if err != nil {
-		return nil, err
-	}
-
-	response, err := client.GetSystemInfo(ctx, &types.Empty{})
-	if err != nil {
-		return nil, err
-	}
-
-	return &SystemInfo{
-		OS:     response.Os,
-		Arch:   response.Arch,
-		NumCPU: response.Numcpu,
-	}, nil
 }
 
 func (c *Client) Download(ctx context.Context, payload uint32) (uint32, error) {
@@ -367,4 +337,13 @@ func (c *Client) Debug(ctx context.Context) (*Debug, error) {
 
 func (c *Client) newGrpcClient() (pb.TelemetryClient, error) {
 	return pb.NewTelemetryClient(c.c), nil
+}
+
+func PropertyDecoded[T any](ctx context.Context, c *Client, name string, decoder PropertyDecoder[T]) (T, error) {
+	r, e := c.Property(ctx, name)
+	if e != nil {
+		var v T
+		return v, e
+	}
+	return decoder(r)
 }
