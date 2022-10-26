@@ -1,0 +1,139 @@
+== Telemetry
+
+TODO: tick streams
+
+=== Metric
+Tracks a number that can change with time. All metrics are captured at the same rate.
+Examples:
+libp2p_bitswap_discovery_failure		- Counts the number of times the bitswap discovery failed
+libp2p_kad_messages_in_add_provider		- Counts the number of add provider messages received by kademlia 
+
+=== Event
+Tracks events that can happen at any time, for example every time a message is received.
+Events can have associated key/value pairs and are stored as json.
+
+=== Snapshot
+A snapshot of some data taken periodically. Each snapshot can be captured at diferent intervals and they can store more data than a simple metric. This can be used to, for example, store a list of all connections of this host every 1 min. This snapshost is stored as json.
+
+=== Property
+Properties are values that are constant or computed on demand. For example the host archicture and OS can be served as constant properties. The list of provider records can also be a property since we only want to capture it on request.
+
+
+=== Collector
+Periodically called to insert messages in a stream
+
+=== Property
+Called on demand to evaluate the property and return it.
+
+=== Collector Types
+NewInt64Counter(name, ...opts)
+	Inc()
+	Dec()
+	Add()
+	Sub()
+	Set()
+
+NewFloat32Metric(name, ...opts)
+	Inc()
+	Dec()
+	Add()
+	Sub()
+	Set()
+
+NewJsonMetric(name, callback, ...opts)
+
+NewBackloggedJsonMetric[T](name, ...opts)
+	Push(*T)
+
+NewConstInt64Property(name, value)
+NewConstStrProperty(name, value)
+
+[source,go]
+----
+type DataType int32
+var (
+	DataType_Binary DataType = 0
+	DataType_Int64 DataType = 1
+	DataType_Float32 DataType = 2
+	DataType_String DataType = 3
+	DataType_Json DataType = 4
+)
+
+var (
+	// Bitswap
+	tBitswapDiscoverySuccess = telemetry.NewInt64Metric("libp2p_bitswap_discovery_success")
+	tBitswapDiscoveryFailure = telemetry.NewInt64Metric("libp2p_bitswap_discovery_failure")
+	tBitswapMessagesIn = telemetry.NewInt64Metric("libp2p_bitswap_messages_in")
+	tBitswapMessagesOut = telemetry.NewInt64Metric("libp2p_bitswap_messages_out")
+	
+	// Kademlia
+	tKademliaMessagesInPutValue = telemetry.NewInt64Metric("libp2p_kad_messages_in_put_value")
+	tKademliaMessagesInGetValue = telemetry.NewInt64Metric("libp2p_kad_messages_in_get_value")
+	tKademliaMessagesInAddProvider = telemetry.NewInt64Metric("libp2p_kad_messages_in_add_provider")
+	tKademliaMessagesInGetProvders = telemetry.NewInt64Metric("libp2p_kad_messages_in_get_providers")
+	tKademliaMessagesInFindNode = telemetry.NewInt64Metric("libp2p_kad_messages_in_find_node")
+	tKademliaMessagesInPing = telemetry.NewInt64Metric("libp2p_kad_messages_in_ping")
+
+	tKademliaMessagesOutPutValue = telemetry.NewInt64Metric("libp2p_kad_messages_out_put_value")
+	tKademliaMessagesOutGetValue = telemetry.NewInt64Metric("libp2p_kad_messages_out_get_value")
+	tKademliaMessagesOutAddProvider = telemetry.NewInt64Metric("libp2p_kad_messages_out_add_provider")
+	tKademliaMessagesOutGetProvders = telemetry.NewInt64Metric("libp2p_kad_messages_out_get_providers")
+	tKademliaMessagesOutFindNode = telemetry.NewInt64Metric("libp2p_kad_messages_out_find_node")
+	tKademliaMessagesOutPing = telemetry.NewInt64Metric("libp2p_kad_messages_out_ping")
+
+	tKademliaRoutingTable = telemetry.NewJsonMetric("libp2p_kad_routing_table")
+	// TODO: Handlers timing -> Custom collector
+
+	// Host
+	tPropertyHostOS = telemetry.NewConstStrProperty("libp2p_host_os", runtime.GOOS)
+	tPropertyHostArch = telemetry.NewConstStrProperty("libp2p_host_arch", runtime.GOARCH)
+	tPropertyHostNumCpu = telemetry.NewConstInt64Property("libp2p_host_numcpu", runtime.NumCPU())
+	tPropertyBootTime = telemetry.NewConstInt64Property("libp2p_host_boottime", <time in seconds since epoch>)
+
+	tHostCpuProcess = telemetry.NewFloat32Metric("libp2p_host_cpu_process")	
+	tHostCpuSystem = telemetry.NewFloat32Metric("libp2p_host_cpu_system")
+	tHostMemoryUsed = telemetry.NewInt64Metric("libp2p_host_memory_used")
+	tHostMemoryFree = telemetry.NewInt64Metric("libp2p_host_memory_free")
+	tHostMemoryTotal = telemetry.NewInt64Metric("libp2p_host_memory_total")
+	tHostMemoryGoroutines = telemetry.NewInt64Metric("libp2p_host_goroutines")
+
+	// Network
+	tNetworkConnectionsLowWater = telemetry.NewInt64Metric("libp2p_network_connections_low_water")
+	tNetworkConnectionsHighWater = telemetry.NewInt64Metric("libp2p_network_connections_high_water")
+	tNetworkConnectionsActive = telemetry.NewInt64Metric("libp2p_network_connections_active")
+	tNetworkConnections = telemetry.NewJsonMetric("libp2p_network_connections")
+	tNetworkProtocolStats = telemetry.NewJsonMetric("libp2p_network_protocol_stats")
+	tNetworkRateIn = telemetry.NewInt64Metric("libp2p_network_rate_in")
+	tNetworkRateOut = telemetry.NewInt64Metric("libp2p_network_rate_out")
+	tNetworkTotalIn = telemetry.NewInt64Metric("libp2p_network_total_in")
+	tNetworkTotalOut = telemetry.NewInt64Metric("libp2p_network_rate"out")
+
+	// Storage
+	tStorageUsed = telemetry.NewInt64Metric("libp2p_storage_used")
+	tStorageTotal = telemetry.NewInt64Metric("libp2p_storage_total")
+	tStorageObjects = telemetry.NewInt64Metric("libp2p_storage_objects")
+
+	// Traceroute
+	tTraceroute = telemetry.NewBackloggedJsonMetric("libp2p_misc_traceroute")
+
+	// Pings
+	tPings = telemetry.NewBackloggedJsonMetric("libp2p_misc_ping")
+)
+
+func init() {
+	telemetry.Register(tBitswapDiscoverySuccess)
+	Telemetry.Register(tBitswapDiscoveryFailure)
+
+	telemetry.RegisterProperty(tPropertyHostOS)
+	telemetry.RegisterProperty(tPropertyHostArch)
+	telemetry.RegisterProperty(tPropertyHostNumCpu)
+}
+
+// Somewhere in bitswap's code
+...
+tBitswapDiscoveryFailure.Inc()
+...
+tBitswapDiscoverySuccess.Inc()
+...
+
+----

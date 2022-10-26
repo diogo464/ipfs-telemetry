@@ -4,18 +4,18 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"math"
 	"net"
 	"time"
 
 	"github.com/diogo464/telemetry/pb"
 	"github.com/diogo464/telemetry/utils"
-	"github.com/gogo/protobuf/types"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/multiformats/go-multiaddr"
+	"google.golang.org/grpc/codes"
 	grpc_peer "google.golang.org/grpc/peer"
+	"google.golang.org/grpc/status"
 )
 
 const (
@@ -66,87 +66,64 @@ func (s *Service) GetSession(ctx context.Context, req *pb.GetSessionRequest) (*p
 	}, nil
 }
 
-func (s *Service) GetAvailableStreams(req *pb.GetAvailableStreamsRequest, srv pb.Telemetry_GetAvailableStreamsServer) error {
-	for _, entry := range s.streams {
-		srv.Send(&pb.AvailableStream{
-			Name:     entry.descriptor.Name,
-			Encoding: uint32(entry.descriptor.Encoding),
-		})
-	}
-	return nil
+func (s *Service) GetMetrics(req *pb.GetMetricsRequest, srv pb.Telemetry_GetMetricsServer) error {
+	stream := s.metrics.stream
+	return grpcSendStreamSegments(stream, int(req.GetSince()), srv)
 }
 
-func (s *Service) GetStream(req *pb.GetStreamRequest, srv pb.Telemetry_GetStreamServer) error {
-	streamEntry := s.streams[req.GetStream()]
-	if streamEntry == nil {
-		return ErrStreamNotAvailable
-	}
-
-	if publicIp, err := getPublicIpFromContext(s.h, srv.Context()); err == nil {
-		if streamEntry.blocker.isBlocked(publicIp) {
-			return ErrBlocked
-		}
-		streamEntry.blocker.block(publicIp, BLOCK_DURATION_STREAM)
-	}
-	stream := streamEntry.stream
-
-	observer := make(chan struct{}, observerDefaultCapacity)
-	if req.Keepalive == 1 {
-		streamEntry.observers_mu.Lock()
-		{
-			streamEntry.observers[observer] = struct{}{}
-		}
-		streamEntry.observers_mu.Unlock()
-		defer func() {
-			streamEntry.observers_mu.Lock()
-			defer streamEntry.observers_mu.Unlock()
-			delete(streamEntry.observers, observer)
-		}()
-	}
-
-	var seqn int = int(req.GetSeqn())
-	segments := stream.Segments(seqn, math.MaxInt)
-	for _, segment := range segments {
-		err := srv.Send(&pb.StreamSegment{
-			Seqn: uint32(segment.SeqN),
-			Data: segment.Data,
+func (s *Service) GetAvailableEvents(req *pb.GetAvailableEventsRequest, srv pb.Telemetry_GetAvailableEventsServer) error {
+	for name := range s.events.events {
+		err := srv.Send(&pb.AvailableEvent{
+			Name: name,
 		})
 		if err != nil {
 			return err
 		}
-		seqn = int(utils.Max(seqn, segment.SeqN))
 	}
-
-	if req.Keepalive == 1 {
-	OUTER:
-		for {
-			select {
-			case <-observer:
-				segments := stream.Segments(seqn, math.MaxInt)
-				for _, segment := range segments {
-					err := srv.Send(&pb.StreamSegment{
-						Seqn: uint32(segment.SeqN),
-						Data: segment.Data,
-					})
-					if err != nil {
-						return err
-					}
-					seqn = int(utils.Max(seqn, segment.SeqN))
-				}
-			case <-s.ctx.Done():
-				break OUTER
-			}
-		}
-	}
-
 	return nil
 }
 
+func (s *Service) GetEvent(req *pb.GetEventRequest, srv pb.Telemetry_GetEventServer) error {
+	name := req.GetName()
+	since := int(req.GetSeqn())
+	event := s.events.events[name]
+	if event == nil {
+		return status.Errorf(codes.NotFound, "event does not exist")
+	}
+	stream := event.stream
+	return grpcSendStreamSegments(stream, since, srv)
+}
+
+func (s *Service) GetAvailableSnapshots(req *pb.GetAvailableSnapshotsRequest, srv pb.Telemetry_GetAvailableSnapshotsServer) error {
+	for name := range s.snapshots.snapshots {
+		err := srv.Send(&pb.AvailableSnapshot{
+			Name: name,
+		})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *Service) GetSnapshot(req *pb.GetSnapshotRequest, srv pb.Telemetry_GetSnapshotServer) error {
+	name := req.GetName()
+	since := int(req.GetSeqn())
+	snapshot := s.snapshots.snapshots[name]
+	if snapshot == nil {
+		return status.Errorf(codes.NotFound, "snapshot not found")
+	}
+	stream := snapshot.stream
+	return grpcSendStreamSegments(stream, since, srv)
+}
+
 func (s *Service) GetAvailableProperties(req *pb.GetAvailablePropertiesRequest, srv pb.Telemetry_GetAvailablePropertiesServer) error {
-	for _, entry := range s.properties {
+	properties := s.properties
+	for _, entry := range properties.properties {
 		err := srv.Send(&pb.AvailableProperty{
 			Name:     entry.descriptor.Name,
 			Encoding: uint32(entry.descriptor.Encoding),
+			Constant: entry.descriptor.Constant,
 		})
 		if err != nil {
 			return err
@@ -156,46 +133,47 @@ func (s *Service) GetAvailableProperties(req *pb.GetAvailablePropertiesRequest, 
 }
 
 func (s *Service) GetProperty(req *pb.GetPropertyRequest, srv pb.Telemetry_GetPropertyServer) error {
-	propertyEntry := s.properties[req.GetProperty()]
+	properties := s.properties
+	propertyEntry := properties.properties[req.GetProperty()]
 	if propertyEntry == nil {
 		return ErrPropertyNotAvailable
 	}
 
 	writer := propertyWriter{srv: srv}
-	return propertyEntry.property.Collect(srv.Context(), writer)
+	return propertyEntry.collector.Collect(srv.Context(), writer)
 }
 
-func (s *Service) GetDebug(ctx context.Context, req *types.Empty) (*pb.TelemetryDebug, error) {
-	if !s.opts.enableDebug {
-		return nil, ErrNotEnabled
-	}
-
-	//for streamName, streamEntry := range s.streams {
-	//	stream := streamEntry.stream
-	//	fmt.Println(streamName)
-	//	fmt.Println("\tDefault buffer size: ", stream.opts.defaultBufferSize)
-	//	fmt.Println("\tActive buffer lifetime: ", stream.opts.activeBufferLifetime)
-	//	fmt.Println("\tSegments: ", stream.segments.Len())
-	//	fmt.Println("\tBuffer pool len: ", stream.bufferPool.len())
-	//}
-
-	streamDebugs := make([]*pb.TelemetryDebug_Stream, 0, len(s.streams))
-	for streamName, streamEntry := range s.streams {
-		stream := streamEntry.stream
-		dbg := stream.debug()
-		streamDebugs = append(streamDebugs, &pb.TelemetryDebug_Stream{
-			Name:  streamName,
-			Used:  dbg.usedSize,
-			Total: dbg.totalSize,
-		})
-	}
-
-	now := time.Now().UTC()
-	return &pb.TelemetryDebug{
-		Timestamp: utils.TimeToPB(&now),
-		Streams:   streamDebugs,
-	}, nil
-}
+//func (s *Service) GetDebug(ctx context.Context, req *types.Empty) (*pb.TelemetryDebug, error) {
+//	if !s.opts.enableDebug {
+//		return nil, ErrNotEnabled
+//	}
+//
+//	//for streamName, streamEntry := range s.streams {
+//	//	stream := streamEntry.stream
+//	//	fmt.Println(streamName)
+//	//	fmt.Println("\tDefault buffer size: ", stream.opts.defaultBufferSize)
+//	//	fmt.Println("\tActive buffer lifetime: ", stream.opts.activeBufferLifetime)
+//	//	fmt.Println("\tSegments: ", stream.segments.Len())
+//	//	fmt.Println("\tBuffer pool len: ", stream.bufferPool.len())
+//	//}
+//
+//	streamDebugs := make([]*pb.TelemetryDebug_Stream, 0, len(s.streams))
+//	for streamName, streamEntry := range s.streams {
+//		stream := streamEntry.stream
+//		dbg := stream.debug()
+//		streamDebugs = append(streamDebugs, &pb.TelemetryDebug_Stream{
+//			Name:  streamName,
+//			Used:  dbg.usedSize,
+//			Total: dbg.totalSize,
+//		})
+//	}
+//
+//	now := time.Now().UTC()
+//	return &pb.TelemetryDebug{
+//		Timestamp: utils.TimeToPB(&now),
+//		Streams:   streamDebugs,
+//	}, nil
+//}
 
 func (s *Service) uploadHandler(stream network.Stream) {
 	defer stream.Close()
@@ -265,4 +243,28 @@ func getPublicIpFromContext(h host.Host, ctx context.Context) (net.IP, error) {
 	}
 	addrs := h.Peerstore().Addrs(pid)
 	return utils.GetFirstPublicAddressFromMultiaddrs(addrs)
+}
+
+type grpcSegmentSender interface {
+	Send(*pb.StreamSegment) error
+}
+
+func grpcSendStreamSegments(stream *Stream, since int, srv grpcSegmentSender) error {
+	for {
+		segments := stream.Segments(since, 128)
+		if len(segments) == 0 {
+			break
+		}
+		since += len(segments)
+		for _, segment := range segments {
+			err := srv.Send(&pb.StreamSegment{
+				Seqn: uint32(segment.SeqN),
+				Data: segment.Data,
+			})
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

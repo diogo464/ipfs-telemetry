@@ -7,66 +7,69 @@ import "google/protobuf/timestamp.proto";
 option go_package = "git.d464.sh/uni/telemetry/pb";
 
 service Telemetry {
-    rpc GetAvailableStreams(GetAvailableStreamsRequest) returns (stream AvailableStream);
-	rpc GetSession(GetSessionRequest) returns (GetSessionResponse);
-    rpc GetStream(GetStreamRequest) returns (stream StreamSegment);
-    rpc GetAvailableProperties(GetAvailablePropertiesRequest) returns (stream AvailableProperty);
-    rpc GetProperty(GetPropertyRequest) returns (stream PropertySegment);
-    rpc GetDebug(google.protobuf.Empty) returns (TelemetryDebug);
+  rpc GetSession(GetSessionRequest) returns (GetSessionResponse);
+
+  rpc GetMetrics(GetMetricsRequest) returns (stream StreamSegment);
+
+  rpc GetAvailableEvents(GetAvailableEventsRequest)
+      returns (stream AvailableEvent);
+  rpc GetEvent(GetEventRequest) returns (stream StreamSegment);
+
+  rpc GetAvailableSnapshots(GetAvailableSnapshotsRequest)
+      returns (stream AvailableSnapshot);
+  rpc GetSnapshot(GetSnapshotRequest) returns (stream StreamSegment);
+
+  rpc GetAvailableProperties(GetAvailablePropertiesRequest)
+      returns (stream AvailableProperty);
+  rpc GetProperty(GetPropertyRequest) returns (stream PropertySegment);
+
+  rpc GetDebug(google.protobuf.Empty) returns (TelemetryDebug);
 }
 
 message TelemetryDebug {
-    message Stream {
-        string name     = 1;
-        uint32 used     = 2;
-        uint32 total    = 3;
-    }
+  message Stream {
+    string name = 1;
+    uint32 used = 2;
+    uint32 total = 3;
+  }
 
-    google.protobuf.Timestamp timestamp     = 1;
-    repeated Stream streams                 = 2;
-}
-
-message GetSessionRequest {}
-
-message GetSessionResponse {
-	string uuid = 1;
+  google.protobuf.Timestamp timestamp = 1;
+  repeated Stream streams = 2;
 }
 
 message StreamSegment {
-    uint32 seqn = 1;
-    bytes data  = 2;
+  uint32 seqn = 1;
+  bytes data = 2;
 }
 
-message GetAvailableStreamsRequest {}
+message GetSessionRequest {}
+message GetSessionResponse { string uuid = 1; }
 
-message AvailableStream {
-    string name                         = 1;
-    uint32 encoding                     = 2;
+message GetMetricsRequest { uint64 since = 1; }
+message MetricsObservations { map<string, double> observations = 2; }
+
+message GetAvailableEventsRequest {}
+message AvailableEvent { string name = 1; }
+message GetEventRequest {
+  string name = 1;
+  uint32 seqn = 2;
 }
 
-message GetStreamRequest {
-    // name of the stream
-    string stream       = 1;
-    // starting sequence number
-    uint32 seqn         = 2;
-    // 0 = end after there are no more segments to return
-    // 1 = keep alive and stream more segments as they are created
-    uint32 keepalive    = 3;
+message GetAvailableSnapshotsRequest {}
+message AvailableSnapshot { string name = 1; }
+message GetSnapshotRequest {
+  string name = 1;
+  uint32 seqn = 2;
 }
 
 message GetAvailablePropertiesRequest {}
-
 message AvailableProperty {
-    string name     = 1;
-    uint32 encoding = 2;
+  string name = 1;
+  uint32 encoding = 2;
+  bool constant = 3;
 }
-
 message GetPropertyRequest {
-    // name of the property
-    string property       = 1;
+  // name of the property
+  string property = 1;
 }
-
-message PropertySegment {
-    bytes data  = 1;
-}
-
+message PropertySegment { bytes data = 1; }

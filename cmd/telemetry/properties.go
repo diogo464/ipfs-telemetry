@@ -20,7 +20,7 @@ func actionProperties(c *cli.Context) error {
 	}
 	defer client.Close()
 
-	properties, err := client.AvailableProperties(c.Context)
+	properties, err := client.GetAvailableProperties(c.Context)
 	if err != nil {
 		return err
 	}

@@ -12,7 +12,7 @@ type PropertyDecoder[T any] func(io.Reader) (T, error)
 
 type PropertyOption func(*propertyConfig) error
 
-type Property interface {
+type PropertyCollector interface {
 	Descriptor() PropertyDescriptor
 	// Write the property value to the writer.
 	// Must be thread safe.
@@ -22,6 +22,7 @@ type Property interface {
 type PropertyDescriptor struct {
 	Name     string
 	Encoding Encoding
+	Constant bool
 }
 
 type propertyConfig struct {

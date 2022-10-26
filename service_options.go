@@ -1,6 +1,9 @@
 package telemetry
 
-import "net"
+import (
+	"net"
+	"time"
+)
 
 type ServiceOption func(*serviceOptions) error
 
@@ -9,6 +12,7 @@ type serviceOptions struct {
 	enableDebug          bool
 	defaultStreamOptions []StreamOption
 	listener             net.Listener
+	metricsPeriod        time.Duration
 }
 
 func serviceDefaults() *serviceOptions {
@@ -17,6 +21,7 @@ func serviceDefaults() *serviceOptions {
 		enableDebug:          false,
 		defaultStreamOptions: []StreamOption{},
 		listener:             nil,
+		metricsPeriod:        time.Second * 15,
 	}
 }
 
@@ -58,13 +63,20 @@ func WithServiceListener(listener net.Listener) ServiceOption {
 	}
 }
 
-func WithTcpListener(addr string) ServiceOption {
+func WithServiceTcpListener(addr string) ServiceOption {
 	return func(so *serviceOptions) error {
 		listener, err := net.Listen("tcp", addr)
 		if err != nil {
 			return err
 		}
 		so.listener = listener
+		return nil
+	}
+}
+
+func WithServiceMetricsPeriod(period time.Duration) ServiceOption {
+	return func(so *serviceOptions) error {
+		so.metricsPeriod = period
 		return nil
 	}
 }

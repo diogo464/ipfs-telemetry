@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"time"
 
 	"github.com/diogo464/telemetry/pb"
 	"github.com/diogo464/telemetry/utils"
+	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
 	gostream "github.com/libp2p/go-libp2p-gostream"
 	"github.com/libp2p/go-libp2p/core/host"
@@ -45,6 +47,44 @@ func (r *propertyReader) Read(p []byte) (n int, err error) {
 		r.b = r.b[n:]
 	}
 	return n, nil
+}
+
+type RawEvent struct {
+	Timestamp time.Time
+	// Json event data
+	Data []byte
+}
+
+type RawSnapshot struct {
+	Timestamp time.Time
+	// Json snapshot data
+	Data []byte
+}
+
+type GetMetricsResponse struct {
+	// Next Sequence Number to request
+	NextSeqN     int
+	Observations []MetricsObservations
+}
+
+type GetEventResponse struct {
+	// Next Sequence Number to request
+	NextSeqN int
+	Events   []RawEvent
+}
+
+type GetSnapshotResponse struct {
+	// Next Sequence Number to request
+	NextSeqN  int
+	Snapshots []RawSnapshot
+}
+
+type AvailableEvent struct{ Name string }
+type AvailableSnapshot struct{ Name string }
+type AvailableProperty struct {
+	Name     string
+	Encoding Encoding
+	Constant bool
 }
 
 type Client struct {
@@ -106,99 +146,192 @@ func (c *Client) GetSession(ctx context.Context) (Session, error) {
 	return ParseSession(response.GetUuid())
 }
 
-func (c *Client) AvailableStreams(ctx context.Context) ([]StreamDescriptor, error) {
+func (c *Client) GetMetrics(ctx context.Context, since int) (*GetMetricsResponse, error) {
 	client, err := c.newGrpcClient()
 	if err != nil {
 		return nil, err
 	}
 
-	stream, err := client.GetAvailableStreams(ctx, &pb.GetAvailableStreamsRequest{})
+	response, err := client.GetMetrics(ctx, &pb.GetMetricsRequest{})
 	if err != nil {
 		return nil, err
 	}
 
-	streams := make([]StreamDescriptor, 0)
+	seqn := since
+	observations := make([]MetricsObservations, 0)
 	for {
-		avail, err := stream.Recv()
+		pbsegment, err := response.Recv()
 		if err == io.EOF {
 			break
 		}
 		if err != nil {
 			return nil, err
 		}
-		streams = append(streams, StreamDescriptor{
-			Name:     avail.GetName(),
-			Encoding: Encoding(avail.GetEncoding()),
-		})
+
+		segment := pbSegmentToSegment(pbsegment)
+		seqn = segment.SeqN + 1
+		messages, err := StreamSegmentDecode(pbMetricsObservationsStreamDecoder, segment)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, msg := range messages {
+			observations = append(observations, MetricsObservations{
+				Timestamp: msg.Timestamp,
+				Metrics:   msg.Value.GetObservations(),
+			})
+		}
 	}
 
-	return streams, nil
+	return &GetMetricsResponse{
+		NextSeqN:     seqn,
+		Observations: observations,
+	}, nil
 }
 
-func (c *Client) Segments(ctx context.Context, stream string, since int) ([]StreamSegment, error) {
+func (c *Client) GetAvailableEvents(ctx context.Context) ([]AvailableEvent, error) {
 	client, err := c.newGrpcClient()
 	if err != nil {
 		return nil, err
 	}
 
-	srv, err := client.GetStream(ctx, &pb.GetStreamRequest{
-		Stream: stream,
-		Seqn:   uint32(since),
-	})
+	response, err := client.GetAvailableEvents(ctx, &pb.GetAvailableEventsRequest{})
 	if err != nil {
 		return nil, err
 	}
 
-	segments := make([]StreamSegment, 0)
-
+	available := make([]AvailableEvent, 0)
 	for {
-		seg, err := srv.Recv()
+		pbavail, err := response.Recv()
 		if err == io.EOF {
 			break
 		}
-
-		segments = append(segments, StreamSegment{
-			SeqN: int(seg.GetSeqn()),
-			Data: seg.GetData(),
+		if err != nil {
+			return nil, err
+		}
+		available = append(available, AvailableEvent{
+			Name: pbavail.Name,
 		})
 	}
-
-	return segments, nil
+	return available, nil
 }
 
-func (c *Client) StreamSegments(ctx context.Context, stream string, since int, ch chan<- StreamSegment) error {
+func (c *Client) GetEvent(ctx context.Context, name string, since int) (*GetEventResponse, error) {
 	client, err := c.newGrpcClient()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	srv, err := client.GetStream(ctx, &pb.GetStreamRequest{
-		Stream:    stream,
-		Seqn:      uint32(since),
-		Keepalive: 1,
+	response, err := client.GetEvent(ctx, &pb.GetEventRequest{
+		Name: name,
+		Seqn: uint32(since),
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
+	events := make([]RawEvent, 0)
+	seqn := since
 	for {
-		seg, err := srv.Recv()
-		if err != nil {
-			if err == io.EOF || err == ctx.Err() {
-				break
-			}
-			return err
+		pbsegment, err := response.Recv()
+		if err == io.EOF {
+			break
 		}
-		ch <- StreamSegment{
-			SeqN: int(seg.GetSeqn()),
-			Data: seg.GetData(),
+		if err != nil {
+			return nil, err
+		}
+		segment := pbSegmentToSegment(pbsegment)
+		seqn = segment.SeqN + 1
+		messages, err := StreamSegmentDecode(ByteStreamDecoder, segment)
+		if err != nil {
+			return nil, err
+		}
+		for _, msg := range messages {
+			events = append(events, RawEvent{
+				Timestamp: msg.Timestamp,
+				Data:      msg.Value,
+			})
 		}
 	}
 
-	return nil
+	return &GetEventResponse{
+		NextSeqN: seqn,
+		Events:   events,
+	}, nil
 }
 
-func (c *Client) AvailableProperties(ctx context.Context) ([]PropertyDescriptor, error) {
+func (c *Client) GetAvailableSnapshots(ctx context.Context) ([]AvailableSnapshot, error) {
+	client, err := c.newGrpcClient()
+	if err != nil {
+		return nil, err
+	}
+
+	response, err := client.GetAvailableSnapshots(ctx, &pb.GetAvailableSnapshotsRequest{})
+	if err != nil {
+		return nil, err
+	}
+
+	available := make([]AvailableSnapshot, 0)
+	for {
+		pbavail, err := response.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+		available = append(available, AvailableSnapshot{
+			Name: pbavail.Name,
+		})
+	}
+	return available, nil
+}
+
+func (c *Client) GetSnapshot(ctx context.Context, name string, since int) (*GetSnapshotResponse, error) {
+	client, err := c.newGrpcClient()
+	if err != nil {
+		return nil, err
+	}
+
+	response, err := client.GetSnapshot(ctx, &pb.GetSnapshotRequest{
+		Name: name,
+		Seqn: uint32(since),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	events := make([]RawSnapshot, 0)
+	seqn := since
+	for {
+		pbsegment, err := response.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+		segment := pbSegmentToSegment(pbsegment)
+		seqn = segment.SeqN + 1
+		messages, err := StreamSegmentDecode(ByteStreamDecoder, segment)
+		if err != nil {
+			return nil, err
+		}
+		for _, msg := range messages {
+			events = append(events, RawSnapshot{
+				Timestamp: msg.Timestamp,
+				Data:      msg.Value,
+			})
+		}
+	}
+
+	return &GetSnapshotResponse{
+		NextSeqN:  seqn,
+		Snapshots: events,
+	}, nil
+}
+
+func (c *Client) GetAvailableProperties(ctx context.Context) ([]PropertyDescriptor, error) {
 	client, err := c.newGrpcClient()
 	if err != nil {
 		return nil, err
@@ -221,6 +354,7 @@ func (c *Client) AvailableProperties(ctx context.Context) ([]PropertyDescriptor,
 		properties = append(properties, PropertyDescriptor{
 			Name:     prop.GetName(),
 			Encoding: Encoding(prop.GetEncoding()),
+			Constant: prop.Constant,
 		})
 	}
 
@@ -346,4 +480,19 @@ func PropertyDecoded[T any](ctx context.Context, c *Client, name string, decoder
 		return v, e
 	}
 	return decoder(r)
+}
+
+var pbMetricsObservationsStreamDecoder = func(b []byte) (*pb.MetricsObservations, error) {
+	msg := &pb.MetricsObservations{}
+	if err := proto.Unmarshal(b, msg); err != nil {
+		return nil, err
+	}
+	return msg, nil
+}
+
+func pbSegmentToSegment(s *pb.StreamSegment) StreamSegment {
+	return StreamSegment{
+		SeqN: int(s.Seqn),
+		Data: s.GetData(),
+	}
 }
