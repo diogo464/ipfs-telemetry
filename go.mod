@@ -6,6 +6,7 @@ require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/google/uuid v1.3.0
 	github.com/ipfs/go-cid v0.3.2
+	github.com/ipfs/go-datastore v0.6.0
 	github.com/ipfs/go-log v1.0.5
 	github.com/libp2p/go-libp2p v0.23.2
 	github.com/libp2p/go-libp2p-gostream v0.4.0
@@ -14,6 +15,8 @@ require (
 	github.com/libp2p/go-msgio v0.2.0
 	github.com/multiformats/go-multiaddr v0.7.0
 	github.com/multiformats/go-multihash v0.2.1
+	github.com/prometheus/client_golang v1.13.0
+	github.com/sirupsen/logrus v1.8.1
 	github.com/stretchr/testify v1.8.0
 	github.com/urfave/cli/v2 v2.11.1
 	go.opentelemetry.io/contrib/instrumentation/host v0.36.4
@@ -55,7 +58,6 @@ require (
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/huin/goupnp v1.0.3 // indirect
-	github.com/ipfs/go-datastore v0.6.0 // indirect
 	github.com/ipfs/go-ipfs-util v0.0.2 // indirect
 	github.com/ipfs/go-ipns v0.2.0 // indirect
 	github.com/ipfs/go-log/v2 v2.5.1 // indirect
@@ -107,7 +109,6 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/polydawn/refmt v0.0.0-20201211092308-30ac6d18308e // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
-	github.com/prometheus/client_golang v1.13.0 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/common v0.37.0 // indirect
 	github.com/prometheus/procfs v0.8.0 // indirect

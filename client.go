@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"time"
 
 	"github.com/diogo464/telemetry/internal/pb"
 	"github.com/diogo464/telemetry/internal/utils"
@@ -20,10 +21,27 @@ import (
 var ErrInvalidResponse = fmt.Errorf("invalid response")
 var ErrNotUsingLibp2p = fmt.Errorf("not using libp2p")
 
+type CMetrics struct {
+	SequenceNumber int
+	Metrics        []*mpb.ResourceMetrics
+}
+
 type CProperty struct {
 	Name        string
 	Description string
 	Value       PropertyValue
+}
+
+type CCapture struct {
+	SequenceNumber int
+	Timestamp      time.Time
+	Data           []byte
+}
+
+type CEvent struct {
+	SequenceNumber int
+	Timestamp      time.Time
+	Data           []byte
 }
 
 type Client struct {
@@ -85,15 +103,15 @@ func (c *Client) GetSession(ctx context.Context) (Session, error) {
 	return ParseSession(response.GetUuid())
 }
 
-func (c *Client) GetMetrics(ctx context.Context, since int) ([]*mpb.ResourceMetrics, error) {
+func (c *Client) GetMetrics(ctx context.Context, since int) (CMetrics, error) {
 	client, err := c.newGrpcClient()
 	if err != nil {
-		return nil, err
+		return CMetrics{}, err
 	}
 
 	response, err := client.GetMetrics(ctx, &pb.GetMetricsRequest{})
 	if err != nil {
-		return nil, err
+		return CMetrics{}, err
 	}
 
 	mdatas := make([]*mpb.ResourceMetrics, 0)
@@ -103,25 +121,25 @@ func (c *Client) GetMetrics(ctx context.Context, since int) ([]*mpb.ResourceMetr
 			break
 		}
 		if err != nil {
-			return nil, err
+			return CMetrics{}, err
 		}
 
 		segment := pbSegmentToSegment(pbsegment)
 		messages, err := StreamSegmentDecode(ByteStreamDecoder, segment)
 		if err != nil {
-			return nil, err
+			return CMetrics{}, err
 		}
 
 		for _, msg := range messages {
 			mdata := &mpb.ResourceMetrics{}
 			if err := gproto.Unmarshal(msg.Value, mdata); err != nil {
-				return nil, err
+				return CMetrics{}, err
 			}
 			mdatas = append(mdatas, mdata)
 		}
 	}
 
-	return mdatas, nil
+	return CMetrics{SequenceNumber: 0, Metrics: mdatas}, nil
 }
 
 func (c *Client) GetProperties(ctx context.Context) ([]CProperty, error) {
@@ -178,7 +196,7 @@ func (c *Client) GetCaptureDescriptors(ctx context.Context) ([]CaptureDescriptor
 	return descriptors, nil
 }
 
-func (c *Client) GetCapture(ctx context.Context, name string, since int) ([]CaptureData, error) {
+func (c *Client) GetCapture(ctx context.Context, name string, since int) ([]CCapture, error) {
 	client, err := c.newGrpcClient()
 	if err != nil {
 		return nil, err
@@ -192,7 +210,7 @@ func (c *Client) GetCapture(ctx context.Context, name string, since int) ([]Capt
 		return nil, err
 	}
 
-	datas := make([]CaptureData, 0)
+	datas := make([]CCapture, 0)
 	for {
 		pbseg, err := srv.Recv()
 		if err == io.EOF {
@@ -207,7 +225,7 @@ func (c *Client) GetCapture(ctx context.Context, name string, since int) ([]Capt
 			return nil, err
 		}
 		for _, msg := range messages {
-			datas = append(datas, CaptureData{
+			datas = append(datas, CCapture{
 				SequenceNumber: segment.SeqN,
 				Timestamp:      msg.Timestamp,
 				Data:           msg.Value,
@@ -247,7 +265,7 @@ func (c *Client) GetEventDescriptors(ctx context.Context) ([]EventDescriptor, er
 	return descriptors, nil
 }
 
-func (c *Client) GetEvent(ctx context.Context, name string, since int) ([]EventData, error) {
+func (c *Client) GetEvent(ctx context.Context, name string, since int) ([]CEvent, error) {
 	client, err := c.newGrpcClient()
 	if err != nil {
 		return nil, err
@@ -261,7 +279,7 @@ func (c *Client) GetEvent(ctx context.Context, name string, since int) ([]EventD
 		return nil, err
 	}
 
-	datas := make([]EventData, 0)
+	datas := make([]CEvent, 0)
 	for {
 		pbseg, err := srv.Recv()
 		if err == io.EOF {
@@ -276,7 +294,7 @@ func (c *Client) GetEvent(ctx context.Context, name string, since int) ([]EventD
 			return nil, err
 		}
 		for _, msg := range messages {
-			datas = append(datas, EventData{
+			datas = append(datas, CEvent{
 				SequenceNumber: segment.SeqN,
 				Timestamp:      msg.Timestamp,
 				Data:           msg.Value,

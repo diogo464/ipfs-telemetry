@@ -20,7 +20,7 @@ func actionUpload(c *cli.Context) error {
 	}
 	defer client.Close()
 
-	rate, err := client.Upload(context.Background(), telemetry.DEFAULT_PAYLOAD_SIZE)
+	rate, err := client.Upload(context.Background(), telemetry.DEFAULT_BANDWIDTH_PAYLOAD_SIZE)
 	if err != nil {
 		return err
 	}

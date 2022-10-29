@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+option go_package = "monitor/pb";
+
+service Monitor {
+  rpc Discover(DiscoverRequest) returns (DiscoverResponse) {}
+}
+
+message DiscoverRequest {
+  // PeerID of the discovered peer supporting the telemetry protocol
+  string peer = 1;
+}
+message DiscoverResponse {}

@@ -21,7 +21,7 @@ func (s *Service) uploadHandler(stream network.Stream) {
 	}
 
 	requested_payload, err := utils.ReadU32(stream)
-	if err != nil || requested_payload > MAX_PAYLOAD_SIZE {
+	if err != nil || requested_payload > MAX_BANDWIDTH_PAYLOAD_SIZE {
 		return
 	}
 
@@ -50,7 +50,7 @@ func (s *Service) downloadHandler(stream network.Stream) {
 	}
 
 	expected_payload, err := utils.ReadU32(stream)
-	if err != nil || expected_payload > MAX_PAYLOAD_SIZE {
+	if err != nil || expected_payload > MAX_BANDWIDTH_PAYLOAD_SIZE {
 		return
 	}
 

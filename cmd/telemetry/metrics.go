@@ -20,15 +20,17 @@ func actionMetrics(c *cli.Context) error {
 	}
 	defer client.Close()
 
-	rmetrics, err := client.GetMetrics(c.Context, 0)
+	cmetrics, err := client.GetMetrics(c.Context, 0)
 	if err != nil {
 		return err
 	}
-	if len(rmetrics) == 0 {
+	metrics := cmetrics.Metrics
+
+	if len(metrics) == 0 {
 		fmt.Println("metrics len is 0 ")
 		return nil
 	}
-	mdata := rmetrics[len(rmetrics)-1]
+	mdata := metrics[len(metrics)-1]
 
 	for _, scope := range mdata.ScopeMetrics {
 		for _, metric := range scope.Metrics {
