@@ -1,75 +1,75 @@
 syntax = "proto3";
 package telemetry;
 
-import "google/protobuf/empty.proto";
-import "google/protobuf/timestamp.proto";
-
 option go_package = "git.d464.sh/uni/telemetry/pb";
 
 service Telemetry {
   rpc GetSession(GetSessionRequest) returns (GetSessionResponse);
 
+  // The data in the segment is a ResourceMetrics defined in:
+  // https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/metrics/v1/metrics.proto
   rpc GetMetrics(GetMetricsRequest) returns (stream StreamSegment);
 
-  rpc GetAvailableEvents(GetAvailableEventsRequest)
-      returns (stream AvailableEvent);
+  rpc GetProperties(GetPropertiesRequest) returns (stream Property);
+
+  rpc GetCaptureDescriptors(GetCaptureDescriptorsRequest)
+      returns (stream CaptureDescriptor);
+
+  // The data in the segment is JSON.
+  rpc GetCapture(GetCaptureRequest) returns (stream StreamSegment);
+
+  rpc GetEventDescriptors(GetEventDescriptorsRequest)
+      returns (stream EventDescriptor);
+
+  // The data in the segment is JSON.
   rpc GetEvent(GetEventRequest) returns (stream StreamSegment);
-
-  rpc GetAvailableSnapshots(GetAvailableSnapshotsRequest)
-      returns (stream AvailableSnapshot);
-  rpc GetSnapshot(GetSnapshotRequest) returns (stream StreamSegment);
-
-  rpc GetAvailableProperties(GetAvailablePropertiesRequest)
-      returns (stream AvailableProperty);
-  rpc GetProperty(GetPropertyRequest) returns (stream PropertySegment);
-
-  rpc GetDebug(google.protobuf.Empty) returns (TelemetryDebug);
-}
-
-message TelemetryDebug {
-  message Stream {
-    string name = 1;
-    uint32 used = 2;
-    uint32 total = 3;
-  }
-
-  google.protobuf.Timestamp timestamp = 1;
-  repeated Stream streams = 2;
-}
-
-message StreamSegment {
-  uint32 seqn = 1;
-  bytes data = 2;
 }
 
 message GetSessionRequest {}
-message GetSessionResponse { string uuid = 1; }
+message GetSessionResponse {
+  // The random UUID of this session
+  string uuid = 1;
+}
 
-message GetMetricsRequest { uint64 since = 1; }
-message MetricsObservations { map<string, double> observations = 2; }
+message StreamSegment {
+  uint32 sequence_number = 1;
+  bytes data = 2;
+}
 
-message GetAvailableEventsRequest {}
-message AvailableEvent { string name = 1; }
+message GetMetricsRequest {
+  // The sequence number of the first segment that should be returned.
+  uint32 sequence_number_since = 1;
+}
+
+message GetPropertiesRequest {}
+message Property {
+  string name = 1;
+  string description = 2;
+  oneof value {
+    int64 integer_value = 3;
+    string string_value = 4;
+  }
+}
+
+message GetCaptureDescriptorsRequest {}
+message CaptureDescriptor {
+  string name = 1;
+  string description = 2;
+}
+
+message GetCaptureRequest {
+  // The sequence number of the first segment that should be returned.
+  uint32 sequence_number_since = 1;
+  string name = 2;
+}
+
+message GetEventDescriptorsRequest {}
+message EventDescriptor {
+  string name = 1;
+  string description = 2;
+}
+
 message GetEventRequest {
-  string name = 1;
-  uint32 seqn = 2;
+  uint32 sequence_number_since = 1;
+  string name = 2;
 }
-
-message GetAvailableSnapshotsRequest {}
-message AvailableSnapshot { string name = 1; }
-message GetSnapshotRequest {
-  string name = 1;
-  uint32 seqn = 2;
-}
-
-message GetAvailablePropertiesRequest {}
-message AvailableProperty {
-  string name = 1;
-  uint32 encoding = 2;
-  bool constant = 3;
-}
-message GetPropertyRequest {
-  // name of the property
-  string property = 1;
-}
-message PropertySegment { bytes data = 1; }

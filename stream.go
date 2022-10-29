@@ -37,11 +37,6 @@ type StreamMessage[T any] struct {
 	Value     T
 }
 
-type StreamDescriptor struct {
-	Name     string
-	Encoding Encoding
-}
-
 // Sequence of RLE messages with a lifetime
 type Stream struct {
 	mu   sync.Mutex

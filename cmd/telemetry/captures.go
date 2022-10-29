@@ -6,20 +6,20 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-var CommandEvents = &cli.Command{
-	Name:        "events",
-	Description: "List available events",
-	Action:      actionEvents,
+var CommandCaptures = &cli.Command{
+	Name:        "captures",
+	Description: "List available captures",
+	Action:      actionCaptures,
 }
 
-func actionEvents(c *cli.Context) error {
+func actionCaptures(c *cli.Context) error {
 	client, err := clientFromContext(c)
 	if err != nil {
 		return err
 	}
 	defer client.Close()
 
-	descriptors, err := client.GetEventDescriptors(c.Context)
+	descriptors, err := client.GetCaptureDescriptors(c.Context)
 	if err != nil {
 		return err
 	}

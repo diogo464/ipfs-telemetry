@@ -1,23 +1,16 @@
 package telemetry
 
 import (
+	"context"
+	"strconv"
 	"time"
 
 	logging "github.com/ipfs/go-log"
+	"go.opentelemetry.io/otel/metric"
 )
 
 // log is the command logger
 var log = logging.Logger("telemetry")
-
-type Encoding uint32
-
-const (
-	EncodingBinary  = 0
-	EncodingInt64   = 1
-	EncodingFloat64 = 2
-	EncodingString  = 3
-	EncodingJson    = 4
-)
 
 const (
 	ID_TELEMETRY               = "/telemetry/telemetry/0.4.0"
@@ -32,21 +25,82 @@ const (
 	BLOCK_DURATION_STREAM    = time.Minute * 5
 )
 
-func ReadableEncoding(e Encoding) string {
-	switch e {
-	case EncodingBinary:
-		return "binary"
-	case EncodingInt64:
-		return "int64"
-	case EncodingFloat64:
-		return "float64"
-	case EncodingString:
-		return "string"
-	case EncodingJson:
-		return "json"
-	default:
-		return "unknown"
-	}
+var (
+	_ (PropertyValue) = (*PropertyValueInteger)(nil)
+	_ (PropertyValue) = (*PropertyValueString)(nil)
+)
+
+type CaptureCallback func(context.Context) (interface{}, error)
+
+type PropertyValue interface {
+	sealed()
+
+	GetString() string
+	GetInteger() int64
+
+	String() string
+}
+
+type PropertyValueString struct {
+	value string
+}
+
+type PropertyValueInteger struct {
+	value int64
+}
+
+type PropertyConfig struct {
+	Name        string
+	Description string
+	// Value is one of PropertyValueInteger, PropertyValueString
+	Value PropertyValue
+}
+
+type CaptureConfig struct {
+	Name        string
+	Description string
+	Callback    CaptureCallback
+	Interval    time.Duration
+}
+
+type CaptureDescriptor struct {
+	Name        string
+	Description string
+}
+
+type CaptureData struct {
+	SequenceNumber int
+	Timestamp      time.Time
+	Data           []byte
+}
+
+type EventConfig struct {
+	Name        string
+	Description string
+}
+
+type EventDescriptor struct {
+	Name        string
+	Description string
+}
+
+type EventData struct {
+	SequenceNumber int
+	Timestamp      time.Time
+	Data           []byte
+}
+
+type EventEmitter interface {
+	Emit(interface{})
+}
+
+type Telemetry interface {
+	metric.MeterProvider
+
+	Property(PropertyConfig)
+	Capture(CaptureConfig)
+	Event(EventConfig) EventEmitter
+	// TODO: Add RPC's
 }
 
 func TimestampNow() uint64 {
@@ -58,12 +112,52 @@ type Bandwidth struct {
 	DownloadRate uint32 `json:"download_rate"`
 }
 
-type DebugStream struct {
-	Name      string `json:"name"`
-	UsedSize  uint32 `json:"used_size"`
-	TotalSize uint32 `json:"total_size"`
+func NewPropertyValueInteger(value int64) *PropertyValueInteger {
+	return &PropertyValueInteger{
+		value: value,
+	}
 }
 
-type Debug struct {
-	Streams []DebugStream
+func NewPropertyValueString(value string) *PropertyValueString {
+	return &PropertyValueString{
+		value: value,
+	}
+}
+
+// GetInteger implements PropertyValue
+func (p *PropertyValueInteger) GetInteger() int64 {
+	return p.value
+}
+
+// GetString implements PropertyValue
+func (p *PropertyValueInteger) GetString() string {
+	return ""
+}
+
+// sealed implements PropertyValue
+func (*PropertyValueInteger) sealed() {
+}
+
+// String implements PropertyValue
+func (p *PropertyValueInteger) String() string {
+	return strconv.Itoa(int(p.value))
+}
+
+// GetInteger implements PropertyValue
+func (*PropertyValueString) GetInteger() int64 {
+	return 0
+}
+
+// GetString implements PropertyValue
+func (p *PropertyValueString) GetString() string {
+	return p.value
+}
+
+// sealed implements PropertyValue
+func (*PropertyValueString) sealed() {
+}
+
+// String implements PropertyValue
+func (p *PropertyValueString) String() string {
+	return p.value
 }

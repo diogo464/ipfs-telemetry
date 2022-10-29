@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"runtime"
@@ -10,35 +11,18 @@ import (
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/urfave/cli/v2"
+	"go.opentelemetry.io/otel/metric/global"
+
+	otel_host "go.opentelemetry.io/contrib/instrumentation/host"
+	otel_runtime "go.opentelemetry.io/contrib/instrumentation/runtime"
 )
 
-var (
-	tPropertyHostOS = telemetry.NewStringProperty(telemetry.StringPropertyConfig{
-		Name: "libp2p_host_os", Value: runtime.GOOS,
-	})
-	tPropertyHostArch = telemetry.NewStringProperty(telemetry.StringPropertyConfig{
-		Name: "libp2p_host_arch", Value: runtime.GOARCH,
-	})
-	tPropertyHostNumCpu = telemetry.NewIntProperty(telemetry.IntPropertyConfig{
-		Name: "libp2p_host_numcpu", Value: int64(runtime.NumCPU()),
-	})
-
-	tBitswapDiscoverySuccess = telemetry.NewMetric(telemetry.MetricConfig{Name: "libp2p_bitswap_discovery_success"})
-
-	tKademliaHandler = telemetry.NewEvent(telemetry.EventConfig{
-		Name: "libp2p_kad_handler",
-	})
-
-	tConnections = telemetry.NewSnapshot(telemetry.SnapshotConfig{
-		Name:   "libp2p_network_connections",
-		Period: time.Second * 5,
-		Collector: func() (interface{}, error) {
-			return struct {
-				Connections int `json:"connections"`
-			}{Connections: 5}, nil
-		},
-	})
-)
+type HandlerTiming struct {
+	Handler string
+	Time1   uint64
+	Time2   uint64
+	Time3   uint64
+}
 
 var app = &cli.App{
 	Name:   "node",
@@ -71,27 +55,49 @@ func actionMain(c *cli.Context) error {
 		return err
 	}
 
-	t.RegisterMetric(tBitswapDiscoverySuccess)
-	t.RegisterEvent(tKademliaHandler)
-	t.RegisterProperty(tPropertyHostOS)
-	t.RegisterProperty(tPropertyHostArch)
-	t.RegisterProperty(tPropertyHostNumCpu)
-	t.RegisterSnapshot(tConnections)
-	t.Start()
+	global.SetMeterProvider(t)
+	otel_host.Start()
+	otel_runtime.Start()
+
+	t.Property(telemetry.PropertyConfig{
+		Name:        "libp2p_host_os",
+		Description: "golang runtime.GOOS",
+		Value:       telemetry.NewPropertyValueString(runtime.GOOS),
+	})
+	t.Property(telemetry.PropertyConfig{
+		Name:        "libp2p_host_arch",
+		Description: "golang runtime.GOARCH",
+		Value:       telemetry.NewPropertyValueString(runtime.GOARCH),
+	})
+	t.Property(telemetry.PropertyConfig{
+		Name:        "libp2p_host_numcpu",
+		Description: "golang runtime.NumCPU()",
+		Value:       telemetry.NewPropertyValueInteger(int64(runtime.NumCPU())),
+	})
+	t.Capture(telemetry.CaptureConfig{
+		Name:        "libp2p_network_addrs",
+		Description: "stuff and things",
+		Callback: func(context.Context) (interface{}, error) {
+			return h.Addrs(), nil
+		},
+		Interval: time.Second * 5,
+	})
+	ev := t.Event(telemetry.EventConfig{
+		Name:        "libp2p_kad_handler",
+		Description: "Handler timings",
+	})
 
 	go func() {
-		t := time.Tick(time.Second)
+		c := 1
 		for {
-			select {
-			case <-t:
-				tBitswapDiscoverySuccess.Inc()
-				tKademliaHandler.Emit(struct {
-					Name    string `json:"name"`
-					Handler uint64 `json:"handler"`
-				}{Name: "FindNode", Handler: 51512})
-			case <-c.Context.Done():
-				break
-			}
+			time.Sleep(time.Millisecond * 2100)
+			ev.Emit(&HandlerTiming{
+				Handler: "handler",
+				Time1:   uint64(c),
+				Time2:   0,
+				Time3:   0,
+			})
+			c += 1
 		}
 	}()
 

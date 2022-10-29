@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 
-	"github.com/diogo464/telemetry"
 	"github.com/urfave/cli/v2"
 )
 
@@ -20,14 +19,14 @@ func actionProperties(c *cli.Context) error {
 	}
 	defer client.Close()
 
-	properties, err := client.GetAvailableProperties(c.Context)
+	properties, err := client.GetProperties(c.Context)
 	if err != nil {
 		return err
 	}
 
 	for _, prop := range properties {
-		fmt.Println(prop.Name)
-		fmt.Println("\tEncoding:", telemetry.ReadableEncoding(prop.Encoding))
+		fmt.Println(prop.Name, "=", prop.Value)
+		fmt.Println("\t", prop.Description)
 	}
 
 	return nil

@@ -15,14 +15,12 @@ var FLAGS = []cli.Flag{
 var COMMANDS = []*cli.Command{
 	CommandUpload,
 	CommandDownload,
-	CommandDebug,
 	CommandSession,
 	CommandMetrics,
+	CommandCaptures,
+	CommandCapture,
 	CommandEvents,
 	CommandEvent,
-	CommandSnapshots,
-	CommandSnapshot,
-	CommandProperty,
 	CommandProperties,
 	CommandWalk,
 }

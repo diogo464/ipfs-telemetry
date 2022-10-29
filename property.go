@@ -1,61 +1,42 @@
 package telemetry
 
-import (
-	"context"
-	"fmt"
-	"io"
-)
+import "github.com/diogo464/telemetry/pb"
 
-var ErrPropertyAlreadyRegistered = fmt.Errorf("property already registered")
-
-type PropertyDecoder[T any] func(io.Reader) (T, error)
-
-type PropertyOption func(*propertyConfig) error
-
-type PropertyCollector interface {
-	Descriptor() PropertyDescriptor
-	// Write the property value to the writer.
-	// Must be thread safe.
-	Collect(context.Context, io.Writer) error
-}
-
-type PropertyDescriptor struct {
-	Name     string
-	Encoding Encoding
-	Constant bool
-}
-
-type propertyConfig struct {
-	overrideName     *string
-	overrideEncoding *Encoding
-}
-
-func propertyConfigDefaults() *propertyConfig {
-	return &propertyConfig{
-		overrideName:     nil,
-		overrideEncoding: nil,
+func propertyConfigToPb(c PropertyConfig) *pb.Property {
+	p := &pb.Property{
+		Name:        c.Name,
+		Description: c.Description,
 	}
-}
 
-func propertyConfigApply(c *propertyConfig, opts ...PropertyOption) error {
-	for _, opt := range opts {
-		if err := opt(c); err != nil {
-			return err
+	switch c.Value.(type) {
+	case *PropertyValueInteger:
+		p.Value = &pb.Property_IntegerValue{
+			IntegerValue: c.Value.GetInteger(),
 		}
+	case *PropertyValueString:
+		p.Value = &pb.Property_StringValue{
+			StringValue: c.Value.GetString(),
+		}
+	default:
+		panic("not implemented")
 	}
-	return nil
+
+	return p
 }
 
-func WithPropertyName(name string) PropertyOption {
-	return func(c *propertyConfig) error {
-		c.overrideName = &name
-		return nil
+func propertyPbToClientProperty(c *pb.Property) CProperty {
+	p := CProperty{
+		Name:        c.GetName(),
+		Description: c.GetDescription(),
+		Value:       nil,
 	}
-}
 
-func WithPropertyEncoding(encoding Encoding) PropertyOption {
-	return func(c *propertyConfig) error {
-		c.overrideEncoding = &encoding
-		return nil
+	switch v := c.Value.(type) {
+	case *pb.Property_IntegerValue:
+		p.Value = NewPropertyValueInteger(v.IntegerValue)
+	case *pb.Property_StringValue:
+		p.Value = NewPropertyValueString(v.StringValue)
 	}
+
+	return p
 }

@@ -10,7 +10,7 @@ import (
 
 var CommandEvent = &cli.Command{
 	Name:        "event",
-	Description: "Stream event data",
+	Description: "Get events",
 	Action:      actionEvent,
 }
 
@@ -21,15 +21,18 @@ func actionEvent(c *cli.Context) error {
 	}
 	defer client.Close()
 
-	response, err := client.GetEvent(c.Context, c.Args().First(), 0)
+	events, err := client.GetEvent(c.Context, c.Args().First(), 0)
 	if err != nil {
 		return err
 	}
+	if len(events) == 0 {
+		return nil
+	}
 
-	buf := &bytes.Buffer{}
-	for _, revent := range response.Events {
+	for _, ev := range events {
+		buf := &bytes.Buffer{}
 		buf.Reset()
-		if err := json.Indent(buf, revent.Data, "", "  "); err != nil {
+		if err := json.Indent(buf, ev.Data, "", "  "); err != nil {
 			return err
 		}
 		fmt.Println(string(buf.Bytes()))

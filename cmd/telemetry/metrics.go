@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
-	"sort"
 
 	"github.com/urfave/cli/v2"
+	mpb "go.opentelemetry.io/proto/otlp/metrics/v1"
 )
 
 var CommandMetrics = &cli.Command{
@@ -20,24 +20,41 @@ func actionMetrics(c *cli.Context) error {
 	}
 	defer client.Close()
 
-	response, err := client.GetMetrics(c.Context, 0)
+	rmetrics, err := client.GetMetrics(c.Context, 0)
 	if err != nil {
 		return err
 	}
-	if len(response.Observations) == 0 {
+	if len(rmetrics) == 0 {
+		fmt.Println("metrics len is 0 ")
 		return nil
 	}
+	mdata := rmetrics[len(rmetrics)-1]
 
-	observations := response.Observations[len(response.Observations)-1]
-	keys := make([]string, 0, len(observations.Metrics))
-	for key := range observations.Metrics {
-		keys = append(keys, key)
+	for _, scope := range mdata.ScopeMetrics {
+		for _, metric := range scope.Metrics {
+			fmt.Println(scope.Scope.Name + "/" + metric.Name)
+			switch v := metric.GetData().(type) {
+			case *mpb.Metric_Gauge:
+				if len(v.Gauge.DataPoints) > 0 {
+					fmt.Println(v.Gauge.DataPoints[0].GetValue())
+				} else {
+					fmt.Println(0)
+				}
+			case *mpb.Metric_Sum:
+				for _, dp := range v.Sum.DataPoints {
+					fmt.Println("\t", dp.Attributes, " = ", dp.GetValue())
+				}
+			case *mpb.Metric_Summary:
+				fmt.Println("summary")
+			case *mpb.Metric_Histogram:
+				fmt.Println("histogram")
+			case *mpb.Metric_ExponentialHistogram:
+				fmt.Println("exp histogram")
+			default:
+				fmt.Println("unknown")
+			}
+		}
 	}
-	sort.Strings(keys)
 
-	fmt.Println(observations.Timestamp)
-	for _, key := range keys {
-		fmt.Println(key, "=", observations.Metrics[key])
-	}
 	return nil
 }
