@@ -1,6 +1,6 @@
 package telemetry
 
-import "github.com/diogo464/telemetry/pb"
+import "github.com/diogo464/telemetry/internal/pb"
 
 func propertyConfigToPb(c PropertyConfig) *pb.Property {
 	p := &pb.Property{

@@ -4,7 +4,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/diogo464/telemetry/utils"
+	"github.com/diogo464/telemetry/internal/utils"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/multiformats/go-multiaddr"
 )

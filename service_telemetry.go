@@ -1,6 +1,6 @@
 package telemetry
 
-import "github.com/diogo464/telemetry/pb"
+import "github.com/diogo464/telemetry/internal/pb"
 
 // Capture implements Telemetry
 func (s *Service) Capture(c CaptureConfig) {

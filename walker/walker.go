@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/diogo464/telemetry/vecdeque"
+	"github.com/diogo464/telemetry/internal/vecdeque"
 	"github.com/diogo464/telemetry/walker/preimage"
 	pb "github.com/libp2p/go-libp2p-kad-dht/pb"
 	"github.com/libp2p/go-libp2p/core/host"

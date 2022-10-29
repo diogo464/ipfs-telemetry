@@ -6,7 +6,7 @@ import (
 	"net"
 	"sync"
 
-	"github.com/diogo464/telemetry/pb"
+	"github.com/diogo464/telemetry/internal/pb"
 	gostream "github.com/libp2p/go-libp2p-gostream"
 	"github.com/libp2p/go-libp2p/core/host"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric"

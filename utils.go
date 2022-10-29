@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/diogo464/telemetry/pb"
-	"github.com/diogo464/telemetry/utils"
+	"github.com/diogo464/telemetry/internal/pb"
+	"github.com/diogo464/telemetry/internal/utils"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
 	grpc_peer "google.golang.org/grpc/peer"

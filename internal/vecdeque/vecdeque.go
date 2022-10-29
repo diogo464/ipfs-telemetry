@@ -1,6 +1,6 @@
 package vecdeque
 
-import "github.com/diogo464/telemetry/utils"
+import "github.com/diogo464/telemetry/internal/utils"
 
 type VecDeque[T any] struct {
 	buf   []T

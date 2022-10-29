@@ -3,7 +3,7 @@ package telemetry
 import (
 	"context"
 
-	"github.com/diogo464/telemetry/pb"
+	"github.com/diogo464/telemetry/internal/pb"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

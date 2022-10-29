@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/diogo464/telemetry/ttlmap"
+	"github.com/diogo464/telemetry/internal/ttlmap"
 )
 
 type requestBlocker struct {
