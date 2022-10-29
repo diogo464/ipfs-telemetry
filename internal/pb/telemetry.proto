@@ -1,7 +1,7 @@
 syntax = "proto3";
 package telemetry;
 
-option go_package = "git.d464.sh/uni/telemetry/pb";
+option go_package = "internal/pb";
 
 service Telemetry {
   rpc GetSession(GetSessionRequest) returns (GetSessionResponse);

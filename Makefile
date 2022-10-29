@@ -26,7 +26,5 @@ tools:
 
 .PHONY: proto
 proto:
-	protoc $(GOGOPROTO_FLAGS) pb/telemetry.proto
-	rm -rf pkg/proto
-	mv git.d464.sh/uni/telemetry/pb/* pb/
-	rm -rf git.d464.sh
+	protoc $(GOGOPROTO_FLAGS) internal/pb/telemetry.proto
+	protoc $(GOGOPROTO_FLAGS) crawler/pb/crawler.proto
