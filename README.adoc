@@ -1,5 +1,14 @@
 == Telemetry
 
+1. Add a Telemetry interface, this interface should implement the otel MeterProvider interface and add some other methods for events, captures, properties and rpcs.
+2. To implement the MeterProvider interface use the metric.NewMeterProvider struct from the otel sdk
+3. The telemetry service should implement the otel otlpmetric.Client interface and export the telemetry into a Stream
+4. In ipfs core/node/builder.go add telemetry after host
+
+
+
+OLD CRAP BELOW
+
 TODO: tick streams
 
 === Metric
