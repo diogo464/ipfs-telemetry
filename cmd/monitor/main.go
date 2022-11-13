@@ -15,6 +15,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 	"google.golang.org/grpc"
+
+	_ "net/http/pprof"
 )
 
 func main() {
@@ -45,6 +47,7 @@ func main() {
 		},
 	}
 
+	go http.ListenAndServe("0.0.0.0:6060", nil)
 	logrus.SetOutput(os.Stdout)
 	logrus.SetLevel(logrus.DebugLevel)
 

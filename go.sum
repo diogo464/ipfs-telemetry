@@ -205,8 +205,8 @@ github.com/dgraph-io/ristretto v0.0.2/go.mod h1:KPxhHT9ZxKefz+PCeOGsrHpl1qZ7i70d
 github.com/dgrijalva/jwt-go v3.2.0+incompatible/go.mod h1:E3ru+11k8xSBh+hMPgOLZmtrrCbhqsmaPHjLKYnJCaQ=
 github.com/dgryski/go-farm v0.0.0-20190104051053-3adb47b1fb0f/go.mod h1:SqUrOPUnsFjfmXRMNPybcSiG0BgUW2AuFH8PAnS2iTw=
 github.com/dgryski/go-farm v0.0.0-20190423205320-6a90982ecee2/go.mod h1:SqUrOPUnsFjfmXRMNPybcSiG0BgUW2AuFH8PAnS2iTw=
-github.com/diogo464/telemetry v0.0.0-20220728212629-2df95c3e8f59 h1:B+RxqvoGg+onlbzyLyzf+lBv0DWrV+S3+TDHKurp+VM=
-github.com/diogo464/telemetry v0.0.0-20220728212629-2df95c3e8f59/go.mod h1:iOcMiz1/XbQ/2EMmCgIxb6zAK7FvL9HFj82mZZ/O1/s=
+github.com/diogo464/telemetry v0.0.0-20221113152417-9e693d4ffc4f h1:bkiKjuTmYi06h3AgzOTqssTWdiSLnsG+yb+vGoT21Q0=
+github.com/diogo464/telemetry v0.0.0-20221113152417-9e693d4ffc4f/go.mod h1:iOcMiz1/XbQ/2EMmCgIxb6zAK7FvL9HFj82mZZ/O1/s=
 github.com/docker/go-units v0.4.0 h1:3uh0PgVws3nIA0Q+MwDC8yjEPf9zjRfZZWXZYDct3Tw=
 github.com/docker/go-units v0.4.0/go.mod h1:fgPhTUdO+D/Jk86RDLlptpiXQzgHJF7gydDDbaIK4Dk=
 github.com/dustin/go-humanize v0.0.0-20171111073723-bb3d318650d4/go.mod h1:HtrtbFcZ19U5GC7JDqmcUSB87Iq5E25KnS6fMYU6eOk=
