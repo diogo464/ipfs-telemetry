@@ -1,344 +1,146 @@
 package monitor
 
-// import (
-// 	"context"
-// 	"time"
+import (
+	"context"
 
-// 	"github.com/diogo464/telemetry"
-// 	"github.com/diogo464/telemetry/internal/actionqueue"
-// 	"github.com/diogo464/telemetry/monitor/pb"
-// 	"github.com/libp2p/go-libp2p-core/host"
-// 	"github.com/libp2p/go-libp2p-core/peer"
-// 	"github.com/sirupsen/logrus"
-// )
+	"github.com/libp2p/go-libp2p/core/host"
+	"github.com/libp2p/go-libp2p/core/peer"
+	"github.com/libp2p/go-libp2p/core/peerstore"
+	"go.uber.org/zap"
+)
 
-// const (
-// 	ActionDiscover   actionKind = "discover"
-// 	ActionTelemetry  actionKind = "telemetry"
-// 	ActionBandwidth  actionKind = "bandwidth"
-// 	ActionRemovePeer actionKind = "remove_peer"
-// )
+var (
+	_ (monitorCommand) = (*monitorCommandDiscover)(nil)
+	_ (monitorCommand) = (*monitorCommandDiscoverWithAddr)(nil)
+	_ (monitorCommand) = (*monitorCommandPeerFailed)(nil)
+)
 
-// type Cursors = map[string]int
+type monitorCommand interface {
+	execute(*Monitor)
+}
 
-// type actionKind string
+type Monitor struct {
+	logger *zap.Logger
 
-// type action struct {
-// 	kind actionKind
-// 	pid  peer.ID
-// }
+	// Safe for use outside task
+	command_sender chan<- monitorCommand
+	host           host.Host
+	opts           *options
+	exporter       Exporter
 
-// type taskResult struct {
-// 	kind   actionKind
-// 	pid    peer.ID
-// 	result interface{}
-// }
+	// Unsafe for use outside task
+	command_receiver <-chan monitorCommand
+	peers            map[peer.ID]*peerTask
+}
 
-// type taskTelemetryResult struct {
-// 	session telemetry.Session
-// 	cursors Cursors
-// 	err     error
-// }
+func Start(ctx context.Context, o ...Option) (*Monitor, error) {
+	opts := defaults()
+	if err := apply(opts, o...); err != nil {
+		return nil, err
+	}
 
-// type taskBandwidthResult struct {
-// 	err error
-// }
+	if opts.Host == nil {
+		h, err := createDefaultHost(ctx)
+		if err != nil {
+			return nil, err
+		}
+		opts.Host = h
+	}
 
-// type taskProviderRecordsResult struct {
-// 	err error
-// }
+	if opts.Exporter == nil {
+		opts.Exporter = NewNoOpExporter()
+	}
 
-// type peerState struct {
-// 	id            peer.ID
-// 	failedAttemps int
-// 	lastSession   telemetry.Session
-// 	cursors       Cursors
-// 	ctx           context.Context
-// 	cancel        context.CancelFunc
-// }
+	command_channel := make(chan monitorCommand)
+	m := &Monitor{
+		logger: opts.Logger,
 
-// type Monitor struct {
-// 	pb.UnimplementedMonitorServer
-// 	h        host.Host
-// 	ctx      context.Context
-// 	opts     *options
-// 	exporter Exporter
+		command_sender: command_channel,
+		host:           opts.Host,
+		opts:           opts,
+		exporter:       opts.Exporter,
 
-// 	peers   map[peer.ID]*peerState
-// 	actions *actionqueue.Queue[action]
-// 	caction chan actionqueue.Action[action]
-// 	cresult chan *taskResult
-// }
+		command_receiver: command_channel,
+		peers:            map[peer.ID]*peerTask{},
+	}
 
-// func NewMonitor(ctx context.Context, o ...Option) (*Monitor, error) {
-// 	opts := defaults()
-// 	if err := apply(opts, o...); err != nil {
-// 		return nil, err
-// 	}
+	go m.run(ctx)
+	return m, nil
+}
 
-// 	if opts.Host == nil {
-// 		h, err := createDefaultHost(ctx)
-// 		if err != nil {
-// 			return nil, err
-// 		}
-// 		opts.Host = h
-// 	}
+func (m *Monitor) Discover(ctx context.Context, pid peer.ID) {
+	m.sendCommand(newMonitorCommandDiscover(pid))
+}
 
-// 	if opts.Exporter == nil {
-// 		opts.Exporter = NewNoOpExporter()
-// 	}
+func (m *Monitor) DiscoverWithAddr(ctx context.Context, paddr peer.AddrInfo) {
+	m.sendCommand(newMonitorCommandDiscoverWithAddr(paddr))
+}
 
-// 	logrus.Debug("options: ", *opts)
+func (m *Monitor) run(ctx context.Context) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case cmd := <-m.command_receiver:
+			cmd.execute(m)
+		}
+	}
+}
 
-// 	return &Monitor{
-// 		h:        opts.Host,
-// 		ctx:      ctx,
-// 		opts:     opts,
-// 		exporter: opts.Exporter,
-// 		peers:    make(map[peer.ID]*peerState),
-// 		actions:  actionqueue.NewQueue[action](),
-// 		caction:  make(chan actionqueue.Action[action]),
-// 		cresult:  make(chan *taskResult),
-// 	}, nil
-// }
+func (m *Monitor) sendCommand(cmd monitorCommand) {
+	m.command_sender <- cmd
+}
 
-// func (s *Monitor) Close() {
-// 	for _, state := range s.peers {
-// 		state.cancel()
-// 	}
-// 	s.h.Close()
-// }
+func (m *Monitor) discover(pid peer.ID) {
+	if pt, ok := m.peers[pid]; ok {
+		m.logger.Info("rediscover peer", zap.String("peer", pid.Pretty()))
+		pt.sendCommand(newPeerCommandResetErrors())
+		return
+	}
+	m.logger.Info("discover peer", zap.String("peer", pid.Pretty()))
+	m.peers[pid] = newPeerTask(pid, m.host, m.opts, m.exporter, m, m.logger.With(zap.String("peer", pid.Pretty())))
+}
 
-// func (s *Monitor) Run(ctx context.Context) {
-// LOOP:
-// 	for {
-// 		logrus.Debug("Monitor main loop")
-// 		actionTimer := s.actions.TimerUntilAction()
-// 		select {
-// 		case <-actionTimer.C:
-// 			action := s.actions.Pop()
-// 			s.processAction(action)
-// 		case tresult := <-s.cresult:
-// 			s.processTaskResult(tresult)
-// 		case action := <-s.caction:
-// 			s.actions.Push(action)
-// 		case <-ctx.Done():
-// 			break LOOP
-// 		}
-// 	}
-// }
+type monitorCommandDiscover struct {
+	pid peer.ID
+}
 
-// func (s *Monitor) processAction(action *action) {
-// 	switch action.kind {
-// 	case ActionDiscover:
-// 		logrus.WithField("peer", action.pid).Debug("action discovery")
-// 		s.onActionDiscover(action.pid)
-// 	case ActionTelemetry:
-// 		logrus.WithField("peer", action.pid).Debug("action telemetry")
-// 		s.onActionTelemetry(action.pid)
-// 	case ActionBandwidth:
-// 		logrus.WithField("peer", action.pid).Debug("action bandwidth")
-// 		s.onActionBandwidth(action.pid)
-// 	case ActionRemovePeer:
-// 		logrus.WithField("peer", action.pid).Debug("action remove peer")
-// 		s.onActionRemove(action.pid)
-// 	default:
-// 		logrus.Error("unhandled action, kind = ", action.kind)
-// 	}
-// }
+func newMonitorCommandDiscover(pid peer.ID) *monitorCommandDiscover {
+	return &monitorCommandDiscover{
+		pid: pid,
+	}
+}
 
-// func (s *Monitor) processTaskResult(tresult *taskResult) {
-// 	switch tresult.kind {
-// 	case ActionTelemetry:
-// 		s.onTaskResultTelemetry(tresult.pid, tresult.result.(*taskTelemetryResult))
-// 	case ActionBandwidth:
-// 		s.onTaskResultBandwidth(tresult.pid, tresult.result.(*taskBandwidthResult))
-// 	default:
-// 		logrus.Error("unhandled task result, kind = ", tresult.kind)
-// 	}
-// }
+// execute implements monitorCommand
+func (c *monitorCommandDiscover) execute(m *Monitor) {
+	m.discover(c.pid)
+}
 
-// func (s *Monitor) onActionDiscover(p peer.ID) {
-// 	if state, ok := s.peers[p]; ok {
-// 		state.failedAttemps = 0
-// 	} else {
-// 		ctx, cancel := context.WithCancel(context.Background())
-// 		s.peers[p] = &peerState{
-// 			id:            p,
-// 			failedAttemps: 0,
-// 			lastSession:   telemetry.InvalidSession,
-// 			cursors:       make(map[string]int),
-// 			ctx:           ctx,
-// 			cancel:        cancel,
-// 		}
+type monitorCommandDiscoverWithAddr struct {
+	paddr peer.AddrInfo
+}
 
-// 		if s.opts.CollectEnabled {
-// 			s.actions.Push(actionqueue.Now(&action{
-// 				kind: ActionTelemetry,
-// 				pid:  p,
-// 			}))
-// 		}
+func newMonitorCommandDiscoverWithAddr(paddr peer.AddrInfo) *monitorCommandDiscoverWithAddr {
+	return &monitorCommandDiscoverWithAddr{
+		paddr: paddr,
+	}
+}
 
-// 		if s.opts.BandwidthEnabled {
-// 			s.actions.Push(actionqueue.After(&action{
-// 				kind: ActionBandwidth,
-// 				pid:  p,
-// 			}, time.Second*60))
-// 		}
-// 	}
-// }
+// execute implements monitorCommand
+func (c *monitorCommandDiscoverWithAddr) execute(m *Monitor) {
+	m.host.Peerstore().AddAddr(c.paddr.ID, c.paddr.Addrs[0], peerstore.PermanentAddrTTL)
+	m.discover(c.paddr.ID)
+}
 
-// func (s *Monitor) onActionTelemetry(p peer.ID) {
-// 	if state, ok := s.peers[p]; ok {
-// 		go func() {
-// 			result := s.taskCollectTelemetry(state.ctx, state.id, state.lastSession, state.cursors)
-// 			s.cresult <- &taskResult{
-// 				kind:   ActionTelemetry,
-// 				pid:    p,
-// 				result: result,
-// 			}
-// 		}()
-// 	}
-// }
+type monitorCommandPeerFailed struct {
+	pid peer.ID
+}
 
-// func (s *Monitor) onActionBandwidth(p peer.ID) {
-// 	if state, ok := s.peers[p]; ok {
-// 		go func() {
-// 			result := s.taskBandwidth(state.ctx, state.id)
-// 			s.cresult <- &taskResult{
-// 				kind:   ActionBandwidth,
-// 				pid:    p,
-// 				result: result,
-// 			}
-// 		}()
-// 	}
-// }
+func newMonitorCommandPeerFailed(pid peer.ID) *monitorCommandPeerFailed {
+	return &monitorCommandPeerFailed{pid}
+}
 
-// func (s *Monitor) onActionRemove(p peer.ID) {
-// 	if state, ok := s.peers[p]; ok {
-// 		state.cancel()
-// 		delete(s.peers, p)
-// 	}
-// }
-
-// func (s *Monitor) taskCollectTelemetry(pctx context.Context, pid peer.ID, lastSession telemetry.Session, cursors Cursors) *taskTelemetryResult {
-// 	ctx, cancel := context.WithTimeout(pctx, s.opts.CollectTimeout)
-// 	defer cancel()
-
-// 	logrus.WithField("peer", pid).Debug("creating client")
-// 	client, err := telemetry.NewClient(s.h, pid)
-// 	if err != nil {
-// 		return &taskTelemetryResult{err: err}
-// 	}
-// 	defer client.Close()
-
-// 	logrus.WithField("peer", pid).Debug("getting session info")
-// 	session, err := client.GetSession(ctx)
-// 	if err != nil {
-// 		return &taskTelemetryResult{err: err}
-// 	}
-
-// 	if session != lastSession {
-// 		cursors = make(map[string]int)
-// 		lastSession = session
-// 	}
-
-// 	logrus.WithField("peer", pid).Debug("exporting datapoints from ", cursors)
-
-// 	streamDescriptors, err := client.AvailableStreams(ctx)
-// 	if err != nil {
-// 		return &taskTelemetryResult{err: err}
-// 	}
-
-// 	for _, descriptor := range streamDescriptors {
-// 		segments := 0
-// 		schan := make(chan telemetry.StreamSegment)
-// 		go client.StreamSegments(ctx, descriptor.Name, cursors[descriptor.Name], schan)
-
-// 		for segment := range schan {
-// 			s.exporter.ExportStream(pid, session, descriptor, segment)
-// 			segments += 1
-// 		}
-
-// 		logrus.
-// 			WithField("peer", pid).
-// 			WithField("stream", descriptor.Name).
-// 			WithField("segments", segments).
-// 			Debug("exported stream")
-// 	}
-
-// 	return &taskTelemetryResult{
-// 		session: session,
-// 		cursors: cursors,
-// 		err:     nil,
-// 	}
-// }
-
-// func (s *Monitor) taskBandwidth(pctx context.Context, pid peer.ID) *taskBandwidthResult {
-// 	ctx, cancel := context.WithTimeout(pctx, s.opts.BandwidthTimeout)
-// 	defer cancel()
-
-// 	client, err := telemetry.NewClient(s.h, pid)
-// 	if err != nil {
-// 		return &taskBandwidthResult{err: err}
-// 	}
-// 	defer client.Close()
-
-// 	session, err := client.GetSession(ctx)
-// 	if err != nil {
-// 		return &taskBandwidthResult{err: err}
-// 	}
-
-// 	bandwidth, err := client.Bandwidth(ctx, telemetry.DEFAULT_BANDWIDTH_PAYLOAD_SIZE)
-// 	if err != nil {
-// 		return &taskBandwidthResult{err: err}
-// 	}
-
-// 	s.exporter.ExportBandwidth(pid, session, bandwidth)
-
-// 	return &taskBandwidthResult{err: nil}
-// }
-
-// func (s *Monitor) onTaskResultTelemetry(pid peer.ID, tresult *taskTelemetryResult) {
-// 	s.onTaskResultCommon(pid, ActionTelemetry, s.opts.CollectPeriod, tresult.err)
-// 	if state, ok := s.peers[pid]; ok && tresult.err == nil {
-// 		state.cursors = tresult.cursors
-// 		state.lastSession = tresult.session
-// 	}
-// }
-
-// func (s *Monitor) onTaskResultBandwidth(pid peer.ID, tresult *taskBandwidthResult) {
-// 	s.onTaskResultCommon(pid, ActionBandwidth, s.opts.BandwidthPeriod, tresult.err)
-// }
-
-// func (s *Monitor) onTaskResultProviderRecords(pid peer.ID, tresult *taskProviderRecordsResult) {
-// 	s.onTaskResultCommon(pid, ActionProviderRecords, s.opts.ProviderRecordsPeriod, tresult.err)
-// }
-
-// func (s *Monitor) onTaskResultCommon(pid peer.ID, kind actionKind, interval time.Duration, err error) {
-// 	if state, ok := s.peers[pid]; ok {
-// 		if err == nil {
-// 			logrus.WithField("peer", pid).Debug("running action ", kind, " in ", interval)
-// 			state.failedAttemps = 0
-// 			s.actions.Push(actionqueue.After(&action{
-// 				kind: kind,
-// 				pid:  pid,
-// 			}, interval))
-// 		} else {
-// 			state.failedAttemps += 1
-// 			logrus.WithField("peer", pid).Debug("removing peer")
-// 			if state.failedAttemps >= s.opts.MaxFailedAttemps {
-// 				s.actions.Push(actionqueue.Now(&action{
-// 					kind: ActionRemovePeer,
-// 					pid:  pid,
-// 				}))
-// 			} else {
-// 				logrus.WithField("peer", pid).Debug("retrying action ", kind, " in ", s.opts.RetryInterval, ". error: ", err)
-// 				s.actions.Push(actionqueue.After(&action{
-// 					kind: kind,
-// 					pid:  pid,
-// 				}, s.opts.RetryInterval))
-// 			}
-// 		}
-// 	}
-// }
+// execute implements monitorCommand
+func (c *monitorCommandPeerFailed) execute(m *Monitor) {
+	delete(m.peers, c.pid)
+}

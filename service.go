@@ -9,8 +9,11 @@ import (
 	"github.com/diogo464/telemetry/internal/pb"
 	gostream "github.com/libp2p/go-libp2p-gostream"
 	"github.com/libp2p/go-libp2p/core/host"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric"
 	sdk_metric "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/resource"
+	semconv "go.opentelemetry.io/otel/semconv/v1.12.0"
 	"google.golang.org/grpc"
 )
 
@@ -132,7 +135,24 @@ func NewService(h host.Host, os ...ServiceOption) (*Service, error) {
 		fmt.Println("GRPC server stopped")
 	}()
 
-	t.meter_provider = sdk_metric.NewMeterProvider(sdk_metric.WithReader(sdk_metric.NewPeriodicReader(otlpmetric.New(t), sdk_metric.WithInterval(opts.metricsPeriod))))
+	r, _ := resource.Merge(
+		resource.Default(),
+		resource.NewWithAttributes(
+			semconv.SchemaURL,
+			semconv.ServiceVersionKey.String("v0.0.0"),
+			attribute.String("peerid", h.ID().String()),
+		),
+	)
+
+	t.meter_provider = sdk_metric.NewMeterProvider(
+		sdk_metric.WithResource(r),
+		sdk_metric.WithReader(
+			sdk_metric.NewPeriodicReader(
+				otlpmetric.New(t),
+				sdk_metric.WithInterval(opts.metricsPeriod),
+			),
+		),
+	)
 
 	return t, nil
 }

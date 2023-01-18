@@ -35,7 +35,7 @@ func actionCapture(c *cli.Context) error {
 	if err := json.Indent(buf, capture.Data, "", "  "); err != nil {
 		return err
 	}
-	fmt.Println(string(buf.Bytes()))
+	fmt.Println(buf.String())
 
 	return nil
 }

@@ -88,7 +88,7 @@ type Telemetry interface {
 	Property(PropertyConfig)
 	Capture(CaptureConfig)
 	Event(EventConfig) EventEmitter
-	// TODO: Add RPC's
+	// TODO: Add RPC's ?
 }
 
 func TimestampNow() uint64 {

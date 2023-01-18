@@ -20,6 +20,9 @@ func JsonStreamDecoder(encoded []byte) (string, error) {
 		return "", err
 	}
 	ndjson, err := json.Marshal(obj)
+	if err != nil {
+		return "", err
+	}
 	return string(ndjson), nil
 }
 

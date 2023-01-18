@@ -1,5 +1,5 @@
 GOCC ?= go
-GOGOPROTO_FLAGS := -I=. -I=./third_party/ -I=./third_party/github.com/gogo/protobuf/protobuf \
+GOGOPROTO_FLAGS := -I=. -I=./third_party/ -I=./third_party/github.com/gogo/protobuf/protobuf -I=./third_party/opentelemetry-proto/ \
 				--gogofast_out=plugins=grpc,Mgoogle/protobuf/any.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/duration.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/struct.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/timestamp.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/wrappers.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/empty.proto=github.com/gogo/protobuf/types:.
 
 all: telemetry example
@@ -7,6 +7,7 @@ all: telemetry example
 .PHONY: example
 example:
 	$(GOCC) build -o ./bin/basic ./examples/basic
+	$(GOCC) build -o ./bin/monitor ./examples/monitor
 
 .PHONY: telemetry
 telemetry:
@@ -28,4 +29,3 @@ tools:
 proto:
 	protoc $(GOGOPROTO_FLAGS) internal/pb/telemetry.proto
 	protoc $(GOGOPROTO_FLAGS) crawler/pb/crawler.proto
-	protoc $(GOGOPROTO_FLAGS) monitor/pb/monitor.proto

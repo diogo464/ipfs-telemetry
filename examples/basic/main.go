@@ -46,6 +46,7 @@ func actionMain(c *cli.Context) error {
 		telemetry.WithServiceDebug(true),
 		telemetry.WithServiceTcpListener("127.0.0.1:4000"),
 		telemetry.WithServiceMetricsPeriod(time.Second*2),
+		telemetry.WithServiceBandwidth(true),
 		telemetry.WithServiceDefaultStreamOpts(
 			telemetry.WithStreamSegmentLifetime(time.Second*60),
 			telemetry.WithStreamActiveBufferLifetime(time.Second*5),
@@ -55,6 +56,7 @@ func actionMain(c *cli.Context) error {
 		return err
 	}
 
+	telemetry.SetGlobalTelemetry(t)
 	global.SetMeterProvider(t)
 	otel_host.Start()
 	otel_runtime.Start()

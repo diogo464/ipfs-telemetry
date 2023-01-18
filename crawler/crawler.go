@@ -8,7 +8,6 @@ import (
 	"github.com/diogo464/telemetry/crawler/pb"
 	"github.com/diogo464/telemetry/internal/utils"
 	"github.com/diogo464/telemetry/walker"
-	"github.com/gogo/protobuf/types"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"go.uber.org/atomic"
@@ -116,7 +115,7 @@ func (c *Crawler) ObserveError(*walker.Error) {
 	c.errors.Inc()
 }
 
-func (c *Crawler) Subscribe(req *types.Empty, stream pb.Crawler_SubscribeServer) error {
+func (c *Crawler) Subscribe(req *pb.SubscribeRequest, srv pb.Crawler_SubscribeServer) error {
 	csubscribe := make(chan peer.ID, DEFAULT_CHANNEL_BUFFER_SIZE)
 	c.subscribers_mu.Lock()
 	c.subscribers[csubscribe] = struct{}{}
@@ -134,7 +133,7 @@ func (c *Crawler) Subscribe(req *types.Empty, stream pb.Crawler_SubscribeServer)
 	}()
 
 	for p := range csubscribe {
-		err := stream.Send(&pb.SubscribeItem{
+		err := srv.Send(&pb.SubscribeItem{
 			PeerId: p.Pretty(),
 		})
 		if err != nil {

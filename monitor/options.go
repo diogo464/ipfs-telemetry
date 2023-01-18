@@ -2,13 +2,12 @@ package monitor
 
 import (
 	"context"
+	"net"
 	"time"
 
-	"github.com/ipfs/go-datastore"
 	"github.com/libp2p/go-libp2p"
-	dht "github.com/libp2p/go-libp2p-kad-dht"
 	"github.com/libp2p/go-libp2p/core/host"
-	"github.com/libp2p/go-libp2p/core/routing"
+	"go.uber.org/zap"
 )
 
 const (
@@ -39,6 +38,8 @@ type options struct {
 	BandwidthTimeout time.Duration
 	Host             host.Host
 	Exporter         Exporter
+	Listener         net.Listener
+	Logger           *zap.Logger
 }
 
 func defaults() *options {
@@ -51,6 +52,8 @@ func defaults() *options {
 		BandwidthEnabled: DEFAULT_BANDWIDTH_ENABLED,
 		BandwidthPeriod:  DEFAULT_BANDWIDTH_PERIOD,
 		BandwidthTimeout: DEFAULT_BANDWIDTH_TIMEOUT,
+		Listener:         nil,
+		Logger:           zap.NewNop(),
 	}
 }
 
@@ -133,30 +136,45 @@ func WithExporter(e Exporter) Option {
 	}
 }
 
+func WithListener(l net.Listener) Option {
+	return func(o *options) error {
+		o.Listener = l
+		return nil
+	}
+}
+
+func WithLogger(l *zap.Logger) Option {
+	return func(o *options) error {
+		o.Logger = l
+		return nil
+	}
+}
+
 func createDefaultHost(ctx context.Context) (host.Host, error) {
 	return libp2p.New(
 		libp2p.NoListenAddrs,
-		libp2p.Routing(func(h host.Host) (routing.PeerRouting, error) {
-			client := dht.NewDHTClient(ctx, h, datastore.NewMapDatastore())
-			if err := client.Bootstrap(ctx); err != nil {
-				return nil, err
-			}
+		// libp2p.Routing(func(h host.Host) (routing.PeerRouting, error) {
+		// 	client := dht.NewDHTClient(ctx, h, datastore.NewMapDatastore())
+		// 	if err := client.Bootstrap(ctx); err != nil {
+		// 		return nil, err
+		// 	}
 
-			var err error = nil
-			var success bool = false
-			for _, bootstrap := range dht.GetDefaultBootstrapPeerAddrInfos() {
-				err = h.Connect(ctx, bootstrap)
-				if err == nil {
-					success = true
-				}
-			}
+		// 	var err error = nil
+		// 	var success bool = false
+		// 	for _, bootstrap := range dht.GetDefaultBootstrapPeerAddrInfos() {
+		// 		err = h.Connect(ctx, bootstrap)
+		// 		if err == nil {
+		// 			success = true
+		// 		}
+		// 	}
 
-			if success {
-				client.RefreshRoutingTable()
-				time.Sleep(time.Second * 2)
-				return client, nil
-			} else {
-				return nil, err
-			}
-		}))
+		// 	if success {
+		// 		client.RefreshRoutingTable()
+		// 		time.Sleep(time.Second * 2)
+		// 		return client, nil
+		// 	} else {
+		// 		return nil, err
+		// 	}
+		// })
+	)
 }

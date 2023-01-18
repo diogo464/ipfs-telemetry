@@ -29,7 +29,7 @@ func clientFromContext(c *cli.Context) (*telemetry.Client, error) {
 	case "tcp":
 		return telemetry.NewClient2(c.String(FLAG_HOST.Name))
 	default:
-		return nil, fmt.Errorf("Unknown connection type: %s", c.String(FLAG_CONN_TYPE.Name))
+		return nil, fmt.Errorf("unknown connection type: %s", c.String(FLAG_CONN_TYPE.Name))
 	}
 }
 

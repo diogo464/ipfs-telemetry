@@ -7,7 +7,7 @@ import (
 	"github.com/diogo464/telemetry"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
-	"github.com/sirupsen/logrus"
+	"go.uber.org/zap"
 )
 
 const (
@@ -23,6 +23,8 @@ type peerCommand interface {
 }
 
 type peerTask struct {
+	logger *zap.Logger
+
 	// Safe for use outside task
 	pid            peer.ID
 	host           host.Host
@@ -30,7 +32,7 @@ type peerTask struct {
 	exporter       Exporter
 	cancel         context.CancelFunc
 	command_sender chan<- peerCommand
-	monitor        *Monitor2
+	monitor        *Monitor
 
 	// Unsafe for use outside task
 	consecutive_errors int
@@ -43,10 +45,12 @@ type peerTask struct {
 	events_seqn        map[string]int
 }
 
-func newPeerTask(pid peer.ID, host host.Host, opts *options, exporter Exporter, monitor *Monitor2) *peerTask {
+func newPeerTask(pid peer.ID, host host.Host, opts *options, exporter Exporter, monitor *Monitor, logger *zap.Logger) *peerTask {
 	ctx, cancel := context.WithCancel(context.Background())
 	command_channel := make(chan peerCommand, peerTaskCommandBufferSize)
 	pt := &peerTask{
+		logger: logger,
+
 		pid:            pid,
 		host:           host,
 		opts:           opts,
@@ -94,10 +98,11 @@ func (p *peerTask) collectTelemetry(ctx context.Context) {
 	ctx, cancel := context.WithTimeout(ctx, p.opts.CollectTimeout)
 	defer cancel()
 	if err := p.tryCollectTelemetry(ctx); err != nil {
-		logrus.Warnf("Failed to collect telemetry for peer %s: %s", p.pid, err)
+		p.logger.Warn("failed to collect telemetry", zap.Error(err))
 		p.fail(err)
 	} else {
-		logrus.Infof("Successfully collected telemetry for peer %s", p.pid)
+		p.logger.Info("successfully collected telemetry")
+		p.success()
 	}
 }
 
@@ -109,33 +114,34 @@ func (p *peerTask) tryCollectTelemetry(ctx context.Context) error {
 
 	sess, err := client.GetSession(ctx)
 	if err != nil {
-		logrus.Warnf("Failed to get session for peer %s: %s", p.pid, err)
+		p.logger.Warn("failed to get session")
 		return err
 	}
 
 	if !p.session_exported {
-		logrus.Infof("Exporting session for peer %s: %s", p.pid, sess)
+		p.logger.Info("exporting session", zap.Any("session", sess))
 		if err := p.tryExportSession(ctx, client, sess); err != nil {
-			logrus.Warnf("Failed to export session for peer %s: %s", p.pid, err)
+			p.logger.Warn("failed to export session", zap.Error(err))
 			return err
 		}
+		p.session_exported = true
 	}
 
-	logrus.Infof("Exporting metrics for peer %s: %s", p.pid, sess)
+	p.logger.Info("exporting metrics", zap.Any("session", sess))
 	if err := p.tryExportMetrics(ctx, client, sess); err != nil {
-		logrus.Warnf("Failed to export metrics for peer %s: %s", p.pid, err)
+		p.logger.Warn("failed to export metrics", zap.Error(err))
 		return err
 	}
 
-	logrus.Infof("Exporting events for peer %s: %s", p.pid, sess)
+	p.logger.Info("exporting events", zap.Any("session", sess))
 	if err := p.tryExportEvents(ctx, client, sess); err != nil {
-		logrus.Warnf("Failed to export events for peer %s: %s", p.pid, err)
+		p.logger.Warn("failed to export events", zap.Error(err))
 		return err
 	}
 
-	logrus.Infof("Exporting captures for peer %s: %s", p.pid, sess)
+	p.logger.Info("exporting captures", zap.Any("session", sess))
 	if err := p.tryExportCaptures(ctx, client, sess); err != nil {
-		logrus.Warnf("Failed to export captures for peer %s: %s", p.pid, err)
+		p.logger.Warn("failed to export captures", zap.Error(err))
 		return err
 	}
 
@@ -145,7 +151,7 @@ func (p *peerTask) tryCollectTelemetry(ctx context.Context) error {
 func (p *peerTask) tryExportSession(ctx context.Context, client *telemetry.Client, sess telemetry.Session) error {
 	props, err := client.GetProperties(ctx)
 	if err != nil {
-		logrus.Warnf("Failed to get properties for peer %s: %s", p.pid, err)
+		p.logger.Warn("failed to get properties", zap.Error(err))
 		return err
 	}
 
@@ -157,7 +163,7 @@ func (p *peerTask) tryExportSession(ctx context.Context, client *telemetry.Clien
 func (p *peerTask) tryExportMetrics(ctx context.Context, client *telemetry.Client, sess telemetry.Session) error {
 	cmetrics, err := client.GetMetrics(ctx, p.metrics_seqn)
 	if err != nil {
-		logrus.Warnf("Failed to get metrics for peer %s: %s", p.pid, err)
+		p.logger.Warn("failed to get metrics", zap.Error(err))
 		return err
 	}
 
@@ -170,14 +176,14 @@ func (p *peerTask) tryExportMetrics(ctx context.Context, client *telemetry.Clien
 func (p *peerTask) tryExportEvents(ctx context.Context, client *telemetry.Client, sess telemetry.Session) error {
 	descriptors, err := client.GetEventDescriptors(ctx)
 	if err != nil {
-		logrus.Warnf("Failed to get event descriptors for peer %s: %s", p.pid, err)
+		p.logger.Warn("failed to get event descriptors", zap.Error(err))
 		return err
 	}
 
 	for _, descriptor := range descriptors {
 		cevents, err := client.GetEvent(ctx, descriptor.Name, p.events_seqn[descriptor.Name])
 		if err != nil {
-			logrus.Warnf("Failed to get events for peer %s: %s", p.pid, err)
+			p.logger.Warn("failed to get events", zap.Error(err))
 			return err
 		}
 
@@ -202,14 +208,14 @@ func (p *peerTask) tryExportEvents(ctx context.Context, client *telemetry.Client
 func (p *peerTask) tryExportCaptures(ctx context.Context, client *telemetry.Client, sess telemetry.Session) error {
 	descriptors, err := client.GetCaptureDescriptors(ctx)
 	if err != nil {
-		logrus.Warnf("Failed to get capture descriptors for peer %s: %s", p.pid, err)
+		p.logger.Warn("failed to get capture descriptors", zap.Error(err))
 		return err
 	}
 
 	for _, descriptor := range descriptors {
 		ccaptures, err := client.GetCapture(ctx, descriptor.Name, p.captures_seqn[descriptor.Name])
 		if err != nil {
-			logrus.Warnf("Failed to get captures for peer %s: %s", p.pid, err)
+			p.logger.Warn("failed to get captures", zap.Error(err))
 			return err
 		}
 
@@ -235,10 +241,11 @@ func (p *peerTask) bandwidthTest(ctx context.Context) {
 	ctx, cancel := context.WithTimeout(ctx, p.opts.BandwidthTimeout)
 	defer cancel()
 	if err := p.tryBandwidthTest(ctx); err != nil {
-		logrus.Warnf("Failed to test bandwidth for peer %s: %s", p.pid, err)
+		p.logger.Warn("failed to test bandwidth", zap.Error(err))
 		p.fail(err)
 	} else {
-		logrus.Infof("Successfully tested bandwidth for peer %s", p.pid)
+		p.logger.Info("successfully tested bandwidth")
+		p.success()
 	}
 }
 
@@ -248,23 +255,23 @@ func (p *peerTask) tryBandwidthTest(ctx context.Context) error {
 		return err
 	}
 
-	logrus.Infof("Starting bandwidth test for peer %s", p.pid)
+	p.logger.Info("starting bandwidth test")
 	result, err := client.Bandwidth(ctx, telemetry.DEFAULT_BANDWIDTH_PAYLOAD_SIZE)
 	if err != nil {
 		return err
 	}
 
-	logrus.Infof("Exporting bandwidth test result for peer %s: %s", p.pid, result)
+	p.logger.Info("exporting bandwidth test result", zap.Any("result", result))
 	p.exporter.Bandwidth(p.pid, result)
 
 	return nil
 }
 
 func (p *peerTask) createClient() (*telemetry.Client, error) {
-	logrus.Tracef("Creating telemetry client for peer %s", p.pid)
+	p.logger.Debug("creating telemetry client")
 	client, err := telemetry.NewClient(p.host, p.pid)
 	if err != nil {
-		logrus.Warnf("Failed to create telemetry client for peer %s: %s", p.pid, err)
+		p.logger.Warn("failed to create telemetry client", zap.Error(err))
 		return nil, err
 	}
 	return client, nil
@@ -277,8 +284,12 @@ func (p *peerTask) fail(err error) {
 	}
 }
 
+func (p *peerTask) success() {
+	p.consecutive_errors = 0
+}
+
 func (p *peerTask) failFast(err error) {
-	logrus.Errorf("Peer %s failed: %s", p.pid, err)
+	p.logger.Error("peer failure", zap.Error(err))
 	p.cancel()
 	p.monitor.sendCommand(newMonitorCommandPeerFailed(p.pid))
 }

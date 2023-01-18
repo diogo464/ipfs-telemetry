@@ -15,11 +15,6 @@ const (
 	TAG_GETRECORDS = "getrecords"
 )
 
-const (
-	observerDefaultCapacity = 16
-	maxGrpcMessageSize      = 2 * 1024 * 1024
-)
-
 var (
 	ErrBlocked              = status.Errorf(codes.Unavailable, "blocked")
 	ErrStreamNotAvailable   = status.Errorf(codes.NotFound, "stream not available")

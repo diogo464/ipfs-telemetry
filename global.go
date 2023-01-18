@@ -1,6 +1,6 @@
 package telemetry
 
-var globalTelemetry Telemetry = nil
+var globalTelemetry Telemetry = NewNoOpTelemetry()
 
 func SetGlobalTelemetry(t Telemetry) { globalTelemetry = t }
 
