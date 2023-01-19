@@ -1,37 +1,56 @@
 package telemetry
 
-import "github.com/diogo464/telemetry/internal/pb"
+import (
+	"github.com/diogo464/telemetry/internal/pb"
+)
 
-// Capture implements Telemetry
-func (s *Service) Capture(c CaptureConfig) {
+func (s *Service) addMetricDescriptor(desc MetricDescriptor) {
+	s.metrics.mu.Lock()
+	defer s.metrics.mu.Unlock()
+
+	s.metrics.descriptors = append(s.metrics.descriptors, &pb.MetricDescriptor{
+		Scope:       desc.Scope,
+		Name:        desc.Name,
+		Description: desc.Description,
+	})
+}
+
+func (s *Service) createCapture(c captureConfig) {
 	captures := s.captures
 	captures.mu.Lock()
 	defer captures.mu.Unlock()
 
-	if _, ok := captures.captures[c.Name]; ok {
+	id := captures.nextID
+	captures.nextID++
+
+	if _, ok := captures.captures[id]; ok {
 		log.Warnf("capture already exists", "capture", c.Name)
 		return
 	}
 
-	captures.captures[c.Name] = newServiceCapture(s.Context(), NewStream(s.opts.defaultStreamOptions...), c)
+	captures.captures[id] = newServiceCapture(s.Context(), id, s.newStream(), c)
 }
 
-// Event implements Telemetry
-func (s *Service) Event(config EventConfig) EventEmitter {
+func (s *Service) createEvent(config eventConfig) EventEmitter {
 	events := s.events
 	s.events.mu.Lock()
 	defer s.events.mu.Unlock()
 
-	if e, ok := events.events[config.Name]; ok {
+	id := events.nextID
+	events.nextID++
+
+	if e, ok := events.events[id]; ok {
 		return e.emitter
 	}
 
-	em := newEventEmitter(config, NewStream(s.opts.defaultStreamOptions...))
-	events.events[config.Name] = &serviceEvent{
+	em := newEventEmitter(config, s.newStream())
+	events.events[id] = &serviceEvent{
 		config:  config,
 		stream:  em.stream,
 		emitter: em,
 		descriptor: &pb.EventDescriptor{
+			Id:          id,
+			Scope:       config.Scope,
 			Name:        config.Name,
 			Description: config.Description,
 		},
@@ -40,23 +59,24 @@ func (s *Service) Event(config EventConfig) EventEmitter {
 	return em
 }
 
-// PropertyInt implements Telemetry
-func (s *Service) Property(c PropertyConfig) {
+func (s *Service) createProperty(c propertyConfig) {
 	s.properties.mu.Lock()
 	defer s.properties.mu.Unlock()
 
-	pbprop := propertyConfigToPb(c)
-	s.addProperty(pbprop)
-}
-
-func (s *Service) addProperty(p *pb.Property) {
-	properties := s.properties
-	if _, ok := properties.properties[p.Name]; ok {
-		log.Warnf("property already exists", "property", p.Name)
-		return
+	for _, prop := range s.properties.properties {
+		if prop.pbproperty.Name == c.Name {
+			log.Warnf("property already exists", "property", c.Name)
+			return
+		}
 	}
 
-	properties.properties[p.Name] = &servicePropertyEntry{
-		pbproperty: p,
+	id := uint32(len(s.properties.properties))
+	pbprop := &pb.Property{
+		Id:          id,
+		Scope:       c.Scope,
+		Name:        c.Name,
+		Description: c.Description,
 	}
+
+	s.properties.properties = append(s.properties.properties, &servicePropertyEntry{pbproperty: pbprop})
 }

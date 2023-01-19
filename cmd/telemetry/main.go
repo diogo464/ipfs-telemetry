@@ -23,6 +23,7 @@ var COMMANDS = []*cli.Command{
 	CommandEvent,
 	CommandProperties,
 	CommandWalk,
+	CommandDescriptors,
 }
 
 func main() {

@@ -4,14 +4,13 @@ import (
 	"context"
 	"fmt"
 
-	"go.opentelemetry.io/otel/metric"
 	mpb "go.opentelemetry.io/proto/otlp/metrics/v1"
 	"google.golang.org/protobuf/proto"
 )
 
 // Meter implements Telemetry
-func (s *Service) Meter(instrumentationName string, opts ...metric.MeterOption) metric.Meter {
-	return s.meter_provider.Meter(instrumentationName, opts...)
+func (s *Service) MeterProvider() MeterProvider {
+	return &serviceMeterProvider{service: s}
 }
 
 // UploadMetrics implements otlpmetric.Client

@@ -1,30 +1,18 @@
 package monitor
 
 import (
-	"time"
-
 	"github.com/diogo464/telemetry"
 	"github.com/libp2p/go-libp2p/core/peer"
-	mpb "go.opentelemetry.io/proto/otlp/metrics/v1"
 )
 
 var _ (Exporter) = (*noOpExporter)(nil)
 
-type Capture struct {
-	Timestamp time.Time
-	Data      []byte
-}
-
-type Event struct {
-	Timestamp time.Time
-	Data      []byte
-}
-
 type Exporter interface {
-	Session(peer.ID, telemetry.Session, []telemetry.CProperty)
-	Metrics(peer.ID, telemetry.Session, []*mpb.ResourceMetrics)
-	Captures(peer.ID, telemetry.Session, telemetry.CaptureDescriptor, []Capture)
-	Events(peer.ID, telemetry.Session, telemetry.EventDescriptor, []Event)
+	Session(peer.ID, telemetry.Session)
+	Metrics(peer.ID, telemetry.Session, telemetry.Metrics)
+	Properties(peer.ID, telemetry.Session, []telemetry.Property)
+	Captures(peer.ID, telemetry.Session, telemetry.CaptureDescriptor, []telemetry.Capture)
+	Events(peer.ID, telemetry.Session, telemetry.EventDescriptor, []telemetry.Event)
 	Bandwidth(peer.ID, telemetry.Bandwidth)
 }
 
@@ -34,20 +22,24 @@ func NewNoOpExporter() Exporter {
 	return &noOpExporter{}
 }
 
+// Properties implements Exporter
+func (*noOpExporter) Properties(peer.ID, telemetry.Session, []telemetry.Property) {
+}
+
 // Session implements Exporter
-func (*noOpExporter) Session(peer.ID, telemetry.Session, []telemetry.CProperty) {
+func (*noOpExporter) Session(peer.ID, telemetry.Session) {
 }
 
 // Captures implements Exporter
-func (*noOpExporter) Captures(peer.ID, telemetry.Session, telemetry.CaptureDescriptor, []Capture) {
+func (*noOpExporter) Captures(peer.ID, telemetry.Session, telemetry.CaptureDescriptor, []telemetry.Capture) {
 }
 
 // Events implements Exporter
-func (*noOpExporter) Events(peer.ID, telemetry.Session, telemetry.EventDescriptor, []Event) {
+func (*noOpExporter) Events(peer.ID, telemetry.Session, telemetry.EventDescriptor, []telemetry.Event) {
 }
 
 // Metrics implements Exporter
-func (*noOpExporter) Metrics(peer.ID, telemetry.Session, []*mpb.ResourceMetrics) {
+func (*noOpExporter) Metrics(peer.ID, telemetry.Session, telemetry.Metrics) {
 }
 
 // Bandwidth implements Exporter

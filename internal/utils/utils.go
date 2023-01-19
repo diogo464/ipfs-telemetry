@@ -6,7 +6,9 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+	"math/bits"
 	"net"
+	"time"
 
 	"github.com/ipfs/go-cid"
 	"github.com/libp2p/go-libp2p/core/peer"
@@ -131,4 +133,25 @@ func RandomPeerID() peer.ID {
 	var alg uint64 = multihash.SHA2_256
 	hash, _ := multihash.Sum(b, alg, -1)
 	return peer.ID(hash)
+}
+
+func TimestampNow() uint64 {
+	return uint64(time.Now().UnixNano())
+}
+
+// Round down to the nearest power of two.
+func RoundDownPowerOfTwo(size int) int {
+	lz := bits.LeadingZeros(uint(size))
+	sz := (1 << (bits.UintSize - lz)) >> 1
+	return sz
+}
+
+// Round up to the nearest power of two.
+func RoundUpPowerOfTwo(size int) int {
+	lz := bits.LeadingZeros(uint(size))
+	sz := (1 << (bits.UintSize - lz)) >> 1
+	if sz < size {
+		sz <<= 1
+	}
+	return sz
 }

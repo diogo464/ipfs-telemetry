@@ -12,6 +12,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/urfave/cli/v2"
 	"go.opentelemetry.io/otel/metric/global"
+	"go.opentelemetry.io/otel/metric/instrument"
 
 	otel_host "go.opentelemetry.io/contrib/instrumentation/host"
 	otel_runtime "go.opentelemetry.io/contrib/instrumentation/runtime"
@@ -47,47 +48,38 @@ func actionMain(c *cli.Context) error {
 		telemetry.WithServiceTcpListener("127.0.0.1:4000"),
 		telemetry.WithServiceMetricsPeriod(time.Second*2),
 		telemetry.WithServiceBandwidth(true),
-		telemetry.WithServiceDefaultStreamOpts(
-			telemetry.WithStreamSegmentLifetime(time.Second*60),
-			telemetry.WithStreamActiveBufferLifetime(time.Second*5),
-		),
+		telemetry.WithServiceActiveBufferDuration(time.Second*5),
 	)
 	if err != nil {
 		return err
 	}
 
-	telemetry.SetGlobalTelemetry(t)
-	global.SetMeterProvider(t)
+	mp := t.MeterProvider()
+	global.SetMeterProvider(mp)
 	otel_host.Start()
 	otel_runtime.Start()
 
-	t.Property(telemetry.PropertyConfig{
-		Name:        "libp2p_host_os",
-		Description: "golang runtime.GOOS",
-		Value:       telemetry.NewPropertyValueString(runtime.GOOS),
-	})
-	t.Property(telemetry.PropertyConfig{
-		Name:        "libp2p_host_arch",
-		Description: "golang runtime.GOARCH",
-		Value:       telemetry.NewPropertyValueString(runtime.GOARCH),
-	})
-	t.Property(telemetry.PropertyConfig{
-		Name:        "libp2p_host_numcpu",
-		Description: "golang runtime.NumCPU()",
-		Value:       telemetry.NewPropertyValueInteger(int64(runtime.NumCPU())),
-	})
-	t.Capture(telemetry.CaptureConfig{
-		Name:        "libp2p_network_addrs",
-		Description: "stuff and things",
-		Callback: func(context.Context) (interface{}, error) {
+	tmp := mp
+	m1 := tmp.TelemetryMeter("libp2p.io/host")
+
+	m1.Property(
+		"os",
+		telemetry.PropertyValueString(runtime.GOOS),
+		instrument.WithDescription("golang runtime.GOOS"))
+
+	m2 := tmp.TelemetryMeter("libp2p.io/network")
+
+	m2.Capture(
+		"addresses",
+		func(context.Context) (interface{}, error) {
 			return h.Addrs(), nil
 		},
-		Interval: time.Second * 5,
-	})
-	ev := t.Event(telemetry.EventConfig{
-		Name:        "libp2p_kad_handler",
-		Description: "Handler timings",
-	})
+		time.Second*5,
+		instrument.WithDescription("some description"),
+	)
+
+	m3 := tmp.TelemetryMeter("libp2p.io/kad")
+	ev := m3.Event("handler_timing", instrument.WithDescription("Handler timings"))
 
 	go func() {
 		c := 1

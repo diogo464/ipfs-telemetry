@@ -6,9 +6,14 @@ option go_package = "internal/pb";
 service Telemetry {
   rpc GetSession(GetSessionRequest) returns (GetSessionResponse);
 
+  rpc GetMetricDescriptors(GetMetricDescriptorsRequest)
+      returns (stream MetricDescriptor);
+
   // The data in the segment is a ResourceMetrics defined in:
   // https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/metrics/v1/metrics.proto
   rpc GetMetrics(GetMetricsRequest) returns (stream StreamSegment);
+
+  rpc GetPropertyDescriptors(GetPropertyDescriptorsRequest) returns (stream PropertyDescriptor);
 
   rpc GetProperties(GetPropertiesRequest) returns (stream Property);
 
@@ -36,40 +41,61 @@ message StreamSegment {
   bytes data = 2;
 }
 
+message GetMetricDescriptorsRequest {}
+message MetricDescriptor {
+  string scope = 1;
+  string name = 2;
+  string description = 3;
+}
+
 message GetMetricsRequest {
   // The sequence number of the first segment that should be returned.
   uint32 sequence_number_since = 1;
 }
 
+message GetPropertyDescriptorsRequest {}
+message PropertyDescriptor {
+  uint32 id = 1;
+  string scope = 2;
+  string name = 3;
+  string description = 4;
+}
+
 message GetPropertiesRequest {}
 message Property {
-  string name = 1;
-  string description = 2;
+  uint32 id = 1;
+  string scope = 2;
+  string name = 3;
+  string description = 4;
   oneof value {
-    int64 integer_value = 3;
-    string string_value = 4;
+    int64 integer_value = 5;
+    string string_value = 6;
   }
 }
 
 message GetCaptureDescriptorsRequest {}
 message CaptureDescriptor {
-  string name = 1;
-  string description = 2;
+  uint32 id = 1;
+  string scope = 2;
+  string name = 3;
+  string description = 4;
 }
 
 message GetCaptureRequest {
   // The sequence number of the first segment that should be returned.
   uint32 sequence_number_since = 1;
-  string name = 2;
+  uint32 id = 2;
 }
 
 message GetEventDescriptorsRequest {}
 message EventDescriptor {
-  string name = 1;
-  string description = 2;
+  uint32 id = 1;
+  string scope = 2;
+  string name = 3;
+  string description = 4;
 }
 
 message GetEventRequest {
   uint32 sequence_number_since = 1;
-  string name = 2;
+  uint32 id = 2;
 }

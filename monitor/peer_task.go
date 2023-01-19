@@ -35,14 +35,13 @@ type peerTask struct {
 	monitor        *Monitor
 
 	// Unsafe for use outside task
-	consecutive_errors int
-	command_receiver   <-chan peerCommand
-	collect_ticker     *time.Ticker
-	bandwidth_ticker   *time.Ticker
-	session_exported   bool
-	metrics_seqn       int
-	captures_seqn      map[string]int
-	events_seqn        map[string]int
+	consecutive_errors  int
+	command_receiver    <-chan peerCommand
+	collect_ticker      *time.Ticker
+	bandwidth_ticker    *time.Ticker
+	session_exported    bool
+	properties_exported bool
+	client_state        *telemetry.ClientState
 }
 
 func newPeerTask(pid peer.ID, host host.Host, opts *options, exporter Exporter, monitor *Monitor, logger *zap.Logger) *peerTask {
@@ -59,14 +58,13 @@ func newPeerTask(pid peer.ID, host host.Host, opts *options, exporter Exporter, 
 		command_sender: command_channel,
 		monitor:        monitor,
 
-		consecutive_errors: 0,
-		command_receiver:   command_channel,
-		collect_ticker:     time.NewTicker(opts.CollectPeriod),
-		bandwidth_ticker:   time.NewTicker(opts.BandwidthPeriod),
-		session_exported:   false,
-		metrics_seqn:       0,
-		captures_seqn:      make(map[string]int),
-		events_seqn:        make(map[string]int),
+		consecutive_errors:  0,
+		command_receiver:    command_channel,
+		collect_ticker:      time.NewTicker(opts.CollectPeriod),
+		bandwidth_ticker:    time.NewTicker(opts.BandwidthPeriod),
+		session_exported:    false,
+		properties_exported: false,
+		client_state:        nil,
 	}
 	go pt.run(ctx)
 	return pt
@@ -107,10 +105,13 @@ func (p *peerTask) collectTelemetry(ctx context.Context) {
 }
 
 func (p *peerTask) tryCollectTelemetry(ctx context.Context) error {
-	client, err := p.createClient()
+	client, err := p.createClient(ctx)
 	if err != nil {
 		return err
 	}
+	defer func() {
+		p.client_state = client.GetClientState()
+	}()
 
 	sess, err := client.GetSession(ctx)
 	if err != nil {
@@ -149,26 +150,18 @@ func (p *peerTask) tryCollectTelemetry(ctx context.Context) error {
 }
 
 func (p *peerTask) tryExportSession(ctx context.Context, client *telemetry.Client, sess telemetry.Session) error {
-	props, err := client.GetProperties(ctx)
-	if err != nil {
-		p.logger.Warn("failed to get properties", zap.Error(err))
-		return err
-	}
-
-	p.exporter.Session(p.pid, sess, props)
-
+	p.exporter.Session(p.pid, sess)
 	return nil
 }
 
 func (p *peerTask) tryExportMetrics(ctx context.Context, client *telemetry.Client, sess telemetry.Session) error {
-	cmetrics, err := client.GetMetrics(ctx, p.metrics_seqn)
+	cmetrics, err := client.GetMetrics(ctx)
 	if err != nil {
 		p.logger.Warn("failed to get metrics", zap.Error(err))
 		return err
 	}
 
-	p.metrics_seqn = cmetrics.SequenceNumber
-	p.exporter.Metrics(p.pid, sess, cmetrics.Metrics)
+	p.exporter.Metrics(p.pid, sess, cmetrics)
 
 	return nil
 }
@@ -181,24 +174,14 @@ func (p *peerTask) tryExportEvents(ctx context.Context, client *telemetry.Client
 	}
 
 	for _, descriptor := range descriptors {
-		cevents, err := client.GetEvent(ctx, descriptor.Name, p.events_seqn[descriptor.Name])
+		events, err := client.GetEvent(ctx, descriptor.ID)
 		if err != nil {
 			p.logger.Warn("failed to get events", zap.Error(err))
 			return err
 		}
 
-		if len(cevents) > 0 {
-			p.events_seqn[descriptor.Name] = cevents[len(cevents)-1].SequenceNumber
-
-			exported_events := make([]Event, 0, len(cevents))
-			for _, cevent := range cevents {
-				exported_events = append(exported_events, Event{
-					Timestamp: cevent.Timestamp,
-					Data:      cevent.Data,
-				})
-			}
-
-			p.exporter.Events(p.pid, sess, descriptor, exported_events)
+		if len(events) > 0 {
+			p.exporter.Events(p.pid, sess, descriptor, events)
 		}
 	}
 
@@ -213,24 +196,14 @@ func (p *peerTask) tryExportCaptures(ctx context.Context, client *telemetry.Clie
 	}
 
 	for _, descriptor := range descriptors {
-		ccaptures, err := client.GetCapture(ctx, descriptor.Name, p.captures_seqn[descriptor.Name])
+		captures, err := client.GetCapture(ctx, descriptor.ID)
 		if err != nil {
 			p.logger.Warn("failed to get captures", zap.Error(err))
 			return err
 		}
 
-		if len(ccaptures) > 0 {
-			p.captures_seqn[descriptor.Name] = ccaptures[len(ccaptures)-1].SequenceNumber
-
-			exported_captures := make([]Capture, 0, len(ccaptures))
-			for _, ccapture := range ccaptures {
-				exported_captures = append(exported_captures, Capture{
-					Timestamp: ccapture.Timestamp,
-					Data:      ccapture.Data,
-				})
-			}
-
-			p.exporter.Captures(p.pid, sess, descriptor, exported_captures)
+		if len(captures) > 0 {
+			p.exporter.Captures(p.pid, sess, descriptor, captures)
 		}
 	}
 
@@ -250,7 +223,7 @@ func (p *peerTask) bandwidthTest(ctx context.Context) {
 }
 
 func (p *peerTask) tryBandwidthTest(ctx context.Context) error {
-	client, err := p.createClient()
+	client, err := p.createClient(ctx)
 	if err != nil {
 		return err
 	}
@@ -267,9 +240,13 @@ func (p *peerTask) tryBandwidthTest(ctx context.Context) error {
 	return nil
 }
 
-func (p *peerTask) createClient() (*telemetry.Client, error) {
+func (p *peerTask) createClient(ctx context.Context) (*telemetry.Client, error) {
 	p.logger.Debug("creating telemetry client")
-	client, err := telemetry.NewClient(p.host, p.pid)
+	client, err := telemetry.NewClient(
+		ctx,
+		telemetry.WithClientLibp2pDial(p.host, p.pid),
+		telemetry.WithClientState(p.client_state),
+	)
 	if err != nil {
 		p.logger.Warn("failed to create telemetry client", zap.Error(err))
 		return nil, err

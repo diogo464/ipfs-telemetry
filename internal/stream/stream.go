@@ -1,4 +1,4 @@
-package telemetry
+package stream
 
 import (
 	"bytes"
@@ -7,11 +7,17 @@ import (
 	"sync"
 	"time"
 
+	"github.com/diogo464/telemetry/internal/bpool"
 	"github.com/diogo464/telemetry/internal/rle"
+	"github.com/diogo464/telemetry/internal/utils"
 	"github.com/diogo464/telemetry/internal/vecdeque"
 )
 
-type StreamDecoder[T any] func([]byte) (T, error)
+// bpool.Pool.Put is not used because we return this buffers in the segments
+// If a buffer starts getting written to while it is still referenced by a segment,
+// then we could send invalid data over the network
+
+type Decoder[T any] func([]byte) (T, error)
 
 type streamDebug struct {
 	usedSize  uint32
@@ -27,12 +33,12 @@ type streamSegmentEntry struct {
 	bufferFree bool   // should the buffer be freed when the segment gets cleaned
 }
 
-type StreamSegment struct {
+type Segment struct {
 	SeqN int
 	Data []byte
 }
 
-type StreamMessage[T any] struct {
+type Message[T any] struct {
 	Timestamp time.Time
 	Value     T
 }
@@ -50,15 +56,18 @@ type Stream struct {
 	activeBuffer         []byte
 	activeBufferSize     int
 	activeBufferSegStart int
-
-	bufferPool *streamBufferPool
+	bufferPool           *bpool.Pool
 }
 
-func NewStream(o ...StreamOption) *Stream {
+func New(o ...Option) *Stream {
 	opts := streamDefault()
 	streamApply(opts, o...)
 
-	bufferPool := newStreamBufferPool(opts.defaultBufferSize)
+	if opts.bufferPool == nil {
+		opts.bufferPool = bpool.New(bpool.WithMaxSize(opts.maxSize), bpool.WithAllocSize(opts.defaultBufferSize))
+	}
+
+	bufferPool := opts.bufferPool
 	return &Stream{
 		opts: opts,
 
@@ -67,7 +76,7 @@ func NewStream(o ...StreamOption) *Stream {
 		segmentNextSeqN:       0,
 		segmentLastAddTime:    time.Now(),
 
-		activeBuffer:         bufferPool.get(opts.defaultBufferSize),
+		activeBuffer:         bufferPool.Get(opts.defaultBufferSize),
 		activeBufferSize:     0,
 		activeBufferSegStart: 0,
 
@@ -90,7 +99,7 @@ func (s *Stream) WriteWithTimestamp(timestamp uint64, data []byte) error {
 }
 
 func (s *Stream) AllocAndWrite(size int, write func([]byte) error) error {
-	return s.AllocAndWriteWithTimestamp(size, TimestampNow(), write)
+	return s.AllocAndWriteWithTimestamp(size, utils.TimestampNow(), write)
 }
 
 func (s *Stream) AllocAndWriteWithTimestamp(size int, timestamp uint64, write func([]byte) error) error {
@@ -116,10 +125,11 @@ func (s *Stream) AllocAndWriteWithTimestamp(size int, timestamp uint64, write fu
 		if !s.segments.IsEmpty() {
 			s.segments.BackRef().bufferFree = true
 		} else {
-			s.bufferPool.put(s.activeBuffer)
+			// Check comment at the top
+			// s.bufferPool.Put(s.activeBuffer)
 		}
 
-		s.activeBuffer = s.bufferPool.get(requiredSize)
+		s.activeBuffer = s.bufferPool.Get(requiredSize)
 		s.activeBufferSegStart = 0
 		s.activeBufferSize = 0
 	}
@@ -139,7 +149,8 @@ func (s *Stream) AllocAndWriteWithTimestamp(size int, timestamp uint64, write fu
 	return err
 }
 
-func (s *Stream) Segments(since int, n int) []StreamSegment {
+// Return `n` segments starting at, and including, `since`
+func (s *Stream) Segments(since int, n int) []Segment {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -147,11 +158,11 @@ func (s *Stream) Segments(since int, n int) []StreamSegment {
 
 	remain := n
 	index := 0
-	segments := make([]StreamSegment, 0)
+	segments := make([]Segment, 0)
 	for remain > 0 && index < s.segments.Len() {
 		entry := s.segments.Get(index)
 		if entry.seqN >= since {
-			segments = append(segments, StreamSegment{
+			segments = append(segments, Segment{
 				SeqN: entry.seqN,
 				Data: entry.data,
 			})
@@ -189,11 +200,11 @@ func (s *Stream) cleanUpSegments() {
 	for !s.segments.IsEmpty() && (s.segmentsTotalUsedSize > s.opts.maxSize || time.Since(s.segments.Front().createdTime) > s.opts.segmentLifetime) {
 		entry := s.segments.PopFront()
 		s.segmentsTotalUsedSize -= len(entry.data)
-		if entry.bufferFree {
-			s.bufferPool.put(entry.buffer)
-		}
+		//if entry.bufferFree {
+		//	// Check comment at the top
+		//	// s.bufferPool.Put(entry.buffer)
+		//}
 	}
-	s.bufferPool.clean(s.opts.maxSize - s.segmentsTotalUsedSize)
 }
 
 func (s *Stream) debug() streamDebug {
@@ -219,8 +230,8 @@ func (s *Stream) debug() streamDebug {
 	}
 }
 
-func StreamSegmentDecode[T any](decoder StreamDecoder[T], segment StreamSegment) ([]StreamMessage[T], error) {
-	items := make([]StreamMessage[T], 0)
+func SegmentDecode[T any](decoder Decoder[T], segment Segment) ([]Message[T], error) {
+	items := make([]Message[T], 0)
 	reader := bytes.NewReader(segment.Data)
 	for {
 		buf, err := rle.Read(reader)
@@ -235,7 +246,7 @@ func StreamSegmentDecode[T any](decoder StreamDecoder[T], segment StreamSegment)
 		if err != nil {
 			return nil, err
 		}
-		items = append(items, StreamMessage[T]{
+		items = append(items, Message[T]{
 			Timestamp: time.Unix(int64(timestamp/1_000_000_000), int64(timestamp%1_000_000_000)),
 			Value:     item,
 		})

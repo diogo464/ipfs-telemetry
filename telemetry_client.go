@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"time"
 
 	"github.com/diogo464/telemetry/internal/pb"
+	"github.com/diogo464/telemetry/internal/stream"
 	"github.com/diogo464/telemetry/internal/utils"
 	gostream "github.com/libp2p/go-libp2p-gostream"
 	"github.com/libp2p/go-libp2p/core/host"
@@ -21,72 +21,117 @@ import (
 var ErrInvalidResponse = fmt.Errorf("invalid response")
 var ErrNotUsingLibp2p = fmt.Errorf("not using libp2p")
 
-type CMetrics struct {
-	SequenceNumber int
-	Metrics        []*mpb.ResourceMetrics
+type ClientOption = func(*clientOptions)
+
+type clientOptions struct {
+	// When h is not nil, dial using libp2p
+	h host.Host
+	p peer.ID
+
+	// When h is nil, dial using grpc.Dial
+	target string
+
+	state *ClientState
 }
 
-type CProperty struct {
-	Name        string
-	Description string
-	Value       PropertyValue
-}
-
-type CCapture struct {
-	SequenceNumber int
-	Timestamp      time.Time
-	Data           []byte
-}
-
-type CEvent struct {
-	SequenceNumber int
-	Timestamp      time.Time
-	Data           []byte
+type ClientState struct {
+	session      Session
+	metricsSeqN  int
+	capturesSeqN map[uint32]int
+	eventsSeqN   map[uint32]int
 }
 
 type Client struct {
 	// Can be null if we are not connected using libp2p
 	h host.Host
 	p peer.ID
-
+	s *ClientState
 	c *grpc.ClientConn
 }
 
-func NewClient(h host.Host, p peer.ID) (*Client, error) {
-	conn, err := grpc.Dial(
-		"",
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithContextDialer(func(ctx context.Context, s string) (net.Conn, error) {
-			conn, err := gostream.Dial(ctx, h, p, ID_TELEMETRY)
-			return conn, err
-		}))
-
-	if err != nil {
-		return nil, err
+func WithClientLibp2pDial(h host.Host, p peer.ID) ClientOption {
+	return func(o *clientOptions) {
+		o.h = h
+		o.p = p
 	}
-
-	return &Client{
-		h: h,
-		p: p,
-		c: conn,
-	}, nil
 }
 
-func NewClient2(target string) (*Client, error) {
-	conn, err := grpc.Dial(target, grpc.WithTransportCredentials(insecure.NewCredentials()))
+func WithClientGrpcDial(target string) ClientOption {
+	return func(o *clientOptions) {
+		o.target = target
+	}
+}
+
+func WithClientState(s *ClientState) ClientOption {
+	return func(o *clientOptions) {
+		o.state = s
+	}
+}
+
+func NewClient(ctx context.Context, opts ...ClientOption) (*Client, error) {
+	options := new(clientOptions)
+	for _, opt := range opts {
+		opt(options)
+	}
+
+	client := new(Client)
+	if options.state != nil {
+		client.s = options.state
+	} else {
+		client.s = &ClientState{
+			session:      Session{},
+			metricsSeqN:  0,
+			capturesSeqN: make(map[uint32]int),
+			eventsSeqN:   make(map[uint32]int),
+		}
+	}
+
+	if options.h != nil {
+		conn, err := grpc.Dial(
+			"",
+			grpc.WithTransportCredentials(insecure.NewCredentials()),
+			grpc.WithContextDialer(func(ctx context.Context, s string) (net.Conn, error) {
+				conn, err := gostream.Dial(ctx, options.h, options.p, ID_TELEMETRY)
+				return conn, err
+			}))
+
+		if err != nil {
+			return nil, err
+		}
+
+		client.h = options.h
+		client.p = options.p
+		client.c = conn
+	} else {
+		conn, err := grpc.Dial(options.target, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		if err != nil {
+			return nil, err
+		}
+
+		client.c = conn
+	}
+
+	sess, err := client.GetSession(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Client{
-		h: nil,
-		p: "",
-		c: conn,
-	}, nil
+	if sess != client.s.session {
+		client.s.session = sess
+		client.s.metricsSeqN = 0
+		client.s.capturesSeqN = make(map[uint32]int)
+		client.s.eventsSeqN = make(map[uint32]int)
+	}
+
+	return client, nil
 }
 
 func (c *Client) Close() {
 	c.c.Close()
+}
+
+func (c *Client) GetClientState() *ClientState {
+	return c.s
 }
 
 func (c *Client) GetSession(ctx context.Context) (Session, error) {
@@ -103,46 +148,113 @@ func (c *Client) GetSession(ctx context.Context) (Session, error) {
 	return ParseSession(response.GetUuid())
 }
 
-func (c *Client) GetMetrics(ctx context.Context, since int) (CMetrics, error) {
+func (c *Client) GetMetricDescriptors(ctx context.Context) ([]MetricDescriptor, error) {
 	client, err := c.newGrpcClient()
 	if err != nil {
-		return CMetrics{}, err
+		return nil, err
 	}
 
-	response, err := client.GetMetrics(ctx, &pb.GetMetricsRequest{})
+	response, err := client.GetMetricDescriptors(ctx, &pb.GetMetricDescriptorsRequest{})
 	if err != nil {
-		return CMetrics{}, err
+		return nil, err
+	}
+
+	descriptors := make([]MetricDescriptor, 0)
+	for {
+		pbdesc, err := response.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+		descriptors = append(descriptors, MetricDescriptor{
+			Scope:       pbdesc.GetScope(),
+			Name:        pbdesc.GetName(),
+			Description: pbdesc.GetDescription(),
+		})
+	}
+
+	return descriptors, nil
+}
+
+func (c *Client) GetMetrics(ctx context.Context) (Metrics, error) {
+	client, err := c.newGrpcClient()
+	if err != nil {
+		return Metrics{}, err
+	}
+
+	response, err := client.GetMetrics(ctx, &pb.GetMetricsRequest{
+		SequenceNumberSince: uint32(c.s.metricsSeqN),
+	})
+	if err != nil {
+		return Metrics{}, err
 	}
 
 	mdatas := make([]*mpb.ResourceMetrics, 0)
+	seqn := 0
 	for {
 		pbsegment, err := response.Recv()
 		if err == io.EOF {
 			break
 		}
 		if err != nil {
-			return CMetrics{}, err
+			return Metrics{}, err
 		}
 
 		segment := pbSegmentToSegment(pbsegment)
-		messages, err := StreamSegmentDecode(ByteStreamDecoder, segment)
+		if segment.SeqN > seqn {
+			seqn = segment.SeqN
+		}
+		messages, err := stream.SegmentDecode(stream.ByteDecoder, segment)
 		if err != nil {
-			return CMetrics{}, err
+			return Metrics{}, err
 		}
 
 		for _, msg := range messages {
 			mdata := &mpb.ResourceMetrics{}
 			if err := gproto.Unmarshal(msg.Value, mdata); err != nil {
-				return CMetrics{}, err
+				return Metrics{}, err
 			}
 			mdatas = append(mdatas, mdata)
 		}
 	}
 
-	return CMetrics{SequenceNumber: 0, Metrics: mdatas}, nil
+	c.s.metricsSeqN = seqn
+
+	return Metrics{OTLP: mdatas}, nil
 }
 
-func (c *Client) GetProperties(ctx context.Context) ([]CProperty, error) {
+func (c *Client) GetPropertyDescriptors(ctx context.Context) ([]PropertyDescriptor, error) {
+	client, err := c.newGrpcClient()
+	if err != nil {
+		return nil, err
+	}
+
+	srv, err := client.GetPropertyDescriptors(ctx, &pb.GetPropertyDescriptorsRequest{})
+	if err != nil {
+		return nil, err
+	}
+
+	descriptors := make([]PropertyDescriptor, 0)
+	for {
+		pbdesc, err := srv.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+		descriptors = append(descriptors, PropertyDescriptor{
+			Scope:       pbdesc.GetScope(),
+			Name:        pbdesc.GetName(),
+			Description: pbdesc.GetDescription(),
+		})
+	}
+	return descriptors, nil
+}
+
+func (c *Client) GetProperties(ctx context.Context) ([]Property, error) {
 	client, err := c.newGrpcClient()
 	if err != nil {
 		return nil, err
@@ -153,7 +265,7 @@ func (c *Client) GetProperties(ctx context.Context) ([]CProperty, error) {
 		return nil, err
 	}
 
-	properties := make([]CProperty, 0)
+	properties := make([]Property, 0)
 	for {
 		pbprop, err := srv.Recv()
 		if err == io.EOF {
@@ -188,6 +300,7 @@ func (c *Client) GetCaptureDescriptors(ctx context.Context) ([]CaptureDescriptor
 			return nil, err
 		}
 		descriptors = append(descriptors, CaptureDescriptor{
+			Scope:       pbdesc.GetScope(),
 			Name:        pbdesc.GetName(),
 			Description: pbdesc.GetDescription(),
 		})
@@ -196,21 +309,21 @@ func (c *Client) GetCaptureDescriptors(ctx context.Context) ([]CaptureDescriptor
 	return descriptors, nil
 }
 
-func (c *Client) GetCapture(ctx context.Context, name string, since int) ([]CCapture, error) {
+func (c *Client) GetCapture(ctx context.Context, id uint32) ([]Capture, error) {
 	client, err := c.newGrpcClient()
 	if err != nil {
 		return nil, err
 	}
 
 	srv, err := client.GetCapture(ctx, &pb.GetCaptureRequest{
-		SequenceNumberSince: uint32(since),
-		Name:                name,
+		SequenceNumberSince: uint32(c.s.capturesSeqN[id]),
+		Id:                  id,
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	datas := make([]CCapture, 0)
+	datas := make([]Capture, 0)
 	for {
 		pbseg, err := srv.Recv()
 		if err == io.EOF {
@@ -220,16 +333,19 @@ func (c *Client) GetCapture(ctx context.Context, name string, since int) ([]CCap
 			return nil, err
 		}
 		segment := pbSegmentToSegment(pbseg)
-		messages, err := StreamSegmentDecode(ByteStreamDecoder, segment)
+		messages, err := stream.SegmentDecode(stream.ByteDecoder, segment)
 		if err != nil {
 			return nil, err
 		}
 		for _, msg := range messages {
-			datas = append(datas, CCapture{
-				SequenceNumber: segment.SeqN,
-				Timestamp:      msg.Timestamp,
-				Data:           msg.Value,
+			datas = append(datas, Capture{
+				Timestamp: msg.Timestamp,
+				Data:      msg.Value,
 			})
+		}
+
+		if segment.SeqN > c.s.capturesSeqN[id] {
+			c.s.capturesSeqN[id] = segment.SeqN
 		}
 	}
 
@@ -257,6 +373,7 @@ func (c *Client) GetEventDescriptors(ctx context.Context) ([]EventDescriptor, er
 			return nil, err
 		}
 		descriptors = append(descriptors, EventDescriptor{
+			Scope:       pbdesc.GetScope(),
 			Name:        pbdesc.GetName(),
 			Description: pbdesc.GetDescription(),
 		})
@@ -265,21 +382,21 @@ func (c *Client) GetEventDescriptors(ctx context.Context) ([]EventDescriptor, er
 	return descriptors, nil
 }
 
-func (c *Client) GetEvent(ctx context.Context, name string, since int) ([]CEvent, error) {
+func (c *Client) GetEvent(ctx context.Context, id uint32) ([]Event, error) {
 	client, err := c.newGrpcClient()
 	if err != nil {
 		return nil, err
 	}
 
 	srv, err := client.GetEvent(ctx, &pb.GetEventRequest{
-		SequenceNumberSince: uint32(since),
-		Name:                name,
+		SequenceNumberSince: uint32(c.s.eventsSeqN[id]),
+		Id:                  id,
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	datas := make([]CEvent, 0)
+	datas := make([]Event, 0)
 	for {
 		pbseg, err := srv.Recv()
 		if err == io.EOF {
@@ -289,16 +406,19 @@ func (c *Client) GetEvent(ctx context.Context, name string, since int) ([]CEvent
 			return nil, err
 		}
 		segment := pbSegmentToSegment(pbseg)
-		messages, err := StreamSegmentDecode(ByteStreamDecoder, segment)
+		messages, err := stream.SegmentDecode(stream.ByteDecoder, segment)
 		if err != nil {
 			return nil, err
 		}
 		for _, msg := range messages {
-			datas = append(datas, CEvent{
-				SequenceNumber: segment.SeqN,
-				Timestamp:      msg.Timestamp,
-				Data:           msg.Value,
+			datas = append(datas, Event{
+				Timestamp: msg.Timestamp,
+				Data:      msg.Value,
 			})
+		}
+
+		if segment.SeqN > c.s.eventsSeqN[id] {
+			c.s.eventsSeqN[id] = segment.SeqN
 		}
 	}
 
@@ -376,8 +496,8 @@ func (c *Client) newGrpcClient() (pb.TelemetryClient, error) {
 	return pb.NewTelemetryClient(c.c), nil
 }
 
-func pbSegmentToSegment(s *pb.StreamSegment) StreamSegment {
-	return StreamSegment{
+func pbSegmentToSegment(s *pb.StreamSegment) stream.Segment {
+	return stream.Segment{
 		SeqN: int(s.GetSequenceNumber()),
 		Data: s.GetData(),
 	}

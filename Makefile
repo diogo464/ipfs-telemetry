@@ -1,5 +1,5 @@
 GOCC ?= go
-GOGOPROTO_FLAGS := -I=. -I=./third_party/ -I=./third_party/github.com/gogo/protobuf/protobuf -I=./third_party/opentelemetry-proto/ \
+GOGOPROTO_FLAGS := -I=. -I=./third_party/ -I=./third_party/github.com/gogo/protobuf/protobuf \
 				--gogofast_out=plugins=grpc,Mgoogle/protobuf/any.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/duration.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/struct.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/timestamp.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/wrappers.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/empty.proto=github.com/gogo/protobuf/types:.
 
 all: telemetry example

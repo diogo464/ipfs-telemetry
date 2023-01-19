@@ -1,10 +1,10 @@
-package telemetry
+package stream
 
 import (
 	"encoding/json"
 )
 
-func JsonObjStreamDecoder(encoded []byte) (map[string]interface{}, error) {
+func JsonObjDecoder(encoded []byte) (map[string]interface{}, error) {
 	var obj map[string]interface{}
 	err := json.Unmarshal(encoded, &obj)
 	if err != nil {
@@ -13,7 +13,7 @@ func JsonObjStreamDecoder(encoded []byte) (map[string]interface{}, error) {
 	return obj, nil
 }
 
-func JsonStreamDecoder(encoded []byte) (string, error) {
+func JsonDecoder(encoded []byte) (string, error) {
 	var obj map[string]interface{}
 	err := json.Unmarshal(encoded, &obj)
 	if err != nil {
@@ -26,7 +26,7 @@ func JsonStreamDecoder(encoded []byte) (string, error) {
 	return string(ndjson), nil
 }
 
-func JsonPrettyStreamDecoder(encoded []byte) (string, error) {
+func JsonPrettyDecoder(encoded []byte) (string, error) {
 	var obj map[string]interface{}
 	err := json.Unmarshal(encoded, &obj)
 	if err != nil {

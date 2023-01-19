@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"strconv"
 
 	"github.com/urfave/cli/v2"
 )
@@ -21,7 +22,11 @@ func actionCapture(c *cli.Context) error {
 	}
 	defer client.Close()
 
-	captures, err := client.GetCapture(c.Context, c.Args().First(), 0)
+	id, err := strconv.Atoi(c.Args().First())
+	if err != nil {
+		return err
+	}
+	captures, err := client.GetCapture(c.Context, uint32(id))
 	if err != nil {
 		return err
 	}

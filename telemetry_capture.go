@@ -6,17 +6,42 @@ import (
 	"time"
 
 	"github.com/diogo464/telemetry/internal/pb"
+	"github.com/diogo464/telemetry/internal/stream"
 )
+
+type CaptureCallback func(context.Context) (interface{}, error)
+
+type CaptureDescriptor struct {
+	ID          uint32
+	Scope       string
+	Name        string
+	Description string
+}
+
+type Capture struct {
+	Timestamp time.Time
+	Data      []byte
+}
+
+type captureConfig struct {
+	Scope       string
+	Name        string
+	Description string
+	Callback    CaptureCallback
+	Interval    time.Duration
+}
 
 type serviceCapture struct {
 	pbdescriptor *pb.CaptureDescriptor
-	stream       *Stream
+	stream       *stream.Stream
 	callback     CaptureCallback
 }
 
-func newServiceCapture(ctx context.Context, stream *Stream, config CaptureConfig) *serviceCapture {
+func newServiceCapture(ctx context.Context, id uint32, stream *stream.Stream, config captureConfig) *serviceCapture {
 	sc := &serviceCapture{
 		pbdescriptor: &pb.CaptureDescriptor{
+			Id:          id,
+			Scope:       config.Scope,
 			Name:        config.Name,
 			Description: config.Description,
 		},

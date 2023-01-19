@@ -1,6 +1,10 @@
-package telemetry
+package stream
 
-import "time"
+import (
+	"time"
+
+	"github.com/diogo464/telemetry/internal/bpool"
+)
 
 type streamOptions struct {
 	// Maximum size taken up by all segments
@@ -13,9 +17,12 @@ type streamOptions struct {
 	activeBufferLifetime time.Duration
 	// How long does a segment remain in the stream
 	segmentLifetime time.Duration
+
+	// Buffer pool
+	bufferPool *bpool.Pool
 }
 
-type StreamOption func(*streamOptions)
+type Option func(*streamOptions)
 
 func streamDefault() *streamOptions {
 	return &streamOptions{
@@ -24,23 +31,30 @@ func streamDefault() *streamOptions {
 		defaultBufferSize:    4 * 1024,
 		activeBufferLifetime: time.Minute * 5,
 		segmentLifetime:      time.Minute * 30,
+		bufferPool:           nil,
 	}
 }
 
-func streamApply(o *streamOptions, opts ...StreamOption) {
+func streamApply(o *streamOptions, opts ...Option) {
 	for _, opt := range opts {
 		opt(o)
 	}
 }
 
-func WithStreamSegmentLifetime(dur time.Duration) StreamOption {
+func WithSegmentLifetime(dur time.Duration) Option {
 	return func(so *streamOptions) {
 		so.segmentLifetime = dur
 	}
 }
 
-func WithStreamActiveBufferLifetime(dur time.Duration) StreamOption {
+func WithActiveBufferLifetime(dur time.Duration) Option {
 	return func(so *streamOptions) {
 		so.activeBufferLifetime = dur
+	}
+}
+
+func WithPool(pool *bpool.Pool) Option {
+	return func(so *streamOptions) {
+		so.bufferPool = pool
 	}
 }

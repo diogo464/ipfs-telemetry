@@ -12,9 +12,10 @@ type ServiceOption func(*serviceOptions) error
 type serviceOptions struct {
 	enableBandwidth      bool
 	enableDebug          bool
-	defaultStreamOptions []StreamOption
 	listener             net.Listener
 	metricsPeriod        time.Duration
+	windowDuration       time.Duration
+	activeBufferDuration time.Duration
 	enablePush           bool
 	pushTargets          []multiaddr.Multiaddr
 	pushInterval         time.Duration
@@ -24,9 +25,10 @@ func serviceDefaults() *serviceOptions {
 	return &serviceOptions{
 		enableBandwidth:      false,
 		enableDebug:          false,
-		defaultStreamOptions: []StreamOption{},
 		listener:             nil,
 		metricsPeriod:        time.Second * 15,
+		windowDuration:       time.Minute * 30,
+		activeBufferDuration: time.Minute * 5,
 		enablePush:           false,
 		pushTargets:          []multiaddr.Multiaddr{},
 		pushInterval:         time.Minute * 15,
@@ -57,13 +59,6 @@ func WithServiceDebug(enabled bool) ServiceOption {
 	}
 }
 
-func WithServiceDefaultStreamOpts(opts ...StreamOption) ServiceOption {
-	return func(so *serviceOptions) error {
-		so.defaultStreamOptions = opts
-		return nil
-	}
-}
-
 func WithServiceListener(listener net.Listener) ServiceOption {
 	return func(so *serviceOptions) error {
 		so.listener = listener
@@ -85,6 +80,20 @@ func WithServiceTcpListener(addr string) ServiceOption {
 func WithServiceMetricsPeriod(period time.Duration) ServiceOption {
 	return func(so *serviceOptions) error {
 		so.metricsPeriod = period
+		return nil
+	}
+}
+
+func WithServiceWindowDuration(duration time.Duration) ServiceOption {
+	return func(so *serviceOptions) error {
+		so.windowDuration = duration
+		return nil
+	}
+}
+
+func WithServiceActiveBufferDuration(duration time.Duration) ServiceOption {
+	return func(so *serviceOptions) error {
+		so.activeBufferDuration = duration
 		return nil
 	}
 }

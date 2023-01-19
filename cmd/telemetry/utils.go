@@ -25,9 +25,9 @@ func clientFromContext(c *cli.Context) (*telemetry.Client, error) {
 		}
 		fmt.Println(info)
 		h.Peerstore().AddAddrs(info.ID, info.Addrs, peerstore.PermanentAddrTTL)
-		return telemetry.NewClient(h, info.ID)
+		return telemetry.NewClient(c.Context, telemetry.WithClientLibp2pDial(h, info.ID))
 	case "tcp":
-		return telemetry.NewClient2(c.String(FLAG_HOST.Name))
+		return telemetry.NewClient(c.Context, telemetry.WithClientGrpcDial(c.String(FLAG_HOST.Name)))
 	default:
 		return nil, fmt.Errorf("unknown connection type: %s", c.String(FLAG_CONN_TYPE.Name))
 	}

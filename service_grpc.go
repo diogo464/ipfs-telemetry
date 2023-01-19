@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/diogo464/telemetry/internal/pb"
+	"github.com/diogo464/telemetry/internal/stream"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -29,10 +30,49 @@ func (s *Service) GetSession(ctx context.Context, req *pb.GetSessionRequest) (*p
 	}, nil
 }
 
+func (s *Service) GetMetricDescriptors(req *pb.GetMetricDescriptorsRequest, srv pb.Telemetry_GetMetricDescriptorsServer) error {
+	s.metrics.mu.Lock()
+	pbdescs := make([]*pb.MetricDescriptor, 0, len(s.metrics.descriptors))
+	pbdescs = append(pbdescs, s.metrics.descriptors...)
+	s.metrics.mu.Unlock()
+
+	for _, desc := range pbdescs {
+		if err := srv.Send(desc); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (s *Service) GetMetrics(req *pb.GetMetricsRequest, srv pb.Telemetry_GetMetricsServer) error {
 	stream := s.metrics.stream
 	since := req.GetSequenceNumberSince()
 	return grpcSendStreamSegments(stream, int(since), srv)
+}
+
+func (s *Service) GetPropertyDescriptors(req *pb.GetPropertyDescriptorsRequest, srv pb.Telemetry_GetPropertyDescriptorsServer) error {
+	properties := s.properties
+
+	properties.mu.Lock()
+	pbdescs := make([]*pb.PropertyDescriptor, 0, len(properties.properties))
+	for idx, p := range properties.properties {
+		pbdescs = append(pbdescs, &pb.PropertyDescriptor{
+			Id:          uint32(idx),
+			Scope:       p.pbproperty.GetScope(),
+			Name:        p.pbproperty.GetName(),
+			Description: p.pbproperty.GetDescription(),
+		})
+	}
+	properties.mu.Unlock()
+
+	for _, desc := range pbdescs {
+		if err := srv.Send(desc); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (s *Service) GetProperties(req *pb.GetPropertiesRequest, srv pb.Telemetry_GetPropertiesServer) error {
@@ -75,7 +115,7 @@ func (s *Service) GetCapture(req *pb.GetCaptureRequest, srv pb.Telemetry_GetCapt
 	captures := s.captures
 
 	captures.mu.Lock()
-	capture := captures.captures[req.GetName()]
+	capture := captures.captures[req.GetId()]
 	captures.mu.Unlock()
 
 	if capture == nil {
@@ -106,7 +146,7 @@ func (s *Service) GetEvent(req *pb.GetEventRequest, srv pb.Telemetry_GetEventSer
 	events := s.events
 
 	events.mu.Lock()
-	e := events.events[req.Name]
+	e := events.events[req.GetId()]
 	if e == nil {
 		return ErrEventNotAvailable
 	}
@@ -116,7 +156,7 @@ func (s *Service) GetEvent(req *pb.GetEventRequest, srv pb.Telemetry_GetEventSer
 	return grpcSendStreamSegments(evstream, int(req.GetSequenceNumberSince()), srv)
 }
 
-func grpcSendStreamSegments(stream *Stream, since int, srv grpcSegmentSender) error {
+func grpcSendStreamSegments(stream *stream.Stream, since int, srv grpcSegmentSender) error {
 	for {
 		segments := stream.Segments(since, 128)
 		if len(segments) == 0 {

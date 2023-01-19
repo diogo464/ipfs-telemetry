@@ -20,11 +20,11 @@ func actionMetrics(c *cli.Context) error {
 	}
 	defer client.Close()
 
-	cmetrics, err := client.GetMetrics(c.Context, 0)
+	cmetrics, err := client.GetMetrics(c.Context)
 	if err != nil {
 		return err
 	}
-	metrics := cmetrics.Metrics
+	metrics := cmetrics.OTLP
 
 	if len(metrics) == 0 {
 		fmt.Println("metrics len is 0 ")
