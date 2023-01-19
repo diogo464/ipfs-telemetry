@@ -246,6 +246,7 @@ func (c *Client) GetPropertyDescriptors(ctx context.Context) ([]PropertyDescript
 			return nil, err
 		}
 		descriptors = append(descriptors, PropertyDescriptor{
+			ID:          pbdesc.GetId(),
 			Scope:       pbdesc.GetScope(),
 			Name:        pbdesc.GetName(),
 			Description: pbdesc.GetDescription(),
@@ -300,6 +301,7 @@ func (c *Client) GetCaptureDescriptors(ctx context.Context) ([]CaptureDescriptor
 			return nil, err
 		}
 		descriptors = append(descriptors, CaptureDescriptor{
+			ID:          pbdesc.GetId(),
 			Scope:       pbdesc.GetScope(),
 			Name:        pbdesc.GetName(),
 			Description: pbdesc.GetDescription(),
@@ -373,6 +375,7 @@ func (c *Client) GetEventDescriptors(ctx context.Context) ([]EventDescriptor, er
 			return nil, err
 		}
 		descriptors = append(descriptors, EventDescriptor{
+			ID:          pbdesc.GetId(),
 			Scope:       pbdesc.GetScope(),
 			Name:        pbdesc.GetName(),
 			Description: pbdesc.GetDescription(),
