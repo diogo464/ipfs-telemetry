@@ -29,3 +29,11 @@ func (mp *serviceMeterProvider) TelemetryMeter(instrumentationName string, opts 
 		meter:   meter,
 	}
 }
+
+func DowncastMeterProvider(provider metric.MeterProvider) MeterProvider {
+	if tprovider, ok := provider.(MeterProvider); ok {
+		return tprovider
+	} else {
+		return NewNoopMeterProvider()
+	}
+}
