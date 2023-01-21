@@ -21,17 +21,17 @@ type PropertyValue interface {
 }
 
 type PropertyDescriptor struct {
-	ID          uint32
-	Scope       string
-	Name        string
-	Description string
+	ID          uint32 `json:"id"`
+	Scope       string `json:"scope"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
 }
 
 type Property struct {
-	Scope       string
-	Name        string
-	Description string
-	Value       PropertyValue
+	Scope       string        `json:"scope"`
+	Name        string        `json:"name"`
+	Description string        `json:"description"`
+	Value       PropertyValue `json:"value"`
 }
 
 type propertyValueString struct {

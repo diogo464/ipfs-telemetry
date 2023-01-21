@@ -15,15 +15,15 @@ type EventEmitter interface {
 }
 
 type EventDescriptor struct {
-	ID          uint32
-	Scope       string
-	Name        string
-	Description string
+	ID          uint32 `json:"id"`
+	Scope       string `json:"scope"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
 }
 
 type Event struct {
-	Timestamp time.Time
-	Data      []byte
+	Timestamp time.Time `json:"timestamp"`
+	Data      []byte    `json:"data"`
 }
 
 type eventConfig struct {

@@ -21,3 +21,17 @@ func ParseSession(sess string) (Session, error) {
 func (s Session) String() string {
 	return uuid.UUID(s).String()
 }
+
+func (s *Session) MarshalJSON() ([]byte, error) {
+	return []byte(`"` + s.String() + `"`), nil
+}
+
+func (s *Session) UnmarshalJSON(b []byte) error {
+	if len(b) < 2 {
+		return nil
+	}
+	b = b[1 : len(b)-1]
+	var err error
+	*s, err = ParseSession(string(b))
+	return err
+}
