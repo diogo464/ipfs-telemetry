@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"sync"
 
 	"github.com/diogo464/telemetry/internal/bpool"
 	"github.com/diogo464/telemetry/internal/pb"
@@ -23,53 +22,20 @@ var (
 	_ (otlpmetric.Client) = (*Service)(nil)
 )
 
-type serviceMetrics struct {
-	mu          sync.Mutex
-	stream      *stream.Stream
-	descriptors []*pb.MetricDescriptor
-}
-
-type servicePropertyEntry struct {
-	pbproperty *pb.Property
-}
-
-type serviceProperties struct {
-	mu         sync.Mutex
-	properties []*servicePropertyEntry
-}
-
-type serviceCaptures struct {
-	mu       sync.Mutex
-	captures map[uint32]*serviceCapture
-	nextID   uint32
-}
-
-type serviceEvent struct {
-	config     eventConfig
-	stream     *stream.Stream
-	emitter    *eventEmitter
-	descriptor *pb.EventDescriptor
-}
-
-type serviceEvents struct {
-	mu     sync.Mutex
-	events map[uint32]*serviceEvent
-	nextID uint32
-}
-
 type Service struct {
 	pb.UnimplementedTelemetryServer
 	// current session, randomly generated uuid
 	session        Session
 	opts           *serviceOptions
 	host           host.Host
-	meter_provider *sdk_metric.MeterProvider
+	meter_provider *serviceMeterProvider
 	bufferPool     *bpool.Pool
 
 	ctx        context.Context
 	cancel     context.CancelFunc
 	grpcServer *grpc.Server
 
+	streams    *serviceStreams
 	metrics    *serviceMetrics
 	properties *serviceProperties
 	captures   *serviceCaptures
@@ -86,6 +52,13 @@ func NewService(h host.Host, os ...ServiceOption) (*Service, error) {
 		return nil, err
 	}
 
+	bufferPool := bpool.New(bpool.WithAllocSize(64*1024), bpool.WithMaxSize(8*1024*1024))
+	streams := newServiceStreams(
+		stream.WithActiveBufferLifetime(opts.activeBufferDuration),
+		stream.WithSegmentLifetime(opts.windowDuration),
+		stream.WithPool(bufferPool),
+	)
+
 	ctx, cancel := context.WithCancel(context.Background())
 	session := RandomSession()
 	t := &Service{
@@ -93,27 +66,19 @@ func NewService(h host.Host, os ...ServiceOption) (*Service, error) {
 		opts:           opts,
 		host:           h,
 		meter_provider: nil,
-		bufferPool:     bpool.New(bpool.WithAllocSize(64*1024), bpool.WithMaxSize(8*1024*1024)),
+		bufferPool:     bufferPool,
 
 		ctx:    ctx,
 		cancel: cancel,
 
+		streams:    streams,
+		metrics:    newServiceMetrics(streams.create().stream),
+		properties: newServiceProperties(),
+		captures:   newServiceCaptures(ctx, streams),
+		events:     newServiceEvents(streams),
+
 		downloadBlocker: newRequestBlocker(),
 		uploadBlocker:   newRequestBlocker(),
-	}
-
-	t.metrics = &serviceMetrics{
-		stream:      t.newStream(),
-		descriptors: make([]*pb.MetricDescriptor, 0),
-	}
-	t.properties = &serviceProperties{
-		properties: make([]*servicePropertyEntry, 0),
-	}
-	t.captures = &serviceCaptures{
-		captures: make(map[uint32]*serviceCapture),
-	}
-	t.events = &serviceEvents{
-		events: make(map[uint32]*serviceEvent, 0),
 	}
 
 	if opts.enableBandwidth {
@@ -152,7 +117,7 @@ func NewService(h host.Host, os ...ServiceOption) (*Service, error) {
 		),
 	)
 
-	t.meter_provider = sdk_metric.NewMeterProvider(
+	sdk_meter_provider := sdk_metric.NewMeterProvider(
 		sdk_metric.WithResource(r),
 		sdk_metric.WithReader(
 			sdk_metric.NewPeriodicReader(
@@ -161,6 +126,7 @@ func NewService(h host.Host, os ...ServiceOption) (*Service, error) {
 			),
 		),
 	)
+	t.meter_provider = newServiceMeterProvider(t, sdk_meter_provider)
 
 	return t, nil
 }
@@ -172,12 +138,4 @@ func (s *Service) Context() context.Context {
 func (s *Service) Close() {
 	s.grpcServer.GracefulStop()
 	s.cancel()
-}
-
-func (s *Service) newStream() *stream.Stream {
-	return stream.New(
-		stream.WithActiveBufferLifetime(s.opts.activeBufferDuration),
-		stream.WithSegmentLifetime(s.opts.windowDuration),
-		stream.WithPool(s.bufferPool),
-	)
 }

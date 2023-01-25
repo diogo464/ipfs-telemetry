@@ -19,4 +19,6 @@ const (
 
 	BLOCK_DURATION_BANDWIDTH = time.Minute * 5
 	BLOCK_DURATION_STREAM    = time.Minute * 5
+
+	METRICS_STREAM_ID = StreamId(0)
 )

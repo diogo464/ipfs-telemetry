@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/diogo464/telemetry/internal/pb"
 	"github.com/diogo464/telemetry/internal/stream"
 )
 
@@ -15,10 +16,10 @@ type EventEmitter interface {
 }
 
 type EventDescriptor struct {
-	ID          uint32 `json:"id"`
-	Scope       string `json:"scope"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
+	StreamId    StreamId `json:"stream_id"`
+	Scope       string   `json:"scope"`
+	Name        string   `json:"name"`
+	Description string   `json:"description"`
 }
 
 type Event struct {
@@ -63,4 +64,22 @@ type noOpEventEmitter struct {
 
 // Emit implements EventEmitter
 func (*noOpEventEmitter) Emit(interface{}) {
+}
+
+func eventDescriptorToPb(descriptor EventDescriptor) *pb.EventDescriptor {
+	return &pb.EventDescriptor{
+		StreamId:    uint32(descriptor.StreamId),
+		Scope:       descriptor.Scope,
+		Name:        descriptor.Name,
+		Description: descriptor.Description,
+	}
+}
+
+func eventDescriptorFromPb(descriptor *pb.EventDescriptor) EventDescriptor {
+	return EventDescriptor{
+		StreamId:    StreamId(descriptor.StreamId),
+		Scope:       descriptor.Scope,
+		Name:        descriptor.Name,
+		Description: descriptor.Description,
+	}
 }

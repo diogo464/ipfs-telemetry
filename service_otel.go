@@ -10,7 +10,7 @@ import (
 
 // Meter implements Telemetry
 func (s *Service) MeterProvider() MeterProvider {
-	return &serviceMeterProvider{service: s}
+	return s.meter_provider
 }
 
 // UploadMetrics implements otlpmetric.Client

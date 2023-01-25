@@ -25,30 +25,41 @@ type Meter interface {
 }
 
 type serviceMeter struct {
-	scope   string
-	config  metric.MeterConfig
 	service *Service
-	meter   metric.Meter
+
+	scope  string
+	config metric.MeterConfig
+	meter  metric.Meter
+
+	af64 *serviceAsyncFloat64
+	ai64 *serviceAsyncInt64
+	sf64 *serviceSyncFloat64
+	si64 *serviceSyncInt64
+}
+
+func newServiceMeter(service *Service, scope string, config metric.MeterConfig, meter metric.Meter) *serviceMeter {
+	return &serviceMeter{
+		service: service,
+
+		scope:  scope,
+		config: config,
+		meter:  meter,
+
+		af64: newServiceAsyncFloat64(service, scope, meter.AsyncFloat64()),
+		ai64: newServiceAsyncInt64(service, scope, meter.AsyncInt64()),
+		sf64: newServiceSyncFloat64(service, scope, meter.SyncFloat64()),
+		si64: newServiceSyncInt64(service, scope, meter.SyncInt64()),
+	}
 }
 
 // AsyncFloat64 implements Meter
 func (m *serviceMeter) AsyncFloat64() asyncfloat64.InstrumentProvider {
-	provider := m.meter.AsyncFloat64()
-	return &serviceAsyncFloat64{
-		service:  m.service,
-		scope:    m.scope,
-		provider: provider,
-	}
+	return m.af64
 }
 
 // AsyncInt64 implements Meter
 func (m *serviceMeter) AsyncInt64() asyncint64.InstrumentProvider {
-	provider := m.meter.AsyncInt64()
-	return &serviceAsyncInt64{
-		service:  m.service,
-		scope:    m.scope,
-		provider: provider,
-	}
+	return m.ai64
 }
 
 // RegisterCallback implements Meter
@@ -58,28 +69,18 @@ func (m *serviceMeter) RegisterCallback(insts []instrument.Asynchronous, functio
 
 // SyncFloat64 implements Meter
 func (m *serviceMeter) SyncFloat64() syncfloat64.InstrumentProvider {
-	provider := m.meter.SyncFloat64()
-	return &serviceSyncFloat64{
-		service:  m.service,
-		scope:    m.scope,
-		provider: provider,
-	}
+	return m.sf64
 }
 
 // SyncInt64 implements Meter
 func (m *serviceMeter) SyncInt64() syncint64.InstrumentProvider {
-	provider := m.meter.SyncInt64()
-	return &serviceSyncInt64{
-		service:  m.service,
-		scope:    m.scope,
-		provider: provider,
-	}
+	return m.si64
 }
 
 // Capture implements Meter
 func (m *serviceMeter) Capture(name string, callback CaptureCallback, interval time.Duration, opts ...instrument.Option) {
 	config := instrument.NewConfig(opts...)
-	m.service.createCapture(captureConfig{
+	m.service.captures.create(captureConfig{
 		Scope:       m.scope,
 		Name:        name,
 		Description: config.Description(),
@@ -91,7 +92,7 @@ func (m *serviceMeter) Capture(name string, callback CaptureCallback, interval t
 // Event implements Meter
 func (m *serviceMeter) Event(name string, opts ...instrument.Option) EventEmitter {
 	config := instrument.NewConfig(opts...)
-	return m.service.createEvent(eventConfig{
+	return m.service.events.create(eventConfig{
 		Scope:       m.scope,
 		Name:        name,
 		Description: config.Description(),
@@ -101,8 +102,7 @@ func (m *serviceMeter) Event(name string, opts ...instrument.Option) EventEmitte
 // Property implements Meter
 func (m *serviceMeter) Property(name string, value PropertyValue, opts ...instrument.Option) {
 	config := instrument.NewConfig(opts...)
-	m.config.SchemaURL()
-	m.service.createProperty(propertyConfig{
+	m.service.properties.create(propertyConfig{
 		Scope:       m.scope,
 		Name:        name,
 		Description: config.Description(),

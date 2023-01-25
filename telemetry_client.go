@@ -35,10 +35,8 @@ type clientOptions struct {
 }
 
 type ClientState struct {
-	session      Session
-	metricsSeqN  int
-	capturesSeqN map[uint32]int
-	eventsSeqN   map[uint32]int
+	session         Session
+	sequenceNumbers map[StreamId]uint32
 }
 
 type Client struct {
@@ -79,10 +77,8 @@ func NewClient(ctx context.Context, opts ...ClientOption) (*Client, error) {
 		client.s = options.state
 	} else {
 		client.s = &ClientState{
-			session:      Session{},
-			metricsSeqN:  0,
-			capturesSeqN: make(map[uint32]int),
-			eventsSeqN:   make(map[uint32]int),
+			session:         Session{},
+			sequenceNumbers: make(map[StreamId]uint32),
 		}
 	}
 
@@ -118,9 +114,7 @@ func NewClient(ctx context.Context, opts ...ClientOption) (*Client, error) {
 
 	if sess != client.s.session {
 		client.s.session = sess
-		client.s.metricsSeqN = 0
-		client.s.capturesSeqN = make(map[uint32]int)
-		client.s.eventsSeqN = make(map[uint32]int)
+		client.s.sequenceNumbers = make(map[StreamId]uint32)
 	}
 
 	return client, nil
@@ -184,8 +178,9 @@ func (c *Client) GetMetrics(ctx context.Context) (Metrics, error) {
 		return Metrics{}, err
 	}
 
-	response, err := client.GetMetrics(ctx, &pb.GetMetricsRequest{
-		SequenceNumberSince: uint32(c.s.metricsSeqN),
+	response, err := client.GetStream(ctx, &pb.GetStreamRequest{
+		StreamId:            uint32(METRICS_STREAM_ID),
+		SequenceNumberSince: c.s.sequenceNumbers[METRICS_STREAM_ID],
 	})
 	if err != nil {
 		return Metrics{}, err
@@ -220,7 +215,7 @@ func (c *Client) GetMetrics(ctx context.Context) (Metrics, error) {
 		}
 	}
 
-	c.s.metricsSeqN = seqn
+	c.s.sequenceNumbers[METRICS_STREAM_ID] = uint32(seqn)
 
 	return Metrics{OTLP: mdatas}, nil
 }
@@ -300,26 +295,21 @@ func (c *Client) GetCaptureDescriptors(ctx context.Context) ([]CaptureDescriptor
 		if err != nil {
 			return nil, err
 		}
-		descriptors = append(descriptors, CaptureDescriptor{
-			ID:          pbdesc.GetId(),
-			Scope:       pbdesc.GetScope(),
-			Name:        pbdesc.GetName(),
-			Description: pbdesc.GetDescription(),
-		})
+		descriptors = append(descriptors, captureDescriptorFromPb(pbdesc))
 	}
 
 	return descriptors, nil
 }
 
-func (c *Client) GetCapture(ctx context.Context, id uint32) ([]Capture, error) {
+func (c *Client) GetCapture(ctx context.Context, streamId StreamId) ([]Capture, error) {
 	client, err := c.newGrpcClient()
 	if err != nil {
 		return nil, err
 	}
 
-	srv, err := client.GetCapture(ctx, &pb.GetCaptureRequest{
-		SequenceNumberSince: uint32(c.s.capturesSeqN[id]),
-		Id:                  id,
+	srv, err := client.GetStream(ctx, &pb.GetStreamRequest{
+		StreamId:            uint32(streamId),
+		SequenceNumberSince: uint32(c.s.sequenceNumbers[streamId]),
 	})
 	if err != nil {
 		return nil, err
@@ -346,8 +336,8 @@ func (c *Client) GetCapture(ctx context.Context, id uint32) ([]Capture, error) {
 			})
 		}
 
-		if segment.SeqN > c.s.capturesSeqN[id] {
-			c.s.capturesSeqN[id] = segment.SeqN
+		if uint32(segment.SeqN) > c.s.sequenceNumbers[streamId] {
+			c.s.sequenceNumbers[streamId] = uint32(segment.SeqN)
 		}
 	}
 
@@ -375,7 +365,7 @@ func (c *Client) GetEventDescriptors(ctx context.Context) ([]EventDescriptor, er
 			return nil, err
 		}
 		descriptors = append(descriptors, EventDescriptor{
-			ID:          pbdesc.GetId(),
+			StreamId:    StreamId(pbdesc.GetStreamId()),
 			Scope:       pbdesc.GetScope(),
 			Name:        pbdesc.GetName(),
 			Description: pbdesc.GetDescription(),
@@ -385,15 +375,15 @@ func (c *Client) GetEventDescriptors(ctx context.Context) ([]EventDescriptor, er
 	return descriptors, nil
 }
 
-func (c *Client) GetEvent(ctx context.Context, id uint32) ([]Event, error) {
+func (c *Client) GetEvent(ctx context.Context, streamId StreamId) ([]Event, error) {
 	client, err := c.newGrpcClient()
 	if err != nil {
 		return nil, err
 	}
 
-	srv, err := client.GetEvent(ctx, &pb.GetEventRequest{
-		SequenceNumberSince: uint32(c.s.eventsSeqN[id]),
-		Id:                  id,
+	srv, err := client.GetStream(ctx, &pb.GetStreamRequest{
+		StreamId:            uint32(streamId),
+		SequenceNumberSince: uint32(c.s.sequenceNumbers[streamId]),
 	})
 	if err != nil {
 		return nil, err
@@ -420,8 +410,8 @@ func (c *Client) GetEvent(ctx context.Context, id uint32) ([]Event, error) {
 			})
 		}
 
-		if segment.SeqN > c.s.eventsSeqN[id] {
-			c.s.eventsSeqN[id] = segment.SeqN
+		if uint32(segment.SeqN) > c.s.sequenceNumbers[streamId] {
+			c.s.sequenceNumbers[streamId] = uint32(segment.SeqN)
 		}
 	}
 

@@ -174,7 +174,7 @@ func (p *peerTask) tryExportEvents(ctx context.Context, client *telemetry.Client
 	}
 
 	for _, descriptor := range descriptors {
-		events, err := client.GetEvent(ctx, descriptor.ID)
+		events, err := client.GetEvent(ctx, descriptor.StreamId)
 		if err != nil {
 			p.logger.Warn("failed to get events", zap.Error(err))
 			return err
@@ -196,7 +196,7 @@ func (p *peerTask) tryExportCaptures(ctx context.Context, client *telemetry.Clie
 	}
 
 	for _, descriptor := range descriptors {
-		captures, err := client.GetCapture(ctx, descriptor.ID)
+		captures, err := client.GetCapture(ctx, descriptor.StreamId)
 		if err != nil {
 			p.logger.Warn("failed to get captures", zap.Error(err))
 			return err

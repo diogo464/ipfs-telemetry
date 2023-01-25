@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/urfave/cli/v2"
 )
@@ -25,7 +26,7 @@ func actionEvents(c *cli.Context) error {
 	}
 
 	for _, desc := range descriptors {
-		fmt.Println(desc.Name)
+		fmt.Println(desc.Name + " - " + strconv.Itoa(int(desc.StreamId)))
 		fmt.Println("\t", desc.Description)
 	}
 
