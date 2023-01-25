@@ -117,10 +117,7 @@ func NewService(h host.Host, os ...ServiceOption) (*Service, error) {
 
 	res := resource.Default()
 	if opts.otelResource != nil {
-		res, err = resource.Merge(res, opts.otelResource)
-		if err != nil {
-			return nil, err
-		}
+		res = opts.otelResource
 	}
 
 	sdk_meter_provider := sdk_metric.NewMeterProvider(
