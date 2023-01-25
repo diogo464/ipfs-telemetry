@@ -6,17 +6,13 @@ import (
 	"net"
 
 	"github.com/diogo464/telemetry/internal/bpool"
+	"github.com/diogo464/telemetry/internal/otlp_exporter"
 	"github.com/diogo464/telemetry/internal/pb"
 	"github.com/diogo464/telemetry/internal/stream"
 	"github.com/libp2p/go-libp2p/core/host"
-	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric"
 	sdk_metric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 	"google.golang.org/grpc"
-)
-
-var (
-	_ (otlpmetric.Client) = (*Service)(nil)
 )
 
 type ServiceAccessType string
@@ -67,6 +63,7 @@ func NewService(h host.Host, os ...ServiceOption) (*Service, error) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	session := RandomSession()
+	otlpExporter := otlp_exporter.New(streams.create().stream)
 	t := &Service{
 		session:        session,
 		opts:           opts,
@@ -124,7 +121,7 @@ func NewService(h host.Host, os ...ServiceOption) (*Service, error) {
 		sdk_metric.WithResource(res),
 		sdk_metric.WithReader(
 			sdk_metric.NewPeriodicReader(
-				otlpmetric.New(t),
+				otlpExporter,
 				sdk_metric.WithInterval(opts.metricsPeriod),
 			),
 		),
