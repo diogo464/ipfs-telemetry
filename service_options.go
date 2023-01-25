@@ -4,6 +4,7 @@ import (
 	"net"
 	"time"
 
+	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/multiformats/go-multiaddr"
 	"go.opentelemetry.io/otel/sdk/resource"
 )
@@ -11,30 +12,34 @@ import (
 type ServiceOption func(*serviceOptions) error
 
 type serviceOptions struct {
-	enableBandwidth      bool
-	enableDebug          bool
-	listener             net.Listener
-	metricsPeriod        time.Duration
-	windowDuration       time.Duration
-	activeBufferDuration time.Duration
-	enablePush           bool
-	pushTargets          []multiaddr.Multiaddr
-	pushInterval         time.Duration
-	otelResource         *resource.Resource
+	enableBandwidth        bool
+	enableDebug            bool
+	listener               net.Listener
+	metricsPeriod          time.Duration
+	windowDuration         time.Duration
+	activeBufferDuration   time.Duration
+	enablePush             bool
+	pushTargets            []multiaddr.Multiaddr
+	pushInterval           time.Duration
+	otelResource           *resource.Resource
+	serviceAccessType      ServiceAccessType
+	serviceAccessWhitelist map[peer.ID]struct{}
 }
 
 func serviceDefaults() *serviceOptions {
 	return &serviceOptions{
-		enableBandwidth:      false,
-		enableDebug:          false,
-		listener:             nil,
-		metricsPeriod:        time.Second * 15,
-		windowDuration:       time.Minute * 30,
-		activeBufferDuration: time.Minute * 5,
-		enablePush:           false,
-		pushTargets:          []multiaddr.Multiaddr{},
-		pushInterval:         time.Minute * 15,
-		otelResource:         nil,
+		enableBandwidth:        false,
+		enableDebug:            false,
+		listener:               nil,
+		metricsPeriod:          time.Second * 15,
+		windowDuration:         time.Minute * 30,
+		activeBufferDuration:   time.Minute * 5,
+		enablePush:             false,
+		pushTargets:            []multiaddr.Multiaddr{},
+		pushInterval:           time.Minute * 15,
+		otelResource:           nil,
+		serviceAccessType:      ServiceAccessPublic,
+		serviceAccessWhitelist: make(map[peer.ID]struct{}),
 	}
 }
 
@@ -118,6 +123,22 @@ func WithServicePushTargets(targets ...multiaddr.Multiaddr) ServiceOption {
 func WithServiceResource(resource *resource.Resource) ServiceOption {
 	return func(so *serviceOptions) error {
 		so.otelResource = resource
+		return nil
+	}
+}
+
+func WithServiceAccessType(accessType ServiceAccessType) ServiceOption {
+	return func(so *serviceOptions) error {
+		so.serviceAccessType = accessType
+		return nil
+	}
+}
+
+func WithServiceAccessWhitelist(ids ...peer.ID) ServiceOption {
+	return func(so *serviceOptions) error {
+		for _, id := range ids {
+			so.serviceAccessWhitelist[id] = struct{}{}
+		}
 		return nil
 	}
 }

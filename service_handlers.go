@@ -12,6 +12,10 @@ import (
 func (s *Service) uploadHandler(stream network.Stream) {
 	defer stream.Close()
 
+	if !s.serviceAcl.isAllowed(stream.Conn().RemotePeer()) {
+		return
+	}
+
 	if publicIp, err := utils.GetFirstPublicAddressFromMultiaddrs([]multiaddr.Multiaddr{stream.Conn().RemoteMultiaddr()}); err == nil {
 		if s.uploadBlocker.isBlocked(publicIp) {
 			_ = utils.WriteU32(stream, 0)
@@ -40,6 +44,10 @@ func (s *Service) uploadHandler(stream network.Stream) {
 
 func (s *Service) downloadHandler(stream network.Stream) {
 	defer stream.Close()
+
+	if !s.serviceAcl.isAllowed(stream.Conn().RemotePeer()) {
+		return
+	}
 
 	if publicIp, err := utils.GetFirstPublicAddressFromMultiaddrs([]multiaddr.Multiaddr{stream.Conn().RemoteMultiaddr()}); err == nil {
 		if s.downloadBlocker.isBlocked(publicIp) {

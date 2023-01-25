@@ -8,7 +8,6 @@ import (
 	"github.com/diogo464/telemetry/internal/bpool"
 	"github.com/diogo464/telemetry/internal/pb"
 	"github.com/diogo464/telemetry/internal/stream"
-	gostream "github.com/libp2p/go-libp2p-gostream"
 	"github.com/libp2p/go-libp2p/core/host"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric"
 	sdk_metric "go.opentelemetry.io/otel/sdk/metric"
@@ -18,6 +17,14 @@ import (
 
 var (
 	_ (otlpmetric.Client) = (*Service)(nil)
+)
+
+type ServiceAccessType string
+
+const (
+	ServiceAccessPublic     ServiceAccessType = "public"
+	ServiceAccessRestricted ServiceAccessType = "restricted"
+	ServiceAccessDisabled   ServiceAccessType = "disabled"
 )
 
 type Service struct {
@@ -33,6 +40,7 @@ type Service struct {
 	cancel     context.CancelFunc
 	grpcServer *grpc.Server
 
+	serviceAcl *serviceAccessControl
 	streams    *serviceStreams
 	metrics    *serviceMetrics
 	properties *serviceProperties
@@ -69,6 +77,7 @@ func NewService(h host.Host, os ...ServiceOption) (*Service, error) {
 		ctx:    ctx,
 		cancel: cancel,
 
+		serviceAcl: newServiceAccessControl(opts.serviceAccessType, opts.serviceAccessWhitelist),
 		streams:    streams,
 		metrics:    newServiceMetrics(streams.create().stream),
 		properties: newServiceProperties(),
@@ -86,7 +95,7 @@ func NewService(h host.Host, os ...ServiceOption) (*Service, error) {
 
 	var listener net.Listener
 	if opts.listener == nil {
-		listener, err = gostream.Listen(h, ID_TELEMETRY)
+		listener, err = newServiceListener(h, ID_TELEMETRY, t.serviceAcl)
 		if err != nil {
 			return nil, err
 		}
