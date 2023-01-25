@@ -6,6 +6,7 @@ import (
 
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/multiformats/go-multiaddr"
+	sdk_metric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 )
 
@@ -22,6 +23,7 @@ type serviceOptions struct {
 	pushTargets            []multiaddr.Multiaddr
 	pushInterval           time.Duration
 	otelResource           *resource.Resource
+	otelViews              []sdk_metric.View
 	serviceAccessType      ServiceAccessType
 	serviceAccessWhitelist map[peer.ID]struct{}
 }
@@ -38,6 +40,7 @@ func serviceDefaults() *serviceOptions {
 		pushTargets:            []multiaddr.Multiaddr{},
 		pushInterval:           time.Minute * 15,
 		otelResource:           nil,
+		otelViews:              []sdk_metric.View{},
 		serviceAccessType:      ServiceAccessPublic,
 		serviceAccessWhitelist: make(map[peer.ID]struct{}),
 	}
@@ -123,6 +126,13 @@ func WithServicePushTargets(targets ...multiaddr.Multiaddr) ServiceOption {
 func WithServiceResource(resource *resource.Resource) ServiceOption {
 	return func(so *serviceOptions) error {
 		so.otelResource = resource
+		return nil
+	}
+}
+
+func WithServiceViews(views ...sdk_metric.View) ServiceOption {
+	return func(so *serviceOptions) error {
+		so.otelViews = append(so.otelViews, views...)
 		return nil
 	}
 }

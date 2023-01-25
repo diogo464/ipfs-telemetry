@@ -125,6 +125,7 @@ func NewService(h host.Host, os ...ServiceOption) (*Service, error) {
 				sdk_metric.WithInterval(opts.metricsPeriod),
 			),
 		),
+		sdk_metric.WithView(opts.otelViews...),
 	)
 	t.meter_provider = newServiceMeterProvider(t, sdk_meter_provider)
 
