@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/multiformats/go-multiaddr"
+	"go.opentelemetry.io/otel/sdk/resource"
 )
 
 type ServiceOption func(*serviceOptions) error
@@ -19,6 +20,7 @@ type serviceOptions struct {
 	enablePush           bool
 	pushTargets          []multiaddr.Multiaddr
 	pushInterval         time.Duration
+	otelResource         *resource.Resource
 }
 
 func serviceDefaults() *serviceOptions {
@@ -32,6 +34,7 @@ func serviceDefaults() *serviceOptions {
 		enablePush:           false,
 		pushTargets:          []multiaddr.Multiaddr{},
 		pushInterval:         time.Minute * 15,
+		otelResource:         nil,
 	}
 }
 
@@ -108,6 +111,13 @@ func WithServicePush(enabled bool) ServiceOption {
 func WithServicePushTargets(targets ...multiaddr.Multiaddr) ServiceOption {
 	return func(so *serviceOptions) error {
 		so.pushTargets = targets
+		return nil
+	}
+}
+
+func WithServiceResource(resource *resource.Resource) ServiceOption {
+	return func(so *serviceOptions) error {
+		so.otelResource = resource
 		return nil
 	}
 }
