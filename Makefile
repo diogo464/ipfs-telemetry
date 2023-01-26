@@ -11,6 +11,12 @@ example:
 telemetry:
 	$(GOCC) build -o ./bin/telemetry ./cmd/telemetry
 
+.PHONY: check
+check:
+	$(GOCC) vet ./...
+	staticcheck ./...
+	golangci-lint run
+
 .PHONY: clean
 clean:
 	rm -rf bin/

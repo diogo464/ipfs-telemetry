@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/diogo464/telemetry"
@@ -31,12 +30,4 @@ func clientFromContext(c *cli.Context) (*telemetry.Client, error) {
 	default:
 		return nil, fmt.Errorf("unknown connection type: %s", c.String(FLAG_CONN_TYPE.Name))
 	}
-}
-
-func printAsJson(v interface{}) {
-	marshaled, err := json.MarshalIndent(v, "", "  ")
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println(string(marshaled))
 }

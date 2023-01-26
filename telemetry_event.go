@@ -28,12 +28,6 @@ type Event struct {
 	Data      []byte    `json:"data"`
 }
 
-type eventConfig struct {
-	Scope       string
-	Name        string
-	Description string
-}
-
 type eventEmitter struct {
 	name   string
 	stream *stream.Stream
@@ -42,14 +36,7 @@ type eventEmitter struct {
 func newEventEmitter(streams *serviceStreams, desc EventDescriptor) *eventEmitter {
 	streamType := &pb.StreamType{
 		Type: &pb.StreamType_Event{
-			Event: &pb.EventDescriptor{
-				Scope: &v1.InstrumentationScope{
-					Name:    desc.Scope.Name,
-					Version: desc.Scope.Version,
-				},
-				Name:        desc.Name,
-				Description: desc.Description,
-			},
+			Event: eventDescriptorToPb(desc),
 		},
 	}
 	sstream := streams.create(streamType)
@@ -83,17 +70,6 @@ func (*noOpEventEmitter) Emit(interface{}) {
 func eventDescriptorToPb(descriptor EventDescriptor) *pb.EventDescriptor {
 	return &pb.EventDescriptor{
 		Scope: &v1.InstrumentationScope{
-			Name:    descriptor.Scope.Name,
-			Version: descriptor.Scope.Version,
-		},
-		Name:        descriptor.Name,
-		Description: descriptor.Description,
-	}
-}
-
-func eventDescriptorFromPb(descriptor *pb.EventDescriptor) EventDescriptor {
-	return EventDescriptor{
-		Scope: instrumentation.Scope{
 			Name:    descriptor.Scope.Name,
 			Version: descriptor.Scope.Version,
 		},

@@ -1,11 +1,10 @@
 package main
 
 import (
+	"os"
+
 	"github.com/urfave/cli/v2"
 )
-
-// Type erased stream decoder
-type streamDecoder func([]byte) (interface{}, error)
 
 var FLAGS = []cli.Flag{
 	FLAG_CONN_TYPE,
@@ -29,5 +28,5 @@ func main() {
 		Flags:    FLAGS,
 		Commands: COMMANDS,
 	}
-	app.RunAndExitOnError()
+	app.Run(os.Args)
 }

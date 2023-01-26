@@ -41,13 +41,3 @@ func actionDescriptors(c *cli.Context) error {
 
 	return nil
 }
-
-func createDescriptor(kind string, desc interface{}) interface{} {
-	return struct {
-		Kind       string
-		Descriptor interface{}
-	}{
-		Kind:       kind,
-		Descriptor: desc,
-	}
-}

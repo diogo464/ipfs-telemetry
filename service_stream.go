@@ -62,14 +62,6 @@ func (s *serviceStreams) create(ty *pb.StreamType, options ...stream.Option) *se
 	return s.streams[id]
 }
 
-func (s *serviceStreams) has(id StreamId) bool {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	_, ok := s.streams[id]
-	return ok
-}
-
 func (s *serviceStreams) get(id StreamId) *serviceStream {
 	s.mu.Lock()
 	defer s.mu.Unlock()
