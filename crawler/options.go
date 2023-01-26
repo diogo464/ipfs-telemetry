@@ -5,8 +5,8 @@ import "github.com/diogo464/telemetry/walker"
 type Option func(*options) error
 
 type options struct {
-	observer    walker.Observer
-	concurrency int
+	observer   walker.Observer
+	walkerOpts []walker.Option
 }
 
 func WithObserver(observer walker.Observer) Option {
@@ -16,16 +16,17 @@ func WithObserver(observer walker.Observer) Option {
 	}
 }
 
-func WithConcurrency(concurrency int) Option {
+func WithWalkerOption(walkerOpt ...walker.Option) Option {
 	return func(o *options) error {
-		o.concurrency = concurrency
+		o.walkerOpts = append(o.walkerOpts, walkerOpt...)
 		return nil
 	}
 }
 
 func defaults() *options {
 	return &options{
-		observer: &walker.NullObserver{},
+		observer:   &walker.NullObserver{},
+		walkerOpts: []walker.Option{},
 	}
 }
 

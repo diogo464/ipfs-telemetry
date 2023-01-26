@@ -50,7 +50,11 @@ func NewCrawler(h host.Host, o ...Option) (*Crawler, error) {
 		subscribers: make(map[chan<- peer.ID]struct{}),
 	}
 
-	w, err := walker.New(h, walker.WithObserver(walker.NewMultiObserver(c, opts.observer)), walker.WithConcurrency(uint(opts.concurrency)))
+	walkerOpts := []walker.Option{}
+	walkerOpts = append(walkerOpts, opts.walkerOpts...)
+	walkerOpts = append(walkerOpts, walker.WithObserver(c))
+
+	w, err := walker.New(h, walkerOpts...)
 	if err != nil {
 		return nil, err
 	}
