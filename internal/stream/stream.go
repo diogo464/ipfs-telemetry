@@ -20,9 +20,9 @@ import (
 type Decoder[T any] func([]byte) (T, error)
 type MessageBin Message[[]byte]
 
-type streamDebug struct {
-	usedSize  uint32
-	totalSize uint32
+type Stats struct {
+	UsedSize  uint32
+	TotalSize uint32
 }
 
 type streamSegmentEntry struct {
@@ -208,7 +208,7 @@ func (s *Stream) cleanUpSegments() {
 	}
 }
 
-func (s *Stream) debug() streamDebug {
+func (s *Stream) Stats() Stats {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -225,9 +225,9 @@ func (s *Stream) debug() streamDebug {
 	usedSize += uint32(s.activeBufferSize - s.activeBufferSegStart)
 	totalSize += uint32(len(s.activeBuffer))
 
-	return streamDebug{
-		usedSize:  usedSize,
-		totalSize: totalSize,
+	return Stats{
+		UsedSize:  usedSize,
+		TotalSize: totalSize,
 	}
 }
 

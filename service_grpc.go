@@ -2,8 +2,10 @@ package telemetry
 
 import (
 	"context"
+	"time"
 
 	"github.com/diogo464/telemetry/internal/pb"
+	"github.com/diogo464/telemetry/metrics"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -24,12 +26,26 @@ var (
 )
 
 func (s *Service) GetSession(ctx context.Context, req *pb.GetSessionRequest) (*pb.GetSessionResponse, error) {
+	methodAttr := metrics.KeyGrpcMethod.String("GetSession")
+	s.smetrics.GrpcReqCount.Add(ctx, 1, methodAttr)
+	startTime := time.Now()
+	defer func() {
+		s.smetrics.GrpcReqDur.Record(ctx, time.Since(startTime).Milliseconds(), methodAttr)
+	}()
+
 	return &pb.GetSessionResponse{
 		Uuid: s.session.String(),
 	}, nil
 }
 
 func (s *Service) GetProperties(req *pb.GetPropertiesRequest, srv pb.Telemetry_GetPropertiesServer) error {
+	methodAttr := metrics.KeyGrpcMethod.String("GetProperties")
+	s.smetrics.GrpcReqCount.Add(srv.Context(), 1, methodAttr)
+	startTime := time.Now()
+	defer func() {
+		s.smetrics.GrpcReqDur.Record(srv.Context(), time.Since(startTime).Milliseconds(), methodAttr)
+	}()
+
 	properties := s.properties.copyProperties()
 	for _, v := range properties {
 		if err := srv.Send(v); err != nil {
@@ -40,6 +56,13 @@ func (s *Service) GetProperties(req *pb.GetPropertiesRequest, srv pb.Telemetry_G
 }
 
 func (s *Service) GetStreamDescriptors(ctx context.Context, req *pb.GetStreamDescriptorsRequest) (*pb.GetStreamDescriptorsResponse, error) {
+	methodAttr := metrics.KeyGrpcMethod.String("GetStreamDescriptors")
+	s.smetrics.GrpcReqCount.Add(ctx, 1, methodAttr)
+	startTime := time.Now()
+	defer func() {
+		s.smetrics.GrpcReqDur.Record(ctx, time.Since(startTime).Milliseconds(), methodAttr)
+	}()
+
 	descriptors := s.streams.copyDescriptors()
 	return &pb.GetStreamDescriptorsResponse{
 		StreamDescriptors: descriptors,
@@ -47,6 +70,13 @@ func (s *Service) GetStreamDescriptors(ctx context.Context, req *pb.GetStreamDes
 }
 
 func (s *Service) GetStream(req *pb.GetStreamRequest, srv pb.Telemetry_GetStreamServer) error {
+	methodAttr := metrics.KeyGrpcMethod.String("GetStream")
+	s.smetrics.GrpcReqCount.Add(srv.Context(), 1, methodAttr)
+	startTime := time.Now()
+	defer func() {
+		s.smetrics.GrpcReqDur.Record(srv.Context(), time.Since(startTime).Milliseconds(), methodAttr)
+	}()
+
 	streamId := StreamId(req.GetStreamId())
 	sstream := s.streams.get(streamId)
 	if sstream == nil {
@@ -54,12 +84,14 @@ func (s *Service) GetStream(req *pb.GetStreamRequest, srv pb.Telemetry_GetStream
 	}
 	stream := sstream.stream
 
+	segmentCount := 0
 	since := int(req.GetSequenceNumberSince())
 	for {
 		segments := stream.Segments(since, 128)
 		if len(segments) == 0 {
 			break
 		}
+		segmentCount += len(segments)
 		since = segments[len(segments)-1].SeqN + 1
 		for _, segment := range segments {
 			err := srv.Send(&pb.StreamSegment{
@@ -72,5 +104,6 @@ func (s *Service) GetStream(req *pb.GetStreamRequest, srv pb.Telemetry_GetStream
 		}
 	}
 
+	s.smetrics.GrpcStreamSegRet.Record(srv.Context(), int64(segmentCount), methodAttr)
 	return nil
 }

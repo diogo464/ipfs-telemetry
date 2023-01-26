@@ -74,3 +74,10 @@ func (e *serviceEvents) createPeriodic(desc EventDescriptor, ctx context.Context
 		}
 	}()
 }
+
+func (e *serviceEvents) getSize() int {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+
+	return len(e.events)
+}

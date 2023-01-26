@@ -74,3 +74,10 @@ func (s *serviceProperties) create(prop Property) {
 
 	s.properties = append(s.properties, proppb)
 }
+
+func (s *serviceProperties) getSize() int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	return len(s.properties)
+}
