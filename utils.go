@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/diogo464/telemetry/internal/pb"
 	"github.com/diogo464/telemetry/internal/utils"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
@@ -25,8 +24,4 @@ func getPublicIpFromContext(h host.Host, ctx context.Context) (net.IP, error) {
 	}
 	addrs := h.Peerstore().Addrs(pid)
 	return utils.GetFirstPublicAddressFromMultiaddrs(addrs)
-}
-
-type grpcSegmentSender interface {
-	Send(*pb.StreamSegment) error
 }

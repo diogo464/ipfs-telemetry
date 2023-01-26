@@ -12,10 +12,11 @@ import (
 	gostream "github.com/libp2p/go-libp2p-gostream"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
-	mpb "go.opentelemetry.io/proto/otlp/metrics/v1"
+	"go.opentelemetry.io/otel/sdk/instrumentation"
+	v1 "go.opentelemetry.io/proto/otlp/metrics/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	gproto "google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 )
 
 var ErrInvalidResponse = fmt.Errorf("invalid response")
@@ -142,114 +143,6 @@ func (c *Client) GetSession(ctx context.Context) (Session, error) {
 	return ParseSession(response.GetUuid())
 }
 
-func (c *Client) GetMetricDescriptors(ctx context.Context) ([]MetricDescriptor, error) {
-	client, err := c.newGrpcClient()
-	if err != nil {
-		return nil, err
-	}
-
-	response, err := client.GetMetricDescriptors(ctx, &pb.GetMetricDescriptorsRequest{})
-	if err != nil {
-		return nil, err
-	}
-
-	descriptors := make([]MetricDescriptor, 0)
-	for {
-		pbdesc, err := response.Recv()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return nil, err
-		}
-		descriptors = append(descriptors, MetricDescriptor{
-			Scope:       pbdesc.GetScope(),
-			Name:        pbdesc.GetName(),
-			Description: pbdesc.GetDescription(),
-		})
-	}
-
-	return descriptors, nil
-}
-
-func (c *Client) GetMetrics(ctx context.Context) (Metrics, error) {
-	client, err := c.newGrpcClient()
-	if err != nil {
-		return Metrics{}, err
-	}
-
-	response, err := client.GetStream(ctx, &pb.GetStreamRequest{
-		StreamId:            uint32(METRICS_STREAM_ID),
-		SequenceNumberSince: c.s.sequenceNumbers[METRICS_STREAM_ID],
-	})
-	if err != nil {
-		return Metrics{}, err
-	}
-
-	mdatas := make([]*mpb.ResourceMetrics, 0)
-	seqn := 0
-	for {
-		pbsegment, err := response.Recv()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return Metrics{}, err
-		}
-
-		segment := pbSegmentToSegment(pbsegment)
-		if segment.SeqN > seqn {
-			seqn = segment.SeqN
-		}
-		messages, err := stream.SegmentDecode(stream.ByteDecoder, segment)
-		if err != nil {
-			return Metrics{}, err
-		}
-
-		for _, msg := range messages {
-			mdata := &mpb.ResourceMetrics{}
-			if err := gproto.Unmarshal(msg.Value, mdata); err != nil {
-				return Metrics{}, err
-			}
-			mdatas = append(mdatas, mdata)
-		}
-	}
-
-	c.s.sequenceNumbers[METRICS_STREAM_ID] = uint32(seqn)
-
-	return Metrics{OTLP: mdatas}, nil
-}
-
-func (c *Client) GetPropertyDescriptors(ctx context.Context) ([]PropertyDescriptor, error) {
-	client, err := c.newGrpcClient()
-	if err != nil {
-		return nil, err
-	}
-
-	srv, err := client.GetPropertyDescriptors(ctx, &pb.GetPropertyDescriptorsRequest{})
-	if err != nil {
-		return nil, err
-	}
-
-	descriptors := make([]PropertyDescriptor, 0)
-	for {
-		pbdesc, err := srv.Recv()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return nil, err
-		}
-		descriptors = append(descriptors, PropertyDescriptor{
-			ID:          pbdesc.GetId(),
-			Scope:       pbdesc.GetScope(),
-			Name:        pbdesc.GetName(),
-			Description: pbdesc.GetDescription(),
-		})
-	}
-	return descriptors, nil
-}
-
 func (c *Client) GetProperties(ctx context.Context) ([]Property, error) {
 	client, err := c.newGrpcClient()
 	if err != nil {
@@ -270,38 +163,67 @@ func (c *Client) GetProperties(ctx context.Context) ([]Property, error) {
 		if err != nil {
 			return nil, err
 		}
-		properties = append(properties, propertyPbToClientProperty(pbprop))
+		property := Property{
+			Scope: instrumentation.Scope{
+				Name:    pbprop.GetScope().GetName(),
+				Version: pbprop.GetScope().GetVersion(),
+			},
+			Name:        pbprop.GetName(),
+			Description: pbprop.GetDescription(),
+		}
+
+		switch v := pbprop.GetValue().(type) {
+		case *pb.Property_StringValue:
+			property.Value = PropertyValueString(v.StringValue)
+		case *pb.Property_IntegerValue:
+			property.Value = PropertyValueInteger(v.IntegerValue)
+		}
+
+		properties = append(properties, property)
 	}
 	return properties, nil
 }
 
-func (c *Client) GetCaptureDescriptors(ctx context.Context) ([]CaptureDescriptor, error) {
+func (c *Client) GetStreamDescriptors(ctx context.Context) ([]StreamDescriptor, error) {
 	client, err := c.newGrpcClient()
 	if err != nil {
 		return nil, err
 	}
 
-	srv, err := client.GetCaptureDescriptors(ctx, &pb.GetCaptureDescriptorsRequest{})
+	resp, err := client.GetStreamDescriptors(ctx, &pb.GetStreamDescriptorsRequest{})
 	if err != nil {
 		return nil, err
 	}
 
-	descriptors := make([]CaptureDescriptor, 0)
-	for {
-		pbdesc, err := srv.Recv()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return nil, err
-		}
-		descriptors = append(descriptors, captureDescriptorFromPb(pbdesc))
+	descriptors := make([]StreamDescriptor, 0)
+	for _, pbdesc := range resp.GetStreamDescriptors() {
+		descriptors = append(descriptors, streamDescriptorFromPb(pbdesc))
 	}
 
 	return descriptors, nil
 }
 
-func (c *Client) GetCapture(ctx context.Context, streamId StreamId) ([]Capture, error) {
+func (c *Client) GetStream(ctx context.Context, streamId StreamId) ([]stream.MessageBin, error) {
+	segments, err := c.GetStreamSegments(ctx, streamId)
+	if err != nil {
+		return nil, err
+	}
+
+	messages := make([]stream.MessageBin, 0)
+	for _, segment := range segments {
+		msgs, err := stream.SegmentDecode(stream.ByteDecoder, segment)
+		if err != nil {
+			return nil, err
+		}
+		for _, msg := range msgs {
+			messages = append(messages, stream.MessageBin(msg))
+		}
+	}
+
+	return messages, nil
+}
+
+func (c *Client) GetStreamSegments(ctx context.Context, streamId StreamId) ([]stream.Segment, error) {
 	client, err := c.newGrpcClient()
 	if err != nil {
 		return nil, err
@@ -315,7 +237,7 @@ func (c *Client) GetCapture(ctx context.Context, streamId StreamId) ([]Capture, 
 		return nil, err
 	}
 
-	datas := make([]Capture, 0)
+	segments := make([]stream.Segment, 0)
 	for {
 		pbseg, err := srv.Recv()
 		if err == io.EOF {
@@ -325,97 +247,51 @@ func (c *Client) GetCapture(ctx context.Context, streamId StreamId) ([]Capture, 
 			return nil, err
 		}
 		segment := pbSegmentToSegment(pbseg)
-		messages, err := stream.SegmentDecode(stream.ByteDecoder, segment)
-		if err != nil {
-			return nil, err
-		}
-		for _, msg := range messages {
-			datas = append(datas, Capture{
-				Timestamp: msg.Timestamp,
-				Data:      msg.Value,
-			})
-		}
-
+		segments = append(segments, segment)
 		if uint32(segment.SeqN) > c.s.sequenceNumbers[streamId] {
 			c.s.sequenceNumbers[streamId] = uint32(segment.SeqN)
 		}
 	}
 
-	return datas, nil
+	return segments, nil
 }
 
-func (c *Client) GetEventDescriptors(ctx context.Context) ([]EventDescriptor, error) {
-	client, err := c.newGrpcClient()
+func (c *Client) GetMetrics(ctx context.Context) (Metrics, error) {
+	messages, err := c.GetStream(ctx, METRICS_STREAM_ID)
 	if err != nil {
-		return nil, err
+		return Metrics{}, err
 	}
 
-	srv, err := client.GetEventDescriptors(ctx, &pb.GetEventDescriptorsRequest{})
-	if err != nil {
-		return nil, err
-	}
-
-	descriptors := make([]EventDescriptor, 0)
-	for {
-		pbdesc, err := srv.Recv()
-		if err == io.EOF {
-			break
-		}
+	metrics := make([]*v1.ResourceMetrics, len(messages))
+	for i, msg := range messages {
+		m := &v1.ResourceMetrics{}
+		err = proto.Unmarshal(msg.Value, m)
 		if err != nil {
-			return nil, err
+			return Metrics{}, err
 		}
-		descriptors = append(descriptors, EventDescriptor{
-			StreamId:    StreamId(pbdesc.GetStreamId()),
-			Scope:       pbdesc.GetScope(),
-			Name:        pbdesc.GetName(),
-			Description: pbdesc.GetDescription(),
-		})
+		metrics[i] = m
 	}
 
-	return descriptors, nil
+	return Metrics{
+		OTLP: metrics,
+	}, nil
 }
 
-func (c *Client) GetEvent(ctx context.Context, streamId StreamId) ([]Event, error) {
-	client, err := c.newGrpcClient()
+func (c *Client) GetEvents(ctx context.Context, streamId StreamId) ([]Event, error) {
+	messages, err := c.GetStream(ctx, streamId)
 	if err != nil {
 		return nil, err
 	}
 
-	srv, err := client.GetStream(ctx, &pb.GetStreamRequest{
-		StreamId:            uint32(streamId),
-		SequenceNumberSince: uint32(c.s.sequenceNumbers[streamId]),
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	datas := make([]Event, 0)
-	for {
-		pbseg, err := srv.Recv()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return nil, err
-		}
-		segment := pbSegmentToSegment(pbseg)
-		messages, err := stream.SegmentDecode(stream.ByteDecoder, segment)
-		if err != nil {
-			return nil, err
-		}
-		for _, msg := range messages {
-			datas = append(datas, Event{
-				Timestamp: msg.Timestamp,
-				Data:      msg.Value,
-			})
-		}
-
-		if uint32(segment.SeqN) > c.s.sequenceNumbers[streamId] {
-			c.s.sequenceNumbers[streamId] = uint32(segment.SeqN)
+	events := make([]Event, len(messages))
+	for i, msg := range messages {
+		events[i] = Event{
+			Timestamp: msg.Timestamp,
+			Data:      msg.Value,
 		}
 	}
 
-	return datas, nil
+	return events, nil
 }
 
 func (c *Client) Download(ctx context.Context, payload uint32) (uint32, error) {

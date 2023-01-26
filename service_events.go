@@ -1,82 +1,76 @@
 package telemetry
 
 import (
+	"context"
 	"sync"
+	"time"
 
-	"github.com/diogo464/telemetry/internal/pb"
+	"go.opentelemetry.io/otel/sdk/instrumentation"
 )
 
 type eventId struct {
-	scope       string
+	scope       instrumentation.Scope
 	name        string
 	description string
 }
 
-func newEventIdFromConfig(config eventConfig) eventId {
+func newEventIdFromDescriptor(desc EventDescriptor) eventId {
 	return eventId{
-		scope:       config.Scope,
-		name:        config.Name,
-		description: config.Description,
+		scope:       desc.Scope,
+		name:        desc.Name,
+		description: desc.Description,
 	}
 }
 
 type serviceEvent struct {
-	config  eventConfig
-	stream  *serviceStream
 	emitter *eventEmitter
 }
 
 type serviceEvents struct {
 	streams *serviceStreams
 
-	mu          sync.Mutex
-	events      map[eventId]*serviceEvent
-	descriptors []*pb.EventDescriptor
+	mu     sync.Mutex
+	events map[eventId]*serviceEvent
 }
 
 func newServiceEvents(streams *serviceStreams) *serviceEvents {
 	return &serviceEvents{
 		streams: streams,
 
-		events:      make(map[eventId]*serviceEvent),
-		descriptors: make([]*pb.EventDescriptor, 0),
+		events: make(map[eventId]*serviceEvent),
 	}
 }
 
-func (e *serviceEvents) copyDescriptors() []*pb.EventDescriptor {
+func (e *serviceEvents) create(desc EventDescriptor) *eventEmitter {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
-	descriptors := make([]*pb.EventDescriptor, len(e.descriptors))
-	copy(descriptors, e.descriptors)
-
-	return descriptors
-}
-
-func (e *serviceEvents) create(config eventConfig) *eventEmitter {
-	e.mu.Lock()
-	defer e.mu.Unlock()
-
-	id := newEventIdFromConfig(config)
+	id := newEventIdFromDescriptor(desc)
 	if se, ok := e.events[id]; ok {
 		return se.emitter
 	}
 
-	stream := e.streams.create()
-	emitter := newEventEmitter(config, stream.stream)
-
+	emitter := newEventEmitter(e.streams, desc)
 	e.events[id] = &serviceEvent{
-		config:  config,
-		stream:  stream,
 		emitter: emitter,
 	}
 
-	e.descriptors = append(e.descriptors, eventDescriptorToPb(EventDescriptor{
-		StreamId:    stream.streamId,
-		Scope:       config.Scope,
-		Name:        config.Name,
-		Description: config.Description,
-	}))
-
 	return emitter
+}
+
+func (e *serviceEvents) createPeriodic(desc EventDescriptor, ctx context.Context, interval time.Duration, cb func(context.Context, EventEmitter) error) {
+	emitter := e.create(desc)
+	go func() {
+		ticker := time.NewTicker(interval)
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				if err := cb(ctx, emitter); err != nil {
+					log.Warnf("error while emitting periodic event: %v", err)
+				}
+			}
+		}
+	}()
 }

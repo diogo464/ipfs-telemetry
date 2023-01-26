@@ -1,6 +1,11 @@
 package main
 
-import "github.com/urfave/cli/v2"
+import (
+	"fmt"
+
+	"github.com/diogo464/telemetry"
+	"github.com/urfave/cli/v2"
+)
 
 var CommandDescriptors = &cli.Command{
 	Name:        "descriptors",
@@ -15,40 +20,24 @@ func actionDescriptors(c *cli.Context) error {
 	}
 	defer client.Close()
 
-	descriptors := make([]interface{}, 0)
-	if md, err := client.GetMetricDescriptors(c.Context); err == nil {
-		for _, d := range md {
-			descriptors = append(descriptors, createDescriptor("metric", d))
-		}
-	} else {
+	descriptors, err := client.GetStreamDescriptors(c.Context)
+	if err != nil {
 		return err
 	}
 
-	if pd, err := client.GetPropertyDescriptors(c.Context); err == nil {
-		for _, d := range pd {
-			descriptors = append(descriptors, createDescriptor("property", d))
+	for _, descriptor := range descriptors {
+		fmt.Println("StreamID: ", descriptor.ID)
+		switch d := descriptor.Type.(type) {
+		case *telemetry.StreamTypeMetric:
+			fmt.Println("\tType: Metrics")
+		case *telemetry.StreamTypeEvent:
+			fmt.Println("\tType: Event")
+			fmt.Println("\tScope: ", d.Scope.Name)
+			fmt.Println("\tVersion: ", d.Scope.Version)
+			fmt.Println("\tName: ", d.Name)
+			fmt.Println("\tDescription: ", d.Description)
 		}
-	} else {
-		return err
 	}
-
-	if cd, err := client.GetCaptureDescriptors(c.Context); err == nil {
-		for _, d := range cd {
-			descriptors = append(descriptors, createDescriptor("capture", d))
-		}
-	} else {
-		return err
-	}
-
-	if ed, err := client.GetEventDescriptors(c.Context); err == nil {
-		for _, d := range ed {
-			descriptors = append(descriptors, createDescriptor("event", d))
-		}
-	} else {
-		return err
-	}
-
-	printAsJson(descriptors)
 
 	return nil
 }

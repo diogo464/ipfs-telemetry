@@ -1,5 +1,5 @@
 GOCC ?= go
-GOGOPROTO_FLAGS := -I=. --go_out=. --go-grpc_out=.
+GOGOPROTO_FLAGS := -I=. -I=./third_party/opentelemetry-proto/ --go_out=. --go-grpc_out=.
 
 all: telemetry example
 

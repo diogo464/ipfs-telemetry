@@ -11,7 +11,6 @@ type Exporter interface {
 	Session(peer.ID, telemetry.Session)
 	Metrics(peer.ID, telemetry.Session, telemetry.Metrics)
 	Properties(peer.ID, telemetry.Session, []telemetry.Property)
-	Captures(peer.ID, telemetry.Session, telemetry.CaptureDescriptor, []telemetry.Capture)
 	Events(peer.ID, telemetry.Session, telemetry.EventDescriptor, []telemetry.Event)
 	Bandwidth(peer.ID, telemetry.Bandwidth)
 }
@@ -28,10 +27,6 @@ func (*noOpExporter) Properties(peer.ID, telemetry.Session, []telemetry.Property
 
 // Session implements Exporter
 func (*noOpExporter) Session(peer.ID, telemetry.Session) {
-}
-
-// Captures implements Exporter
-func (*noOpExporter) Captures(peer.ID, telemetry.Session, telemetry.CaptureDescriptor, []telemetry.Capture) {
 }
 
 // Events implements Exporter

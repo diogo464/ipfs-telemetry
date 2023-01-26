@@ -2,10 +2,8 @@ package telemetry
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/diogo464/telemetry/internal/pb"
-	"github.com/diogo464/telemetry/internal/stream"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -31,16 +29,6 @@ func (s *Service) GetSession(ctx context.Context, req *pb.GetSessionRequest) (*p
 	}, nil
 }
 
-func (s *Service) GetPropertyDescriptors(req *pb.GetPropertyDescriptorsRequest, srv pb.Telemetry_GetPropertyDescriptorsServer) error {
-	descriptors := s.properties.copyDescriptors()
-	for _, desc := range descriptors {
-		if err := srv.Send(desc); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 func (s *Service) GetProperties(req *pb.GetPropertiesRequest, srv pb.Telemetry_GetPropertiesServer) error {
 	properties := s.properties.copyProperties()
 	for _, v := range properties {
@@ -51,54 +39,28 @@ func (s *Service) GetProperties(req *pb.GetPropertiesRequest, srv pb.Telemetry_G
 	return nil
 }
 
-func (s *Service) GetMetricDescriptors(req *pb.GetMetricDescriptorsRequest, srv pb.Telemetry_GetMetricDescriptorsServer) error {
-	descriptors := s.metrics.copyDescriptors()
-	for _, desc := range descriptors {
-		if err := srv.Send(desc); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (s *Service) GetCaptureDescriptors(req *pb.GetCaptureDescriptorsRequest, srv pb.Telemetry_GetCaptureDescriptorsServer) error {
-	descriptors := s.captures.copyDescriptors()
-	for _, v := range descriptors {
-		if err := srv.Send(v); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (s *Service) GetEventDescriptors(req *pb.GetEventDescriptorsRequest, srv pb.Telemetry_GetEventDescriptorsServer) error {
-	descriptors := s.events.copyDescriptors()
-	for _, desc := range descriptors {
-		if err := srv.Send(desc); err != nil {
-			return err
-		}
-	}
-	return nil
+func (s *Service) GetStreamDescriptors(ctx context.Context, req *pb.GetStreamDescriptorsRequest) (*pb.GetStreamDescriptorsResponse, error) {
+	descriptors := s.streams.copyDescriptors()
+	return &pb.GetStreamDescriptorsResponse{
+		StreamDescriptors: descriptors,
+	}, nil
 }
 
 func (s *Service) GetStream(req *pb.GetStreamRequest, srv pb.Telemetry_GetStreamServer) error {
 	streamId := StreamId(req.GetStreamId())
-	stream := s.streams.get(streamId)
-	if stream == nil {
+	sstream := s.streams.get(streamId)
+	if sstream == nil {
 		return ErrStreamNotAvailable
 	}
-	return grpcSendStreamSegments(stream.stream, int(req.GetSequenceNumberSince()), srv)
-}
+	stream := sstream.stream
 
-func grpcSendStreamSegments(stream *stream.Stream, since int, srv grpcSegmentSender) error {
-	fmt.Println("Sending segments since", since)
+	since := int(req.GetSequenceNumberSince())
 	for {
 		segments := stream.Segments(since, 128)
 		if len(segments) == 0 {
 			break
 		}
 		since = segments[len(segments)-1].SeqN + 1
-		fmt.Println("Sending", len(segments), "segments")
 		for _, segment := range segments {
 			err := srv.Send(&pb.StreamSegment{
 				SequenceNumber: uint32(segment.SeqN),
@@ -109,5 +71,6 @@ func grpcSendStreamSegments(stream *stream.Stream, since int, srv grpcSegmentSen
 			}
 		}
 	}
+
 	return nil
 }

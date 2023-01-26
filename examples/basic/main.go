@@ -69,12 +69,14 @@ func actionMain(c *cli.Context) error {
 
 	m2 := tmp.TelemetryMeter("libp2p.io/network")
 
-	m2.Capture(
+	m2.PeriodicEvent(
+		c.Context,
 		"addresses",
-		func(context.Context) (interface{}, error) {
-			return h.Addrs(), nil
-		},
 		time.Second*5,
+		func(ctx context.Context, e telemetry.EventEmitter) error {
+			e.Emit(h.Addrs())
+			return nil
+		},
 		instrument.WithDescription("some description"),
 	)
 

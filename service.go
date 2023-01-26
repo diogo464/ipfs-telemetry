@@ -40,7 +40,6 @@ type Service struct {
 	streams    *serviceStreams
 	metrics    *serviceMetrics
 	properties *serviceProperties
-	captures   *serviceCaptures
 	events     *serviceEvents
 
 	downloadBlocker *requestBlocker
@@ -62,10 +61,9 @@ func NewService(h host.Host, os ...ServiceOption) (*Service, error) {
 	)
 
 	ctx, cancel := context.WithCancel(context.Background())
-	session := RandomSession()
-	otlpExporter := otlp_exporter.New(streams.create().stream)
+
 	t := &Service{
-		session:        session,
+		session:        RandomSession(),
 		opts:           opts,
 		host:           h,
 		meter_provider: nil,
@@ -76,9 +74,10 @@ func NewService(h host.Host, os ...ServiceOption) (*Service, error) {
 
 		serviceAcl: newServiceAccessControl(opts.serviceAccessType, opts.serviceAccessWhitelist),
 		streams:    streams,
-		metrics:    newServiceMetrics(streams.create().stream),
+		metrics: newServiceMetrics(streams.create(&pb.StreamType{
+			Type: &pb.StreamType_Metric{},
+		}).stream),
 		properties: newServiceProperties(),
-		captures:   newServiceCaptures(ctx, streams),
 		events:     newServiceEvents(streams),
 
 		downloadBlocker: newRequestBlocker(),
@@ -117,6 +116,7 @@ func NewService(h host.Host, os ...ServiceOption) (*Service, error) {
 		res = opts.otelResource
 	}
 
+	otlpExporter := otlp_exporter.New(t.metrics.stream)
 	sdk_meter_provider := sdk_metric.NewMeterProvider(
 		sdk_metric.WithResource(res),
 		sdk_metric.WithReader(

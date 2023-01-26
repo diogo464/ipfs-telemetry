@@ -18,6 +18,7 @@ import (
 // then we could send invalid data over the network
 
 type Decoder[T any] func([]byte) (T, error)
+type MessageBin Message[[]byte]
 
 type streamDebug struct {
 	usedSize  uint32

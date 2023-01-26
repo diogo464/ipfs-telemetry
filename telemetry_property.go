@@ -3,13 +3,20 @@ package telemetry
 import (
 	"strconv"
 
-	"github.com/diogo464/telemetry/internal/pb"
+	"go.opentelemetry.io/otel/sdk/instrumentation"
 )
 
 var (
 	_ (PropertyValue) = (*propertyValueInteger)(nil)
 	_ (PropertyValue) = (*propertyValueString)(nil)
 )
+
+type Property struct {
+	Scope       instrumentation.Scope `json:"scope"`
+	Name        string                `json:"name"`
+	Description string                `json:"description"`
+	Value       PropertyValue         `json:"value"`
+}
 
 type PropertyValue interface {
 	sealed()
@@ -20,20 +27,6 @@ type PropertyValue interface {
 	String() string
 }
 
-type PropertyDescriptor struct {
-	ID          uint32 `json:"id"`
-	Scope       string `json:"scope"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-}
-
-type Property struct {
-	Scope       string        `json:"scope"`
-	Name        string        `json:"name"`
-	Description string        `json:"description"`
-	Value       PropertyValue `json:"value"`
-}
-
 type propertyValueString struct {
 	value string
 }
@@ -42,62 +35,12 @@ type propertyValueInteger struct {
 	value int64
 }
 
-type propertyConfig struct {
-	Scope       string
-	Name        string
-	Description string
-	// Value is one of PropertyValueInteger, PropertyValueString
-	Value PropertyValue
-}
-
 func PropertyValueString(v string) PropertyValue {
 	return &propertyValueString{value: v}
 }
 
 func PropertyValueInteger(v int64) PropertyValue {
 	return &propertyValueInteger{value: v}
-}
-
-func propertyConfigToPb(id uint32, c propertyConfig) *pb.Property {
-	p := &pb.Property{
-		Id:          id,
-		Scope:       c.Scope,
-		Name:        c.Name,
-		Description: c.Description,
-	}
-
-	switch c.Value.(type) {
-	case *propertyValueInteger:
-		p.Value = &pb.Property_IntegerValue{
-			IntegerValue: c.Value.GetInteger(),
-		}
-	case *propertyValueString:
-		p.Value = &pb.Property_StringValue{
-			StringValue: c.Value.GetString(),
-		}
-	default:
-		panic("not implemented")
-	}
-
-	return p
-}
-
-func propertyPbToClientProperty(c *pb.Property) Property {
-	p := Property{
-		Scope:       c.GetScope(),
-		Name:        c.GetName(),
-		Description: c.GetDescription(),
-		Value:       nil,
-	}
-
-	switch v := c.Value.(type) {
-	case *pb.Property_IntegerValue:
-		p.Value = PropertyValueInteger(v.IntegerValue)
-	case *pb.Property_StringValue:
-		p.Value = PropertyValueString(v.StringValue)
-	}
-
-	return p
 }
 
 // GetInteger implements PropertyValue

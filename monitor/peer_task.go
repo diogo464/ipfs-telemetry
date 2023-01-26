@@ -140,12 +140,6 @@ func (p *peerTask) tryCollectTelemetry(ctx context.Context) error {
 		return err
 	}
 
-	p.logger.Info("exporting captures", zap.Any("session", sess))
-	if err := p.tryExportCaptures(ctx, client, sess); err != nil {
-		p.logger.Warn("failed to export captures", zap.Error(err))
-		return err
-	}
-
 	return nil
 }
 
@@ -167,43 +161,27 @@ func (p *peerTask) tryExportMetrics(ctx context.Context, client *telemetry.Clien
 }
 
 func (p *peerTask) tryExportEvents(ctx context.Context, client *telemetry.Client, sess telemetry.Session) error {
-	descriptors, err := client.GetEventDescriptors(ctx)
+	descriptors, err := client.GetStreamDescriptors(ctx)
 	if err != nil {
-		p.logger.Warn("failed to get event descriptors", zap.Error(err))
+		p.logger.Warn("failed to get stream descriptors", zap.Error(err))
 		return err
 	}
 
 	for _, descriptor := range descriptors {
-		events, err := client.GetEvent(ctx, descriptor.StreamId)
-		if err != nil {
-			p.logger.Warn("failed to get events", zap.Error(err))
-			return err
-		}
+		if ed := descriptor.Type.(*telemetry.StreamTypeEvent); ed == nil {
+			events, err := client.GetEvents(ctx, descriptor.ID)
+			if err != nil {
+				p.logger.Warn("failed to get events", zap.Error(err))
+				return err
+			}
 
-		if len(events) > 0 {
-			p.exporter.Events(p.pid, sess, descriptor, events)
-		}
-	}
-
-	return nil
-}
-
-func (p *peerTask) tryExportCaptures(ctx context.Context, client *telemetry.Client, sess telemetry.Session) error {
-	descriptors, err := client.GetCaptureDescriptors(ctx)
-	if err != nil {
-		p.logger.Warn("failed to get capture descriptors", zap.Error(err))
-		return err
-	}
-
-	for _, descriptor := range descriptors {
-		captures, err := client.GetCapture(ctx, descriptor.StreamId)
-		if err != nil {
-			p.logger.Warn("failed to get captures", zap.Error(err))
-			return err
-		}
-
-		if len(captures) > 0 {
-			p.exporter.Captures(p.pid, sess, descriptor, captures)
+			if len(events) > 0 {
+				p.exporter.Events(p.pid, sess, telemetry.EventDescriptor{
+					Scope:       ed.Scope,
+					Name:        ed.Name,
+					Description: ed.Description,
+				}, events)
+			}
 		}
 	}
 

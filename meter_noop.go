@@ -43,8 +43,8 @@ func (m *noOpMeter) SyncInt64() syncint64.InstrumentProvider {
 	return m.noop_meter.SyncInt64()
 }
 
-// Capture implements Meter
-func (*noOpMeter) Capture(name string, callback CaptureCallback, interval time.Duration, opts ...instrument.Option) {
+// Property implements Meter
+func (*noOpMeter) Property(name string, value PropertyValue, opts ...instrument.Option) {
 }
 
 // Event implements Meter
@@ -52,6 +52,6 @@ func (*noOpMeter) Event(name string, opts ...instrument.Option) EventEmitter {
 	return &noOpEventEmitter{}
 }
 
-// Property implements Meter
-func (*noOpMeter) Property(name string, value PropertyValue, opts ...instrument.Option) {
+// PeriodicEvent implements Meter
+func (*noOpMeter) PeriodicEvent(ctx context.Context, name string, interval time.Duration, cb func(context.Context, EventEmitter) error, opts ...instrument.Option) {
 }

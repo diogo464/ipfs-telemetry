@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/otel/metric/instrument/asyncint64"
 	"go.opentelemetry.io/otel/metric/instrument/syncfloat64"
 	"go.opentelemetry.io/otel/metric/instrument/syncint64"
+	"go.opentelemetry.io/otel/sdk/instrumentation"
 )
 
 var _ Meter = (*serviceMeter)(nil)
@@ -19,15 +20,15 @@ type Meter interface {
 
 	Property(name string, value PropertyValue, opts ...instrument.Option)
 
-	Capture(name string, callback CaptureCallback, interval time.Duration, opts ...instrument.Option)
-
 	Event(name string, opts ...instrument.Option) EventEmitter
+
+	PeriodicEvent(ctx context.Context, name string, interval time.Duration, cb func(context.Context, EventEmitter) error, opts ...instrument.Option)
 }
 
 type serviceMeter struct {
 	service *Service
 
-	scope  string
+	scope  instrumentation.Scope
 	config metric.MeterConfig
 	meter  metric.Meter
 
@@ -37,18 +38,23 @@ type serviceMeter struct {
 	si64 *serviceSyncInt64
 }
 
-func newServiceMeter(service *Service, scope string, config metric.MeterConfig, meter metric.Meter) *serviceMeter {
+func newServiceMeter(service *Service, name string, config metric.MeterConfig, meter metric.Meter) *serviceMeter {
+
 	return &serviceMeter{
 		service: service,
 
-		scope:  scope,
+		scope: instrumentation.Scope{
+			Name:      name,
+			Version:   config.InstrumentationVersion(),
+			SchemaURL: config.SchemaURL(),
+		},
 		config: config,
 		meter:  meter,
 
-		af64: newServiceAsyncFloat64(service, scope, meter.AsyncFloat64()),
-		ai64: newServiceAsyncInt64(service, scope, meter.AsyncInt64()),
-		sf64: newServiceSyncFloat64(service, scope, meter.SyncFloat64()),
-		si64: newServiceSyncInt64(service, scope, meter.SyncInt64()),
+		af64: newServiceAsyncFloat64(service, name, meter.AsyncFloat64()),
+		ai64: newServiceAsyncInt64(service, name, meter.AsyncInt64()),
+		sf64: newServiceSyncFloat64(service, name, meter.SyncFloat64()),
+		si64: newServiceSyncInt64(service, name, meter.SyncInt64()),
 	}
 }
 
@@ -77,35 +83,33 @@ func (m *serviceMeter) SyncInt64() syncint64.InstrumentProvider {
 	return m.si64
 }
 
-// Capture implements Meter
-func (m *serviceMeter) Capture(name string, callback CaptureCallback, interval time.Duration, opts ...instrument.Option) {
+// Property implements Meter
+func (m *serviceMeter) Property(name string, value PropertyValue, opts ...instrument.Option) {
 	config := instrument.NewConfig(opts...)
-	m.service.captures.create(captureConfig{
+	m.service.properties.create(Property{
 		Scope:       m.scope,
 		Name:        name,
 		Description: config.Description(),
-		Callback:    callback,
-		Interval:    interval,
+		Value:       value,
 	})
 }
 
 // Event implements Meter
 func (m *serviceMeter) Event(name string, opts ...instrument.Option) EventEmitter {
 	config := instrument.NewConfig(opts...)
-	return m.service.events.create(eventConfig{
+	return m.service.events.create(EventDescriptor{
 		Scope:       m.scope,
 		Name:        name,
 		Description: config.Description(),
 	})
 }
 
-// Property implements Meter
-func (m *serviceMeter) Property(name string, value PropertyValue, opts ...instrument.Option) {
+// PeriodicEvent implements Meter
+func (e *serviceMeter) PeriodicEvent(ctx context.Context, name string, interval time.Duration, cb func(context.Context, EventEmitter) error, opts ...instrument.Option) {
 	config := instrument.NewConfig(opts...)
-	m.service.properties.create(propertyConfig{
-		Scope:       m.scope,
+	e.service.events.createPeriodic(EventDescriptor{
+		Scope:       e.scope,
 		Name:        name,
 		Description: config.Description(),
-		Value:       value,
-	})
+	}, ctx, interval, cb)
 }

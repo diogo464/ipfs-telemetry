@@ -27,7 +27,8 @@ func actionEvent(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	events, err := client.GetEvent(c.Context, telemetry.StreamId(id))
+
+	events, err := client.GetEvents(c.Context, telemetry.StreamId(id))
 	if err != nil {
 		return err
 	}

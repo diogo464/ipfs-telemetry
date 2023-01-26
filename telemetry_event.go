@@ -6,6 +6,8 @@ import (
 
 	"github.com/diogo464/telemetry/internal/pb"
 	"github.com/diogo464/telemetry/internal/stream"
+	"go.opentelemetry.io/otel/sdk/instrumentation"
+	v1 "go.opentelemetry.io/proto/otlp/common/v1"
 )
 
 var _ (EventEmitter) = (*eventEmitter)(nil)
@@ -16,10 +18,9 @@ type EventEmitter interface {
 }
 
 type EventDescriptor struct {
-	StreamId    StreamId `json:"stream_id"`
-	Scope       string   `json:"scope"`
-	Name        string   `json:"name"`
-	Description string   `json:"description"`
+	Scope       instrumentation.Scope `json:"scope"`
+	Name        string                `json:"name"`
+	Description string                `json:"description"`
 }
 
 type Event struct {
@@ -38,10 +39,23 @@ type eventEmitter struct {
 	stream *stream.Stream
 }
 
-func newEventEmitter(config eventConfig, stream *stream.Stream) *eventEmitter {
+func newEventEmitter(streams *serviceStreams, desc EventDescriptor) *eventEmitter {
+	streamType := &pb.StreamType{
+		Type: &pb.StreamType_Event{
+			Event: &pb.EventDescriptor{
+				Scope: &v1.InstrumentationScope{
+					Name:    desc.Scope.Name,
+					Version: desc.Scope.Version,
+				},
+				Name:        desc.Name,
+				Description: desc.Description,
+			},
+		},
+	}
+	sstream := streams.create(streamType)
 	return &eventEmitter{
-		name:   config.Name,
-		stream: stream,
+		name:   desc.Name,
+		stream: sstream.stream,
 	}
 }
 
@@ -68,8 +82,10 @@ func (*noOpEventEmitter) Emit(interface{}) {
 
 func eventDescriptorToPb(descriptor EventDescriptor) *pb.EventDescriptor {
 	return &pb.EventDescriptor{
-		StreamId:    uint32(descriptor.StreamId),
-		Scope:       descriptor.Scope,
+		Scope: &v1.InstrumentationScope{
+			Name:    descriptor.Scope.Name,
+			Version: descriptor.Scope.Version,
+		},
 		Name:        descriptor.Name,
 		Description: descriptor.Description,
 	}
@@ -77,8 +93,10 @@ func eventDescriptorToPb(descriptor EventDescriptor) *pb.EventDescriptor {
 
 func eventDescriptorFromPb(descriptor *pb.EventDescriptor) EventDescriptor {
 	return EventDescriptor{
-		StreamId:    StreamId(descriptor.StreamId),
-		Scope:       descriptor.Scope,
+		Scope: instrumentation.Scope{
+			Name:    descriptor.Scope.Name,
+			Version: descriptor.Scope.Version,
+		},
 		Name:        descriptor.Name,
 		Description: descriptor.Description,
 	}
