@@ -35,13 +35,11 @@ type peerTask struct {
 	monitor        *Monitor
 
 	// Unsafe for use outside task
-	consecutive_errors  int
-	command_receiver    <-chan peerCommand
-	collect_ticker      *time.Ticker
-	bandwidth_ticker    *time.Ticker
-	session_exported    bool
-	properties_exported bool
-	client_state        *telemetry.ClientState
+	consecutive_errors int
+	command_receiver   <-chan peerCommand
+	collect_ticker     *time.Ticker
+	bandwidth_ticker   *time.Ticker
+	client_state       *telemetry.ClientState
 }
 
 func newPeerTask(pid peer.ID, host host.Host, opts *options, exporter Exporter, monitor *Monitor, logger *zap.Logger) *peerTask {
@@ -58,13 +56,11 @@ func newPeerTask(pid peer.ID, host host.Host, opts *options, exporter Exporter, 
 		command_sender: command_channel,
 		monitor:        monitor,
 
-		consecutive_errors:  0,
-		command_receiver:    command_channel,
-		collect_ticker:      time.NewTicker(opts.CollectPeriod),
-		bandwidth_ticker:    time.NewTicker(opts.BandwidthPeriod),
-		session_exported:    false,
-		properties_exported: false,
-		client_state:        nil,
+		consecutive_errors: 0,
+		command_receiver:   command_channel,
+		collect_ticker:     time.NewTicker(opts.CollectPeriod),
+		bandwidth_ticker:   time.NewTicker(opts.BandwidthPeriod),
+		client_state:       nil,
 	}
 	go pt.run(ctx)
 	return pt
@@ -119,13 +115,16 @@ func (p *peerTask) tryCollectTelemetry(ctx context.Context) error {
 		return err
 	}
 
-	if !p.session_exported {
-		p.logger.Info("exporting session", zap.Any("session", sess))
-		if err := p.tryExportSession(ctx, client, sess); err != nil {
-			p.logger.Warn("failed to export session", zap.Error(err))
-			return err
-		}
-		p.session_exported = true
+	p.logger.Info("exporting session", zap.Any("session", sess))
+	if err := p.tryExportSession(ctx, client, sess); err != nil {
+		p.logger.Warn("failed to export session", zap.Error(err))
+		return err
+	}
+
+	p.logger.Info("exporting properties", zap.Any("session", sess))
+	if err := p.tryExportProperties(ctx, client, sess); err != nil {
+		p.logger.Warn("failed to export properties", zap.Error(err))
+		return err
 	}
 
 	p.logger.Info("exporting metrics", zap.Any("session", sess))
@@ -145,6 +144,16 @@ func (p *peerTask) tryCollectTelemetry(ctx context.Context) error {
 
 func (p *peerTask) tryExportSession(ctx context.Context, client *telemetry.Client, sess telemetry.Session) error {
 	p.exporter.Session(p.pid, sess)
+	return nil
+}
+
+func (p *peerTask) tryExportProperties(ctx context.Context, client *telemetry.Client, sess telemetry.Session) error {
+	properties, err := client.GetProperties(ctx)
+	if err != nil {
+		p.logger.Warn("failed to get properties", zap.Error(err))
+		return err
+	}
+	p.exporter.Properties(p.pid, sess, properties)
 	return nil
 }
 
