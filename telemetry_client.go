@@ -40,6 +40,10 @@ type ClientState struct {
 	sequenceNumbers map[StreamId]uint32
 }
 
+func (s *ClientState) String() string {
+	return fmt.Sprintf("Session: %s, SequenceNumbers: %v", s.session, s.sequenceNumbers)
+}
+
 type Client struct {
 	// Can be null if we are not connected using libp2p
 	h host.Host
@@ -251,6 +255,12 @@ func (c *Client) GetStreamSegments(ctx context.Context, streamId StreamId) ([]st
 		if uint32(segment.SeqN) > c.s.sequenceNumbers[streamId] {
 			c.s.sequenceNumbers[streamId] = uint32(segment.SeqN)
 		}
+	}
+
+	// If we received at least one segment, we need to increment the sequence number
+	// to avoid requesting the same segment again next time we use this stream.
+	if len(segments) > 0 {
+		c.s.sequenceNumbers[streamId]++
 	}
 
 	return segments, nil

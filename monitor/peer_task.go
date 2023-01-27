@@ -228,7 +228,7 @@ func (p *peerTask) tryBandwidthTest(ctx context.Context) error {
 }
 
 func (p *peerTask) createClient(ctx context.Context) (*telemetry.Client, error) {
-	p.logger.Debug("creating telemetry client")
+	p.logger.Info("creating telemetry client", zap.Any("state", p.client_state))
 	client, err := telemetry.NewClient(
 		ctx,
 		telemetry.WithClientLibp2pDial(p.host, p.pid),
