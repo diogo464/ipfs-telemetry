@@ -13,6 +13,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/peerstore"
+	"github.com/multiformats/go-multiaddr"
 )
 
 type Walker interface {
@@ -89,7 +90,14 @@ LOOP:
 				c.opts.observer.ObservePeer(result.ok)
 				for _, addrinfo := range result.ok.Buckets {
 					if _, ok := queried[addrinfo.ID]; !ok {
-						c.h.Peerstore().AddAddrs(addrinfo.ID, addrinfo.Addrs, peerstore.PermanentAddrTTL)
+						addrs := make([]multiaddr.Multiaddr, 0, len(addrinfo.Addrs))
+						for _, addr := range addrinfo.Addrs {
+							if c.opts.addrFilter(addr) {
+								addrs = append(addrs, addr)
+							}
+						}
+
+						c.h.Peerstore().AddAddrs(addrinfo.ID, addrs, peerstore.PermanentAddrTTL)
 						queried[addrinfo.ID] = struct{}{}
 						pending.PushBack(addrinfo.ID)
 					}

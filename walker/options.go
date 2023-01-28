@@ -3,8 +3,8 @@ package walker
 import (
 	"time"
 
-	"github.com/libp2p/go-libp2p/core/peer"
 	dht "github.com/libp2p/go-libp2p-kad-dht"
+	"github.com/libp2p/go-libp2p/core/peer"
 )
 
 type Option func(*options) error
@@ -16,6 +16,7 @@ type options struct {
 	concurrency    uint
 	seeds          []peer.AddrInfo
 	observer       Observer
+	addrFilter     AddressFilter
 }
 
 func WithConnectTimeout(timeout time.Duration) Option {
@@ -64,6 +65,13 @@ func WithObserver(observer Observer) Option {
 	}
 }
 
+func WithAddressFilter(filter AddressFilter) Option {
+	return func(c *options) error {
+		c.addrFilter = filter
+		return nil
+	}
+}
+
 func defaults(c *options) {
 	c.connectTimeout = time.Second * 5
 	c.requestTimeout = time.Second * 25
@@ -71,6 +79,7 @@ func defaults(c *options) {
 	c.concurrency = 128
 	c.seeds = dht.GetDefaultBootstrapPeerAddrInfos()
 	c.observer = &NullObserver{}
+	c.addrFilter = AddressFilterPublic
 }
 
 func apply(c *options, opts ...Option) error {
