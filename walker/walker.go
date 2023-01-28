@@ -24,6 +24,11 @@ func New(h host.Host, opts ...Option) (Walker, error) {
 	return newImplWalker(h, opts...)
 }
 
+type pendingPeer struct {
+	peer      peer.ID
+	realAddrs []multiaddr.Multiaddr
+}
+
 type walkResult struct {
 	ok  *Peer
 	err *Error
@@ -68,13 +73,13 @@ func (c *implWalker) Walk(ctx context.Context) error {
 
 	var err error = nil
 	inprogress := 0
-	pending := vecdeque.New[peer.ID]()
+	pending := vecdeque.New[pendingPeer]()
 	queried := make(map[peer.ID]struct{})
 	interval := time.NewTicker(c.opts.interval)
 
 	for _, addr := range c.opts.seeds {
 		c.h.Peerstore().AddAddrs(addr.ID, addr.Addrs, peerstore.PermanentAddrTTL)
-		pending.PushBack(addr.ID)
+		pending.PushBack(pendingPeer{addr.ID, addr.Addrs})
 	}
 
 LOOP:
@@ -99,7 +104,7 @@ LOOP:
 
 						c.h.Peerstore().AddAddrs(addrinfo.ID, addrs, peerstore.PermanentAddrTTL)
 						queried[addrinfo.ID] = struct{}{}
-						pending.PushBack(addrinfo.ID)
+						pending.PushBack(pendingPeer{addrinfo.ID, addrinfo.Addrs})
 					}
 				}
 			} else {
@@ -108,8 +113,8 @@ LOOP:
 			inprogress -= 1
 		case <-intervalChan:
 			inprogress += 1
-			pid := pending.PopFront()
-			c.walkPeer(ctx, cresult, pid)
+			pp := pending.PopFront()
+			c.walkPeer(ctx, cresult, pp)
 		case <-ctx.Done():
 			err = ctx.Err()
 			break LOOP
@@ -121,14 +126,16 @@ LOOP:
 	return err
 }
 
-func (c *implWalker) walkPeerTask(ctx context.Context, pid peer.ID) walkResult {
+func (c *implWalker) walkPeerTask(ctx context.Context, pp pendingPeer) walkResult {
 	connCtx, connCancel := context.WithTimeout(ctx, c.opts.connectTimeout)
 	defer connCancel()
 
+	pid := pp.peer
+	addrs := pp.realAddrs
 	walkStart := time.Now()
 	walkError := &Error{
 		ID:        pid,
-		Addresses: c.h.Peerstore().Addrs(pid),
+		Addresses: addrs,
 		Time:      walkStart,
 		Err:       nil,
 	}
@@ -206,10 +213,10 @@ func (c *implWalker) walkPeerTask(ctx context.Context, pid peer.ID) walkResult {
 	return walkResult{ok: walkOk}
 }
 
-func (c *implWalker) walkPeer(ctx context.Context, cresult chan<- walkResult, pid peer.ID) {
+func (c *implWalker) walkPeer(ctx context.Context, cresult chan<- walkResult, pp pendingPeer) {
 	c.wg.Add(1)
 	go func() {
-		res := c.walkPeerTask(ctx, pid)
+		res := c.walkPeerTask(ctx, pp)
 		select {
 		case cresult <- res:
 		case <-ctx.Done():

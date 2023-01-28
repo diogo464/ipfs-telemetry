@@ -151,5 +151,5 @@ func (c *Crawler) ObservePeer(p *walker.Peer) {
 // ObserveError implements walker.Observer
 func (c *Crawler) ObserveError(e *walker.Error) {
 	c.cnow.errors.Inc()
-	c.l.Info("error", zap.Any("error", e))
+	c.l.Info("error", zap.String("peer", e.ID.String()), zap.Any("addresses", e.Addresses), zap.Error(e.Err))
 }

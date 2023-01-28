@@ -16,7 +16,7 @@ func Dump(ctx context.Context, h host.Host, p peer.AddrInfo) ([]BucketEntry, err
 	}
 
 	h.Peerstore().AddAddrs(p.ID, p.Addrs, peerstore.PermanentAddrTTL)
-	result := walker.walkPeerTask(ctx, p.ID)
+	result := walker.walkPeerTask(ctx, pendingPeer{p.ID, p.Addrs})
 	if result.ok != nil {
 		return result.ok.Buckets, nil
 	} else {
