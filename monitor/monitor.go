@@ -3,6 +3,7 @@ package monitor
 import (
 	"context"
 
+	"github.com/diogo464/telemetry/monitor/metrics"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/peerstore"
@@ -20,7 +21,9 @@ type monitorCommand interface {
 }
 
 type Monitor struct {
-	logger *zap.Logger
+	logger    *zap.Logger
+	metrics   *metrics.Metrics
+	ptmetrics *metrics.PeerTaskMetrics
 
 	// Safe for use outside task
 	command_sender chan<- monitorCommand
@@ -51,18 +54,37 @@ func Start(ctx context.Context, o ...Option) (*Monitor, error) {
 		opts.Exporter = NewNoOpExporter()
 	}
 
+	mmetrics, err := metrics.New(opts.MeterProvider)
+	if err != nil {
+		return nil, err
+	}
+	ptmetrics, err := metrics.NewPeerTaskMetrics(opts.MeterProvider)
+	if err != nil {
+		return nil, err
+	}
+	emetrics, err := metrics.NewExportMetrics(opts.MeterProvider)
+	if err != nil {
+		return nil, err
+	}
+
 	command_channel := make(chan monitorCommand)
 	m := &Monitor{
-		logger: opts.Logger,
+		logger:    opts.Logger,
+		metrics:   mmetrics,
+		ptmetrics: ptmetrics,
 
 		command_sender: command_channel,
 		host:           opts.Host,
 		opts:           opts,
-		exporter:       opts.Exporter,
+		exporter:       &observableExporter{m: emetrics, e: opts.Exporter},
 
 		command_receiver: command_channel,
 		peers:            map[peer.ID]*peerTask{},
 	}
+
+	mmetrics.RegisterCallback(func(ctx context.Context) {
+		mmetrics.ActivePeers.Observe(ctx, int64(len(m.peers)))
+	})
 
 	go m.run(ctx)
 	return m, nil
@@ -92,13 +114,23 @@ func (m *Monitor) sendCommand(cmd monitorCommand) {
 }
 
 func (m *Monitor) discover(pid peer.ID) {
+	m.metrics.DiscoveredPeers.Add(context.Background(), 1)
 	if pt, ok := m.peers[pid]; ok {
+		m.metrics.RediscoveredPeers.Add(context.Background(), 1)
 		m.logger.Info("rediscover peer", zap.String("peer", pid.Pretty()))
 		pt.sendCommand(newPeerCommandResetErrors())
 		return
 	}
 	m.logger.Info("discover peer", zap.String("peer", pid.Pretty()))
-	m.peers[pid] = newPeerTask(pid, m.host, m.opts, m.exporter, m, m.logger.With(zap.String("peer", pid.Pretty())))
+	m.peers[pid] = newPeerTask(
+		pid,
+		m.host,
+		m.opts,
+		m.exporter,
+		m,
+		m.logger.With(zap.String("peer", pid.Pretty())),
+		m.ptmetrics,
+	)
 }
 
 type monitorCommandDiscover struct {

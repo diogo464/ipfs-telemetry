@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/diogo464/telemetry"
+	"github.com/diogo464/telemetry/monitor/metrics"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"go.uber.org/zap"
@@ -23,7 +24,8 @@ type peerCommand interface {
 }
 
 type peerTask struct {
-	logger *zap.Logger
+	logger  *zap.Logger
+	metrics *metrics.PeerTaskMetrics
 
 	// Safe for use outside task
 	pid            peer.ID
@@ -42,11 +44,12 @@ type peerTask struct {
 	client_state       *telemetry.ClientState
 }
 
-func newPeerTask(pid peer.ID, host host.Host, opts *options, exporter Exporter, monitor *Monitor, logger *zap.Logger) *peerTask {
+func newPeerTask(pid peer.ID, host host.Host, opts *options, exporter Exporter, monitor *Monitor, logger *zap.Logger, m *metrics.PeerTaskMetrics) *peerTask {
 	ctx, cancel := context.WithCancel(context.Background())
 	command_channel := make(chan peerCommand, peerTaskCommandBufferSize)
 	pt := &peerTask{
-		logger: logger,
+		logger:  logger,
+		metrics: m,
 
 		pid:            pid,
 		host:           host,
@@ -203,9 +206,11 @@ func (p *peerTask) bandwidthTest(ctx context.Context) {
 	if err := p.tryBandwidthTest(ctx); err != nil {
 		p.logger.Warn("failed to test bandwidth", zap.Error(err))
 		p.fail(err)
+		p.metrics.CollectFailure.Add(ctx, 1, metrics.KeyPeerID.String(p.pid.String()))
 	} else {
 		p.logger.Info("successfully tested bandwidth")
 		p.success()
+		p.metrics.CollectCompleted.Add(ctx, 1, metrics.KeyPeerID.String(p.pid.String()))
 	}
 }
 

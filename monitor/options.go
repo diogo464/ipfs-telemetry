@@ -7,6 +7,7 @@ import (
 
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p/core/host"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 )
 
@@ -40,6 +41,7 @@ type options struct {
 	Exporter         Exporter
 	Listener         net.Listener
 	Logger           *zap.Logger
+	MeterProvider    metric.MeterProvider
 }
 
 func defaults() *options {
@@ -54,6 +56,7 @@ func defaults() *options {
 		BandwidthTimeout: DEFAULT_BANDWIDTH_TIMEOUT,
 		Listener:         nil,
 		Logger:           zap.NewNop(),
+		MeterProvider:    metric.NewNoopMeterProvider(),
 	}
 }
 
@@ -146,6 +149,13 @@ func WithListener(l net.Listener) Option {
 func WithLogger(l *zap.Logger) Option {
 	return func(o *options) error {
 		o.Logger = l
+		return nil
+	}
+}
+
+func WithMeterProvider(m metric.MeterProvider) Option {
+	return func(o *options) error {
+		o.MeterProvider = m
 		return nil
 	}
 }

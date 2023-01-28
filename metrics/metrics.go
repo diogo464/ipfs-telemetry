@@ -63,7 +63,7 @@ func NewMetrics(meterProvider metric.MeterProvider) (*Metrics, error) {
 	m := meterProvider.Meter(Scope.Name, metric.WithInstrumentationVersion(Scope.Version), metric.WithSchemaURL(Scope.SchemaURL))
 
 	GrpcReqCount, err := m.SyncInt64().Counter(
-		"grpc_request_count",
+		"telemetry.grpc_request_count",
 		instrument.WithUnit(unit.Dimensionless),
 		instrument.WithDescription("Number of GRPC requests"),
 	)
@@ -72,7 +72,7 @@ func NewMetrics(meterProvider metric.MeterProvider) (*Metrics, error) {
 	}
 
 	GrpcReqDur, err := m.SyncInt64().Histogram(
-		"grpc_request_duration",
+		"telemetry.grpc_request_duration",
 		instrument.WithUnit(unit.Milliseconds),
 		instrument.WithDescription("Histogram of GRPC request duration"),
 	)
@@ -81,7 +81,7 @@ func NewMetrics(meterProvider metric.MeterProvider) (*Metrics, error) {
 	}
 
 	GrpcStreamSegRet, err := m.SyncInt64().Histogram(
-		"grpc_stream_segment_return",
+		"telemetry.grpc_stream_segment_return",
 		instrument.WithUnit(unit.Dimensionless),
 		instrument.WithDescription("Histogram of number of stream segments returned"),
 	)
@@ -90,7 +90,7 @@ func NewMetrics(meterProvider metric.MeterProvider) (*Metrics, error) {
 	}
 
 	StreamCount, err := m.AsyncInt64().Gauge(
-		"stream_count",
+		"telemetry.stream_count",
 		instrument.WithUnit(unit.Dimensionless),
 		instrument.WithDescription("Number of streams"),
 	)
@@ -99,7 +99,7 @@ func NewMetrics(meterProvider metric.MeterProvider) (*Metrics, error) {
 	}
 
 	PropertyCount, err := m.AsyncInt64().Gauge(
-		"property_count",
+		"telemetry.property_count",
 		instrument.WithUnit(unit.Dimensionless),
 		instrument.WithDescription("Number of properties"),
 	)
@@ -108,7 +108,7 @@ func NewMetrics(meterProvider metric.MeterProvider) (*Metrics, error) {
 	}
 
 	EventCount, err := m.AsyncInt64().Gauge(
-		"event_count",
+		"telemetry.event_count",
 		instrument.WithUnit(unit.Dimensionless),
 		instrument.WithDescription("Number of events"),
 	)
@@ -142,7 +142,7 @@ func NewAclMetrics(meterProvider metric.MeterProvider) (*AclMetrics, error) {
 	m := meterProvider.Meter(AclScope.Name, metric.WithInstrumentationVersion(AclScope.Version), metric.WithSchemaURL(AclScope.SchemaURL))
 
 	BlockedRequests, err := m.SyncInt64().Counter(
-		"blocked_requests",
+		"telemetry.acl.blocked_requests",
 		instrument.WithUnit(unit.Dimensionless),
 		instrument.WithDescription("Number of blocked requests"),
 	)
@@ -151,7 +151,7 @@ func NewAclMetrics(meterProvider metric.MeterProvider) (*AclMetrics, error) {
 	}
 
 	AllowedRequests, err := m.SyncInt64().Counter(
-		"allowed_requests",
+		"telemetry.acl.allowed_requests",
 		instrument.WithUnit(unit.Dimensionless),
 		instrument.WithDescription("Number of allowed requests"),
 	)
@@ -169,7 +169,7 @@ func NewStreamMetrics(meterProvider metric.MeterProvider) (*StreamMetrics, error
 	m := meterProvider.Meter(StreamScope.Name, metric.WithInstrumentationVersion(StreamScope.Version), metric.WithSchemaURL(StreamScope.SchemaURL))
 
 	UsedSize, err := m.AsyncInt64().Gauge(
-		"used_size",
+		"telemetry.stream.used_size",
 		instrument.WithUnit(unit.Bytes),
 		instrument.WithDescription("Used size"),
 	)
@@ -178,7 +178,7 @@ func NewStreamMetrics(meterProvider metric.MeterProvider) (*StreamMetrics, error
 	}
 
 	TotalSize, err := m.AsyncInt64().Gauge(
-		"total_size",
+		"telemetry.stream.total_size",
 		instrument.WithUnit(unit.Bytes),
 		instrument.WithDescription("Total size"),
 	)
