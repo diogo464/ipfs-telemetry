@@ -5,7 +5,6 @@ import (
 
 	"github.com/diogo464/telemetry"
 	"github.com/diogo464/telemetry/walker"
-	"github.com/libp2p/go-libp2p"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/urfave/cli/v2"
 )
@@ -24,14 +23,8 @@ var CommandWalk = &cli.Command{
 }
 
 func actionWalk(c *cli.Context) error {
-	h, err := libp2p.New(libp2p.NoListenAddrs)
-	if err != nil {
-		return err
-	}
-
 	targetProto := c.String(FLAG_WALK_PROTOCOL.Name)
 	w, err := walker.New(
-		h,
 		walker.WithObserver(walker.NewPeerObserverFn(func(p *walker.Peer) {
 			for _, proto := range p.Protocols {
 				if proto == targetProto {

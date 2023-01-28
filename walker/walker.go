@@ -20,8 +20,8 @@ type Walker interface {
 	Walk(ctx context.Context) error
 }
 
-func New(h host.Host, opts ...Option) (Walker, error) {
-	return newImplWalker(h, opts...)
+func New(opts ...Option) (Walker, error) {
+	return newImplWalker(opts...)
 }
 
 type pendingPeer struct {
@@ -42,22 +42,29 @@ type implWalker struct {
 	wg        sync.WaitGroup
 }
 
-func newImplWalker(h host.Host, opts ...Option) (*implWalker, error) {
+func newImplWalker(opts ...Option) (*implWalker, error) {
 	c := new(options)
 	defaults(c)
 	if err := apply(c, opts...); err != nil {
 		return nil, err
 	}
+	if c.host == nil {
+		h, err := newDefaultHost()
+		if err != nil {
+			return nil, err
+		}
+		c.host = h
+	}
 
 	messenger, err := pb.NewProtocolMessenger(&MessageSender{
-		h: h,
+		h: c.host,
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	walker := &implWalker{
-		h:         h,
+		h:         c.host,
 		opts:      c,
 		messenger: messenger,
 		table:     preimage.Generate(),

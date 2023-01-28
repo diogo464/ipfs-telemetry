@@ -10,7 +10,7 @@ import (
 
 // Return all the peers in p's buckets
 func Dump(ctx context.Context, h host.Host, p peer.AddrInfo) ([]BucketEntry, error) {
-	walker, err := newImplWalker(h, WithConcurrency(1))
+	walker, err := newImplWalker(WithHost(h), WithConcurrency(1))
 	if err != nil {
 		return nil, err
 	}

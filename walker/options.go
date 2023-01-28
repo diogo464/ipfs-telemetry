@@ -3,13 +3,17 @@ package walker
 import (
 	"time"
 
+	"github.com/libp2p/go-libp2p"
 	dht "github.com/libp2p/go-libp2p-kad-dht"
+	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
+	rcmgr "github.com/libp2p/go-libp2p/p2p/host/resource-manager"
 )
 
 type Option func(*options) error
 
 type options struct {
+	host           host.Host
 	connectTimeout time.Duration
 	requestTimeout time.Duration
 	interval       time.Duration
@@ -17,6 +21,13 @@ type options struct {
 	seeds          []peer.AddrInfo
 	observer       Observer
 	addrFilter     AddressFilter
+}
+
+func WithHost(h host.Host) Option {
+	return func(o *options) error {
+		o.host = h
+		return nil
+	}
 }
 
 func WithConnectTimeout(timeout time.Duration) Option {
@@ -89,4 +100,18 @@ func apply(c *options, opts ...Option) error {
 		}
 	}
 	return nil
+}
+
+func newDefaultHost() (host.Host, error) {
+	limits := rcmgr.InfiniteLimits
+	limiter := rcmgr.NewFixedLimiter(limits)
+	rm, err := rcmgr.NewResourceManager(limiter)
+	if err != nil {
+		return nil, err
+	}
+	h, err := libp2p.New(libp2p.NoListenAddrs, libp2p.ResourceManager(rm))
+	if err != nil {
+		return nil, err
+	}
+	return h, nil
 }

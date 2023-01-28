@@ -8,7 +8,6 @@ import (
 	"github.com/diogo464/telemetry/crawler/metrics"
 	"github.com/diogo464/telemetry/internal/utils"
 	"github.com/diogo464/telemetry/walker"
-	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"go.uber.org/atomic"
 	"go.uber.org/zap"
@@ -40,7 +39,6 @@ func (c *counters) clone() *counters {
 
 type Crawler struct {
 	l    *zap.Logger
-	h    host.Host
 	w    walker.Walker
 	opts *options
 
@@ -53,7 +51,7 @@ type Crawler struct {
 	cold      *counters
 }
 
-func NewCrawler(h host.Host, o ...Option) (*Crawler, error) {
+func NewCrawler(o ...Option) (*Crawler, error) {
 	opts := defaults()
 	if err := apply(opts, o...); err != nil {
 		return nil, err
@@ -61,7 +59,6 @@ func NewCrawler(h host.Host, o ...Option) (*Crawler, error) {
 
 	c := &Crawler{
 		l:    opts.logger,
-		h:    h,
 		w:    nil,
 		opts: opts,
 
@@ -77,7 +74,7 @@ func NewCrawler(h host.Host, o ...Option) (*Crawler, error) {
 	walkerOpts = append(walkerOpts, opts.walkerOpts...)
 	walkerOpts = append(walkerOpts, walker.WithObserver(c))
 
-	w, err := walker.New(h, walkerOpts...)
+	w, err := walker.New(walkerOpts...)
 	if err != nil {
 		return nil, err
 	}
