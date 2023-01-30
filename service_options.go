@@ -6,11 +6,17 @@ import (
 
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/multiformats/go-multiaddr"
+	"go.opentelemetry.io/otel/metric"
 	sdk_metric "go.opentelemetry.io/otel/sdk/metric"
-	"go.opentelemetry.io/otel/sdk/resource"
 )
 
 type ServiceOption func(*serviceOptions) error
+
+type MeterProviderFactory = func(sdk_metric.Reader) (metric.MeterProvider, error)
+
+var NoOpMeterProviderFactory = func(sdk_metric.Reader) (metric.MeterProvider, error) {
+	return metric.NewNoopMeterProvider(), nil
+}
 
 type serviceOptions struct {
 	enableBandwidth        bool
@@ -22,10 +28,9 @@ type serviceOptions struct {
 	enablePush             bool
 	pushTargets            []multiaddr.Multiaddr
 	pushInterval           time.Duration
-	otelResource           *resource.Resource
-	otelViews              []sdk_metric.View
 	serviceAccessType      ServiceAccessType
 	serviceAccessWhitelist map[peer.ID]struct{}
+	meterProviderFactory   MeterProviderFactory
 }
 
 func serviceDefaults() *serviceOptions {
@@ -39,10 +44,9 @@ func serviceDefaults() *serviceOptions {
 		enablePush:             false,
 		pushTargets:            []multiaddr.Multiaddr{},
 		pushInterval:           time.Minute * 15,
-		otelResource:           nil,
-		otelViews:              []sdk_metric.View{},
 		serviceAccessType:      ServiceAccessPublic,
 		serviceAccessWhitelist: make(map[peer.ID]struct{}),
+		meterProviderFactory:   NoOpMeterProviderFactory,
 	}
 }
 
@@ -123,20 +127,6 @@ func WithServicePushTargets(targets ...multiaddr.Multiaddr) ServiceOption {
 	}
 }
 
-func WithServiceResource(resource *resource.Resource) ServiceOption {
-	return func(so *serviceOptions) error {
-		so.otelResource = resource
-		return nil
-	}
-}
-
-func WithServiceViews(views ...sdk_metric.View) ServiceOption {
-	return func(so *serviceOptions) error {
-		so.otelViews = append(so.otelViews, views...)
-		return nil
-	}
-}
-
 func WithServiceAccessType(accessType ServiceAccessType) ServiceOption {
 	return func(so *serviceOptions) error {
 		so.serviceAccessType = accessType
@@ -149,6 +139,13 @@ func WithServiceAccessWhitelist(ids ...peer.ID) ServiceOption {
 		for _, id := range ids {
 			so.serviceAccessWhitelist[id] = struct{}{}
 		}
+		return nil
+	}
+}
+
+func WithMeterProviderFactory(factory MeterProviderFactory) ServiceOption {
+	return func(so *serviceOptions) error {
+		so.meterProviderFactory = factory
 		return nil
 	}
 }

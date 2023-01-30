@@ -12,7 +12,6 @@ import (
 	"github.com/diogo464/telemetry/metrics"
 	"github.com/libp2p/go-libp2p/core/host"
 	sdk_metric "go.opentelemetry.io/otel/sdk/metric"
-	"go.opentelemetry.io/otel/sdk/resource"
 	"google.golang.org/grpc"
 )
 
@@ -49,11 +48,11 @@ type Service struct {
 	smetrics *metrics.Metrics
 }
 
-func NewService(h host.Host, os ...ServiceOption) (*Service, error) {
+func NewService(h host.Host, os ...ServiceOption) (*Service, MeterProvider, error) {
 	opts := serviceDefaults()
 	err := serviceApply(opts, os...)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	bufferPool := bpool.New(bpool.WithAllocSize(64*1024), bpool.WithMaxSize(8*1024*1024))
@@ -92,33 +91,28 @@ func NewService(h host.Host, os ...ServiceOption) (*Service, error) {
 		h.SetStreamHandler(ID_DOWNLOAD, t.downloadHandler)
 	}
 
-	res := resource.Default()
-	if opts.otelResource != nil {
-		res = opts.otelResource
+	exporter := otlp_exporter.New(t.metrics.stream)
+	reader := sdk_metric.NewPeriodicReader(
+		exporter,
+		sdk_metric.WithInterval(opts.metricsPeriod),
+	)
+
+	meter_provider, err := opts.meterProviderFactory(reader)
+	if err != nil {
+		return nil, nil, err
 	}
 
-	otlpExporter := otlp_exporter.New(t.metrics.stream)
-	sdk_meter_provider := sdk_metric.NewMeterProvider(
-		sdk_metric.WithResource(res),
-		sdk_metric.WithReader(
-			sdk_metric.NewPeriodicReader(
-				otlpExporter,
-				sdk_metric.WithInterval(opts.metricsPeriod),
-			),
-		),
-		sdk_metric.WithView(opts.otelViews...),
-	)
-	t.meter_provider = newServiceMeterProvider(t, sdk_meter_provider)
+	t.meter_provider = newServiceMeterProvider(t, meter_provider)
 
 	aclMetrics, err := metrics.NewAclMetrics(t.meter_provider)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	t.serviceAcl = newServiceAccessControl(opts.serviceAccessType, opts.serviceAccessWhitelist, aclMetrics)
 
 	smetrics, err := metrics.NewMetrics(t.meter_provider)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	t.smetrics = smetrics
 	t.smetrics.RegisterCallback(func(ctx context.Context) {
@@ -129,7 +123,7 @@ func NewService(h host.Host, os ...ServiceOption) (*Service, error) {
 
 	streamMetrics, err := metrics.NewStreamMetrics(t.meter_provider)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	streamMetrics.RegisterCallback(func(ctx context.Context) {
@@ -144,7 +138,7 @@ func NewService(h host.Host, os ...ServiceOption) (*Service, error) {
 	if opts.listener == nil {
 		listener, err = newServiceListener(h, ID_TELEMETRY, t.serviceAcl)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	} else {
 		listener = opts.listener
@@ -162,7 +156,7 @@ func NewService(h host.Host, os ...ServiceOption) (*Service, error) {
 		log.Info("grpc server stopped")
 	}()
 
-	return t, nil
+	return t, t.meter_provider, nil
 }
 
 func (s *Service) Context() context.Context {

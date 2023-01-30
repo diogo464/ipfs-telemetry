@@ -4,7 +4,6 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/otel/metric"
-	sdk_metric "go.opentelemetry.io/otel/sdk/metric"
 )
 
 var _ MeterProvider = (*serviceMeterProvider)(nil)
@@ -22,13 +21,13 @@ type serviceMeterId struct {
 
 type serviceMeterProvider struct {
 	service        *Service
-	meter_provider *sdk_metric.MeterProvider
+	meter_provider metric.MeterProvider
 
 	mu     sync.Mutex
 	meters map[serviceMeterId]*serviceMeter
 }
 
-func newServiceMeterProvider(service *Service, meter_provider *sdk_metric.MeterProvider) *serviceMeterProvider {
+func newServiceMeterProvider(service *Service, meter_provider metric.MeterProvider) *serviceMeterProvider {
 	return &serviceMeterProvider{
 		service:        service,
 		meter_provider: meter_provider,

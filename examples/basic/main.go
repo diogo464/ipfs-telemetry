@@ -13,21 +13,23 @@ import (
 	"github.com/urfave/cli/v2"
 	"go.opentelemetry.io/otel/metric/global"
 	"go.opentelemetry.io/otel/metric/instrument"
+	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 
 	otel_host "go.opentelemetry.io/contrib/instrumentation/host"
 	otel_runtime "go.opentelemetry.io/contrib/instrumentation/runtime"
+	"go.opentelemetry.io/otel/metric"
+	sdk_metric "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/resource"
 )
 
-type HandlerTiming struct {
-	Handler string
-	Time1   uint64
-	Time2   uint64
-	Time3   uint64
+var app = &cli.App{
+	Name:   "example",
+	Action: actionMain,
 }
 
-var app = &cli.App{
-	Name:   "node",
-	Action: actionMain,
+type ExampleEvent struct {
+	Field1 string `json:"field1"`
+	Field2 int    `json:"field2"`
 }
 
 func main() {
@@ -42,19 +44,27 @@ func actionMain(c *cli.Context) error {
 		return err
 	}
 
-	t, err := telemetry.NewService(
+	_, mp, err := telemetry.NewService(
 		h,
 		telemetry.WithServiceDebug(true),
 		telemetry.WithServiceTcpListener("127.0.0.1:4000"),
 		telemetry.WithServiceMetricsPeriod(time.Second*2),
 		telemetry.WithServiceBandwidth(true),
 		telemetry.WithServiceActiveBufferDuration(time.Second*5),
+		telemetry.WithMeterProviderFactory(func(r sdk_metric.Reader) (metric.MeterProvider, error) {
+			return sdk_metric.NewMeterProvider(
+				sdk_metric.WithResource(resource.NewWithAttributes(
+					semconv.SchemaURL,
+					semconv.ServiceNameKey.String("example"),
+				)),
+				sdk_metric.WithReader(r),
+			), nil
+		}),
 	)
 	if err != nil {
 		return err
 	}
 
-	mp := t.MeterProvider()
 	global.SetMeterProvider(mp)
 	otel_host.Start()
 	otel_runtime.Start()
@@ -87,11 +97,9 @@ func actionMain(c *cli.Context) error {
 		c := 1
 		for {
 			time.Sleep(time.Millisecond * 2100)
-			ev.Emit(&HandlerTiming{
-				Handler: "handler",
-				Time1:   uint64(c),
-				Time2:   0,
-				Time3:   0,
+			ev.Emit(&ExampleEvent{
+				Field1: "field",
+				Field2: c,
 			})
 			c += 1
 		}
