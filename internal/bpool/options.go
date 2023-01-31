@@ -14,7 +14,7 @@ type Option func(*options)
 func defaults() *options {
 	return &options{
 		allocSize: 1 << 16,
-		maxSize:   1 << 31,
+		maxSize:   1 << 30,
 	}
 }
 
