@@ -11,6 +11,7 @@ import (
 	"github.com/diogo464/telemetry/internal/stream"
 	"github.com/diogo464/telemetry/metrics"
 	"github.com/libp2p/go-libp2p/core/host"
+	"go.opentelemetry.io/otel/metric"
 	sdk_metric "go.opentelemetry.io/otel/sdk/metric"
 	"google.golang.org/grpc"
 )
@@ -115,10 +116,11 @@ func NewService(h host.Host, os ...ServiceOption) (*Service, MeterProvider, erro
 		return nil, nil, err
 	}
 	t.smetrics = smetrics
-	t.smetrics.RegisterCallback(func(ctx context.Context) {
-		t.smetrics.StreamCount.Observe(ctx, int64(t.streams.getSize()))
-		t.smetrics.PropertyCount.Observe(ctx, int64(t.properties.getSize()))
-		t.smetrics.EventCount.Observe(ctx, int64(t.events.getSize()))
+	t.smetrics.RegisterCallback(func(ctx context.Context, obs metric.Observer) error {
+		obs.ObserveInt64(t.smetrics.StreamCount, int64(t.streams.getSize()))
+		obs.ObserveInt64(t.smetrics.PropertyCount, int64(t.properties.getSize()))
+		obs.ObserveInt64(t.smetrics.EventCount, int64(t.events.getSize()))
+		return nil
 	})
 
 	streamMetrics, err := metrics.NewStreamMetrics(t.meter_provider)
@@ -126,12 +128,13 @@ func NewService(h host.Host, os ...ServiceOption) (*Service, MeterProvider, erro
 		return nil, nil, err
 	}
 
-	streamMetrics.RegisterCallback(func(ctx context.Context) {
+	streamMetrics.RegisterCallback(func(ctx context.Context, obs metric.Observer) error {
 		for _, s := range t.streams.getStats() {
 			attr := metrics.KeyStreamID.Int(int(s.streamId))
-			streamMetrics.UsedSize.Observe(ctx, int64(s.stats.UsedSize), attr)
-			streamMetrics.TotalSize.Observe(ctx, int64(s.stats.TotalSize), attr)
+			obs.ObserveInt64(streamMetrics.UsedSize, int64(s.stats.UsedSize), attr)
+			obs.ObserveInt64(streamMetrics.TotalSize, int64(s.stats.TotalSize), attr)
 		}
+		return nil
 	})
 
 	var listener net.Listener

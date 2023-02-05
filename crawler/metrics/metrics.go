@@ -5,7 +5,6 @@ import (
 
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/instrument"
-	"go.opentelemetry.io/otel/metric/instrument/asyncint64"
 	"go.opentelemetry.io/otel/metric/unit"
 	"go.opentelemetry.io/otel/sdk/instrumentation"
 )
@@ -20,19 +19,19 @@ var (
 type Metrics struct {
 	m metric.Meter
 
-	PeersCurrentCrawl          asyncint64.Gauge
-	PeersLastCrawl             asyncint64.Gauge
-	PeersTelemetryCurrentCrawl asyncint64.Gauge
-	PeersTelemetryLastCrawl    asyncint64.Gauge
-	ErrorsCurrentCrawl         asyncint64.Gauge
-	ErrorsLastCrawl            asyncint64.Gauge
-	CompletedCrawls            asyncint64.Counter
+	PeersCurrentCrawl          instrument.Int64ObservableGauge
+	PeersLastCrawl             instrument.Int64ObservableGauge
+	PeersTelemetryCurrentCrawl instrument.Int64ObservableGauge
+	PeersTelemetryLastCrawl    instrument.Int64ObservableGauge
+	ErrorsCurrentCrawl         instrument.Int64ObservableGauge
+	ErrorsLastCrawl            instrument.Int64ObservableGauge
+	CompletedCrawls            instrument.Int64ObservableGauge
 }
 
 func New(meterProvider metric.MeterProvider) (*Metrics, error) {
 	m := meterProvider.Meter(Scope.Name, metric.WithInstrumentationVersion(Scope.Version), metric.WithSchemaURL(Scope.SchemaURL))
 
-	PeersCurrentCrawl, err := m.AsyncInt64().Gauge(
+	PeersCurrentCrawl, err := m.Int64ObservableGauge(
 		"crawler.peers",
 		instrument.WithDescription("Number unique peers found in this crawl"),
 		instrument.WithUnit(unit.Dimensionless),
@@ -41,7 +40,7 @@ func New(meterProvider metric.MeterProvider) (*Metrics, error) {
 		return nil, err
 	}
 
-	PeersLastCrawl, err := m.AsyncInt64().Gauge(
+	PeersLastCrawl, err := m.Int64ObservableGauge(
 		"crawler.peers_last_crawl",
 		instrument.WithDescription("Number of unique peers found in the last crawl"),
 		instrument.WithUnit(unit.Dimensionless),
@@ -50,7 +49,7 @@ func New(meterProvider metric.MeterProvider) (*Metrics, error) {
 		return nil, err
 	}
 
-	PeersTelemetryCurrentCrawl, err := m.AsyncInt64().Gauge(
+	PeersTelemetryCurrentCrawl, err := m.Int64ObservableGauge(
 		"crawler.peers_telemetry",
 		instrument.WithDescription("Number of unique peers found in this crawl supporting the telemetry protocol"),
 		instrument.WithUnit(unit.Dimensionless),
@@ -59,7 +58,7 @@ func New(meterProvider metric.MeterProvider) (*Metrics, error) {
 		return nil, err
 	}
 
-	PeersTelemetryLastCrawl, err := m.AsyncInt64().Gauge(
+	PeersTelemetryLastCrawl, err := m.Int64ObservableGauge(
 		"crawler.peers_telemetry_last_crawl",
 		instrument.WithDescription("Number of unique peers found in the last crawl supporting the telemetry protocol"),
 		instrument.WithUnit(unit.Dimensionless),
@@ -68,7 +67,7 @@ func New(meterProvider metric.MeterProvider) (*Metrics, error) {
 		return nil, err
 	}
 
-	ErrorsCurrentCrawl, err := m.AsyncInt64().Gauge(
+	ErrorsCurrentCrawl, err := m.Int64ObservableGauge(
 		"crawler.errors",
 		instrument.WithDescription("Number of errors in this crawl"),
 		instrument.WithUnit(unit.Dimensionless),
@@ -77,7 +76,7 @@ func New(meterProvider metric.MeterProvider) (*Metrics, error) {
 		return nil, err
 	}
 
-	ErrorsLastCrawl, err := m.AsyncInt64().Gauge(
+	ErrorsLastCrawl, err := m.Int64ObservableGauge(
 		"crawler.errors_last_crawl",
 		instrument.WithDescription("Number of errros in the last crawl"),
 		instrument.WithUnit(unit.Dimensionless),
@@ -86,7 +85,7 @@ func New(meterProvider metric.MeterProvider) (*Metrics, error) {
 		return nil, err
 	}
 
-	CompletedCrawls, err := m.AsyncInt64().Counter(
+	CompletedCrawls, err := m.Int64ObservableGauge(
 		"crawler.completed_crawls",
 		instrument.WithDescription("Number of completed crawls"),
 		instrument.WithUnit(unit.Dimensionless),
@@ -108,7 +107,7 @@ func New(meterProvider metric.MeterProvider) (*Metrics, error) {
 	}, nil
 }
 
-func (m *Metrics) RegisterCallback(cb func(context.Context)) error {
+func (m *Metrics) RegisterCallback(cb func(context.Context, metric.Observer) error) error {
 	instruments := []instrument.Asynchronous{
 		m.PeersCurrentCrawl,
 		m.PeersLastCrawl,
@@ -118,5 +117,6 @@ func (m *Metrics) RegisterCallback(cb func(context.Context)) error {
 		m.ErrorsLastCrawl,
 		m.CompletedCrawls,
 	}
-	return m.m.RegisterCallback(instruments, cb)
+	_, err := m.m.RegisterCallback(cb, instruments...)
+	return err
 }

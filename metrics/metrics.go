@@ -6,8 +6,6 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/instrument"
-	"go.opentelemetry.io/otel/metric/instrument/asyncint64"
-	"go.opentelemetry.io/otel/metric/instrument/syncint64"
 	"go.opentelemetry.io/otel/metric/unit"
 	"go.opentelemetry.io/otel/sdk/instrumentation"
 )
@@ -36,33 +34,33 @@ type Metrics struct {
 	m metric.Meter
 
 	// Syncronous
-	GrpcReqCount     syncint64.Counter
-	GrpcReqDur       syncint64.Histogram
-	GrpcStreamSegRet syncint64.Histogram
+	GrpcReqCount     instrument.Int64Counter
+	GrpcReqDur       instrument.Int64Histogram
+	GrpcStreamSegRet instrument.Int64Histogram
 
 	// Asyncronous
-	StreamCount   asyncint64.Gauge
-	PropertyCount asyncint64.Gauge
-	EventCount    asyncint64.Gauge
+	StreamCount   instrument.Int64ObservableGauge
+	PropertyCount instrument.Int64ObservableGauge
+	EventCount    instrument.Int64ObservableGauge
 }
 
 type AclMetrics struct {
-	BlockedRequests syncint64.Counter
-	AllowedRequests syncint64.Counter
+	BlockedRequests instrument.Int64Counter
+	AllowedRequests instrument.Int64Counter
 }
 
 type StreamMetrics struct {
 	m metric.Meter
 
 	// Asyncronous
-	UsedSize  asyncint64.Gauge
-	TotalSize asyncint64.Gauge
+	UsedSize  instrument.Int64ObservableGauge
+	TotalSize instrument.Int64ObservableGauge
 }
 
 func NewMetrics(meterProvider metric.MeterProvider) (*Metrics, error) {
 	m := meterProvider.Meter(Scope.Name, metric.WithInstrumentationVersion(Scope.Version), metric.WithSchemaURL(Scope.SchemaURL))
 
-	GrpcReqCount, err := m.SyncInt64().Counter(
+	GrpcReqCount, err := m.Int64Counter(
 		"telemetry.grpc_request_count",
 		instrument.WithUnit(unit.Dimensionless),
 		instrument.WithDescription("Number of GRPC requests"),
@@ -71,7 +69,7 @@ func NewMetrics(meterProvider metric.MeterProvider) (*Metrics, error) {
 		return nil, err
 	}
 
-	GrpcReqDur, err := m.SyncInt64().Histogram(
+	GrpcReqDur, err := m.Int64Histogram(
 		"telemetry.grpc_request_duration",
 		instrument.WithUnit(unit.Milliseconds),
 		instrument.WithDescription("Histogram of GRPC request duration"),
@@ -80,7 +78,7 @@ func NewMetrics(meterProvider metric.MeterProvider) (*Metrics, error) {
 		return nil, err
 	}
 
-	GrpcStreamSegRet, err := m.SyncInt64().Histogram(
+	GrpcStreamSegRet, err := m.Int64Histogram(
 		"telemetry.grpc_stream_segment_return",
 		instrument.WithUnit(unit.Dimensionless),
 		instrument.WithDescription("Histogram of number of stream segments returned"),
@@ -89,7 +87,7 @@ func NewMetrics(meterProvider metric.MeterProvider) (*Metrics, error) {
 		return nil, err
 	}
 
-	StreamCount, err := m.AsyncInt64().Gauge(
+	StreamCount, err := m.Int64ObservableGauge(
 		"telemetry.stream_count",
 		instrument.WithUnit(unit.Dimensionless),
 		instrument.WithDescription("Number of streams"),
@@ -98,7 +96,7 @@ func NewMetrics(meterProvider metric.MeterProvider) (*Metrics, error) {
 		return nil, err
 	}
 
-	PropertyCount, err := m.AsyncInt64().Gauge(
+	PropertyCount, err := m.Int64ObservableGauge(
 		"telemetry.property_count",
 		instrument.WithUnit(unit.Dimensionless),
 		instrument.WithDescription("Number of properties"),
@@ -107,7 +105,7 @@ func NewMetrics(meterProvider metric.MeterProvider) (*Metrics, error) {
 		return nil, err
 	}
 
-	EventCount, err := m.AsyncInt64().Gauge(
+	EventCount, err := m.Int64ObservableGauge(
 		"telemetry.event_count",
 		instrument.WithUnit(unit.Dimensionless),
 		instrument.WithDescription("Number of events"),
@@ -129,19 +127,20 @@ func NewMetrics(meterProvider metric.MeterProvider) (*Metrics, error) {
 	}, nil
 }
 
-func (m *Metrics) RegisterCallback(cb func(context.Context)) error {
+func (m *Metrics) RegisterCallback(cb func(context.Context, metric.Observer) error) error {
 	instruments := []instrument.Asynchronous{
 		m.StreamCount,
 		m.PropertyCount,
 		m.EventCount,
 	}
-	return m.m.RegisterCallback(instruments, cb)
+	_, err := m.m.RegisterCallback(cb, instruments...)
+	return err
 }
 
 func NewAclMetrics(meterProvider metric.MeterProvider) (*AclMetrics, error) {
 	m := meterProvider.Meter(AclScope.Name, metric.WithInstrumentationVersion(AclScope.Version), metric.WithSchemaURL(AclScope.SchemaURL))
 
-	BlockedRequests, err := m.SyncInt64().Counter(
+	BlockedRequests, err := m.Int64Counter(
 		"telemetry.acl.blocked_requests",
 		instrument.WithUnit(unit.Dimensionless),
 		instrument.WithDescription("Number of blocked requests"),
@@ -150,7 +149,7 @@ func NewAclMetrics(meterProvider metric.MeterProvider) (*AclMetrics, error) {
 		return nil, err
 	}
 
-	AllowedRequests, err := m.SyncInt64().Counter(
+	AllowedRequests, err := m.Int64Counter(
 		"telemetry.acl.allowed_requests",
 		instrument.WithUnit(unit.Dimensionless),
 		instrument.WithDescription("Number of allowed requests"),
@@ -168,7 +167,7 @@ func NewAclMetrics(meterProvider metric.MeterProvider) (*AclMetrics, error) {
 func NewStreamMetrics(meterProvider metric.MeterProvider) (*StreamMetrics, error) {
 	m := meterProvider.Meter(StreamScope.Name, metric.WithInstrumentationVersion(StreamScope.Version), metric.WithSchemaURL(StreamScope.SchemaURL))
 
-	UsedSize, err := m.AsyncInt64().Gauge(
+	UsedSize, err := m.Int64ObservableGauge(
 		"telemetry.stream.used_size",
 		instrument.WithUnit(unit.Bytes),
 		instrument.WithDescription("Used size"),
@@ -177,7 +176,7 @@ func NewStreamMetrics(meterProvider metric.MeterProvider) (*StreamMetrics, error
 		return nil, err
 	}
 
-	TotalSize, err := m.AsyncInt64().Gauge(
+	TotalSize, err := m.Int64ObservableGauge(
 		"telemetry.stream.total_size",
 		instrument.WithUnit(unit.Bytes),
 		instrument.WithDescription("Total size"),
@@ -194,10 +193,11 @@ func NewStreamMetrics(meterProvider metric.MeterProvider) (*StreamMetrics, error
 	}, nil
 }
 
-func (m *StreamMetrics) RegisterCallback(cb func(context.Context)) error {
+func (m *StreamMetrics) RegisterCallback(cb func(context.Context, metric.Observer) error) error {
 	instruments := []instrument.Asynchronous{
 		m.UsedSize,
 		m.TotalSize,
 	}
-	return m.m.RegisterCallback(instruments, cb)
+	_, err := m.m.RegisterCallback(cb, instruments...)
+	return err
 }

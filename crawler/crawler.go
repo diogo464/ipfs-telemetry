@@ -9,6 +9,7 @@ import (
 	"github.com/diogo464/telemetry/internal/utils"
 	"github.com/diogo464/telemetry/walker"
 	"github.com/libp2p/go-libp2p/core/peer"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/atomic"
 	"go.uber.org/zap"
 )
@@ -84,16 +85,17 @@ func NewCrawler(o ...Option) (*Crawler, error) {
 	if err != nil {
 		return nil, err
 	}
-	m.RegisterCallback(func(ctx context.Context) {
-		m.PeersCurrentCrawl.Observe(ctx, int64(c.cnow.peers.Load()))
-		m.PeersTelemetryCurrentCrawl.Observe(ctx, int64(c.cnow.tpeers.Load()))
-		m.ErrorsCurrentCrawl.Observe(ctx, int64(c.cnow.errors.Load()))
+	m.RegisterCallback(func(ctx context.Context, observer metric.Observer) error {
+		observer.ObserveInt64(m.PeersCurrentCrawl, int64(c.cnow.peers.Load()))
+		observer.ObserveInt64(m.PeersTelemetryCurrentCrawl, int64(c.cnow.tpeers.Load()))
+		observer.ObserveInt64(m.ErrorsCurrentCrawl, int64(c.cnow.errors.Load()))
 
-		m.PeersLastCrawl.Observe(ctx, int64(c.cold.peers.Load()))
-		m.PeersTelemetryLastCrawl.Observe(ctx, int64(c.cold.tpeers.Load()))
-		m.ErrorsLastCrawl.Observe(ctx, int64(c.cold.errors.Load()))
+		observer.ObserveInt64(m.PeersLastCrawl, int64(c.cold.peers.Load()))
+		observer.ObserveInt64(m.PeersTelemetryLastCrawl, int64(c.cold.tpeers.Load()))
+		observer.ObserveInt64(m.ErrorsLastCrawl, int64(c.cold.errors.Load()))
 
-		m.CompletedCrawls.Observe(ctx, int64(c.completed.Load()))
+		observer.ObserveInt64(m.CompletedCrawls, int64(c.completed.Load()))
+		return nil
 	})
 
 	return c, nil

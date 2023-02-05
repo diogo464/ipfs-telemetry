@@ -7,6 +7,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/peerstore"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 )
 
@@ -82,8 +83,9 @@ func Start(ctx context.Context, o ...Option) (*Monitor, error) {
 		peers:            map[peer.ID]*peerTask{},
 	}
 
-	mmetrics.RegisterCallback(func(ctx context.Context) {
-		mmetrics.ActivePeers.Observe(ctx, int64(len(m.peers)))
+	mmetrics.RegisterCallback(func(ctx context.Context, observer metric.Observer) error {
+		observer.ObserveInt64(mmetrics.ActivePeers, int64(len(m.peers)))
+		return nil
 	})
 
 	go m.run(ctx)
