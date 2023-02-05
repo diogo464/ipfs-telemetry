@@ -162,7 +162,7 @@ func newMonitorCommandDiscoverWithAddr(paddr peer.AddrInfo) *monitorCommandDisco
 
 // execute implements monitorCommand
 func (c *monitorCommandDiscoverWithAddr) execute(m *Monitor) {
-	m.host.Peerstore().AddAddr(c.paddr.ID, c.paddr.Addrs[0], peerstore.PermanentAddrTTL)
+	m.host.Peerstore().AddAddrs(c.paddr.ID, c.paddr.Addrs, peerstore.PermanentAddrTTL)
 	m.discover(c.paddr.ID)
 }
 
