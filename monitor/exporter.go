@@ -67,15 +67,18 @@ type observableExporter struct {
 }
 
 // PeerBegin implements Exporter
-func (*observableExporter) PeerBegin(peer.ID) {
+func (e *observableExporter) PeerBegin(p peer.ID) {
+	e.e.PeerBegin(p)
 }
 
 // PeerFailure implements Exporter
-func (*observableExporter) PeerFailure(peer.ID, error) {
+func (e *observableExporter) PeerFailure(p peer.ID, err error) {
+	e.e.PeerFailure(p, err)
 }
 
 // PeerSuccess implements Exporter
-func (*observableExporter) PeerSuccess(peer.ID) {
+func (e *observableExporter) PeerSuccess(p peer.ID) {
+	e.e.PeerSuccess(p)
 }
 
 // Bandwidth implements Exporter
