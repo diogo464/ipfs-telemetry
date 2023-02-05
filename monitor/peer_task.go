@@ -206,14 +206,17 @@ func (p *peerTask) tryExportEvents(ctx context.Context, client *telemetry.Client
 func (p *peerTask) bandwidthTest(ctx context.Context) {
 	ctx, cancel := context.WithTimeout(ctx, p.opts.BandwidthTimeout)
 	defer cancel()
+	p.exporter.PeerBegin(p.pid)
 	if err := p.tryBandwidthTest(ctx); err != nil {
 		p.logger.Warn("failed to test bandwidth", zap.Error(err))
 		p.fail(err)
 		p.metrics.CollectFailure.Add(ctx, 1, metrics.KeyPeerID.String(p.pid.String()))
+		p.exporter.PeerFailure(p.pid, err)
 	} else {
 		p.logger.Info("successfully tested bandwidth")
 		p.success()
 		p.metrics.CollectCompleted.Add(ctx, 1, metrics.KeyPeerID.String(p.pid.String()))
+		p.exporter.PeerSuccess(p.pid)
 	}
 }
 
