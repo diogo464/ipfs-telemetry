@@ -74,7 +74,7 @@ func actionMain(c *cli.Context) error {
 
 	m1.Property(
 		"os",
-		telemetry.PropertyValueString(runtime.GOOS),
+		telemetry.NewPropertyValueString(runtime.GOOS),
 		instrument.WithDescription("golang runtime.GOOS"))
 
 	m2 := tmp.TelemetryMeter("libp2p.io/network")

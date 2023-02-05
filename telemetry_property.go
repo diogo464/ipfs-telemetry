@@ -7,8 +7,8 @@ import (
 )
 
 var (
-	_ (PropertyValue) = (*propertyValueInteger)(nil)
-	_ (PropertyValue) = (*propertyValueString)(nil)
+	_ (PropertyValue) = (*PropertyValueInteger)(nil)
+	_ (PropertyValue) = (*PropertyValueString)(nil)
 )
 
 type Property struct {
@@ -27,56 +27,56 @@ type PropertyValue interface {
 	String() string
 }
 
-type propertyValueString struct {
+type PropertyValueString struct {
 	value string
 }
 
-type propertyValueInteger struct {
+type PropertyValueInteger struct {
 	value int64
 }
 
-func PropertyValueString(v string) PropertyValue {
-	return &propertyValueString{value: v}
+func NewPropertyValueString(v string) PropertyValue {
+	return &PropertyValueString{value: v}
 }
 
-func PropertyValueInteger(v int64) PropertyValue {
-	return &propertyValueInteger{value: v}
+func NewPropertyValueInteger(v int64) PropertyValue {
+	return &PropertyValueInteger{value: v}
 }
 
 // GetInteger implements PropertyValue
-func (p *propertyValueInteger) GetInteger() int64 {
+func (p *PropertyValueInteger) GetInteger() int64 {
 	return p.value
 }
 
 // GetString implements PropertyValue
-func (p *propertyValueInteger) GetString() string {
+func (p *PropertyValueInteger) GetString() string {
 	return ""
 }
 
 // sealed implements PropertyValue
-func (*propertyValueInteger) sealed() {
+func (*PropertyValueInteger) sealed() {
 }
 
 // String implements PropertyValue
-func (p *propertyValueInteger) String() string {
+func (p *PropertyValueInteger) String() string {
 	return strconv.Itoa(int(p.value))
 }
 
 // GetInteger implements PropertyValue
-func (*propertyValueString) GetInteger() int64 {
+func (*PropertyValueString) GetInteger() int64 {
 	return 0
 }
 
 // GetString implements PropertyValue
-func (p *propertyValueString) GetString() string {
+func (p *PropertyValueString) GetString() string {
 	return p.value
 }
 
 // sealed implements PropertyValue
-func (*propertyValueString) sealed() {
+func (*PropertyValueString) sealed() {
 }
 
 // String implements PropertyValue
-func (p *propertyValueString) String() string {
+func (p *PropertyValueString) String() string {
 	return p.value
 }

@@ -61,11 +61,11 @@ func (s *serviceProperties) create(prop Property) {
 	}
 
 	switch v := prop.Value.(type) {
-	case *propertyValueInteger:
+	case *PropertyValueInteger:
 		proppb.Value = &pb.Property_IntegerValue{
 			IntegerValue: v.GetInteger(),
 		}
-	case *propertyValueString:
+	case *PropertyValueString:
 		proppb.Value = &pb.Property_StringValue{
 			StringValue: v.GetString(),
 		}

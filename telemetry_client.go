@@ -178,9 +178,9 @@ func (c *Client) GetProperties(ctx context.Context) ([]Property, error) {
 
 		switch v := pbprop.GetValue().(type) {
 		case *pb.Property_StringValue:
-			property.Value = PropertyValueString(v.StringValue)
+			property.Value = NewPropertyValueString(v.StringValue)
 		case *pb.Property_IntegerValue:
-			property.Value = PropertyValueInteger(v.IntegerValue)
+			property.Value = NewPropertyValueInteger(v.IntegerValue)
 		}
 
 		properties = append(properties, property)
