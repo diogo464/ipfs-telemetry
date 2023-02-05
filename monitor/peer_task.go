@@ -94,12 +94,15 @@ func (p *peerTask) sendCommand(cmd peerCommand) {
 func (p *peerTask) collectTelemetry(ctx context.Context) {
 	ctx, cancel := context.WithTimeout(ctx, p.opts.CollectTimeout)
 	defer cancel()
+	p.exporter.PeerBegin(p.pid)
 	if err := p.tryCollectTelemetry(ctx); err != nil {
 		p.logger.Warn("failed to collect telemetry", zap.Error(err))
 		p.fail(err)
+		p.exporter.PeerFailure(p.pid, err)
 	} else {
 		p.logger.Info("successfully collected telemetry")
 		p.success()
+		p.exporter.PeerSuccess(p.pid)
 	}
 }
 

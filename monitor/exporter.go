@@ -12,6 +12,10 @@ var _ (Exporter) = (*noOpExporter)(nil)
 var _ (Exporter) = (*observableExporter)(nil)
 
 type Exporter interface {
+	PeerBegin(peer.ID)
+	PeerSuccess(peer.ID)
+	PeerFailure(peer.ID, error)
+
 	Session(peer.ID, telemetry.Session)
 	Metrics(peer.ID, telemetry.Session, telemetry.Metrics)
 	Properties(peer.ID, telemetry.Session, []telemetry.Property)
@@ -23,6 +27,18 @@ type noOpExporter struct{}
 
 func NewNoOpExporter() Exporter {
 	return &noOpExporter{}
+}
+
+// PeerBegin implements Exporter
+func (*noOpExporter) PeerBegin(peer.ID) {
+}
+
+// PeerFailure implements Exporter
+func (*noOpExporter) PeerFailure(peer.ID, error) {
+}
+
+// PeerSuccess implements Exporter
+func (*noOpExporter) PeerSuccess(peer.ID) {
 }
 
 // Properties implements Exporter
@@ -48,6 +64,18 @@ func (*noOpExporter) Bandwidth(peer.ID, telemetry.Bandwidth) {
 type observableExporter struct {
 	m *metrics.ExporterMetrics
 	e Exporter
+}
+
+// PeerBegin implements Exporter
+func (*observableExporter) PeerBegin(peer.ID) {
+}
+
+// PeerFailure implements Exporter
+func (*observableExporter) PeerFailure(peer.ID, error) {
+}
+
+// PeerSuccess implements Exporter
+func (*observableExporter) PeerSuccess(peer.ID) {
 }
 
 // Bandwidth implements Exporter
