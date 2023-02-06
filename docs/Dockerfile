@@ -22,6 +22,6 @@ RUN poetry run mkdocs build
 
 FROM docker.io/nginx:1.21.4-alpine
 
-LABEL org.opencontainers.image.source "https://github.com/diogo464/ipfs_telemetry"
+LABEL org.opencontainers.image.source "https://github.com/diogo464/ipfs-telemetry"
 
 COPY --from=0 /usr/src/app/site /usr/share/nginx/html

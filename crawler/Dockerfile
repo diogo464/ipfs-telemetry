@@ -9,7 +9,7 @@ RUN CGO_ENABLED=0 go build -o crawler ./cmd
 
 FROM docker.io/alpine:3.17.1
 
-LABEL org.opencontainers.image.source "https://github.com/diogo464/ipfs_telemetry"
+LABEL org.opencontainers.image.source "https://github.com/diogo464/ipfs-telemetry"
 
 ENV PATH=/usr/local/app:$PATH
 WORKDIR /usr/local/app

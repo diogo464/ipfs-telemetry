@@ -1,5 +1,5 @@
 FROM docker.io/python:alpine3.17
-LABEL org.opencontainers.image.source "https://github.com/diogo464/ipfs_telemetry"
+LABEL org.opencontainers.image.source "https://github.com/diogo464/ipfs-telemetry"
 
 # Configure Poetry
 ENV POETRY_VERSION=1.3.2

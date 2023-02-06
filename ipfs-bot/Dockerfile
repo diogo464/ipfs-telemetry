@@ -1,5 +1,5 @@
 FROM ghcr.io/diogo464/go-ipfs:telemetry-latest
-LABEL org.opencontainers.image.source "https://github.com/diogo464/ipfs_telemetry"
+LABEL org.opencontainers.image.source "https://github.com/diogo464/ipfs-telemetry"
 
 ENV PATH=/usr/local/bin:$PATH
 ENV PATH=/usr/local/app:$PATH

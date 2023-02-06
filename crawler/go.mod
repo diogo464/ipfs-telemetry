@@ -1,4 +1,4 @@
-module github.com/diogo464/ipfs_telemetry/crawler
+module github.com/diogo464/ipfs-telemetry/crawler
 
 go 1.19
 

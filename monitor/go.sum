@@ -94,8 +94,6 @@ github.com/davidlazar/go-crypto v0.0.0-20200604182044-b73af7476f6c/go.mod h1:6Uh
 github.com/decred/dcrd/crypto/blake256 v1.0.0 h1:/8DMNYp9SGi5f0w7uCm6d6M4OU2rGFK09Y2A4Xv7EE0=
 github.com/decred/dcrd/dcrec/secp256k1/v4 v4.1.0 h1:HbphB4TFFXpv7MNrT52FGrrgVXF1owhMVTHFZIlnvd4=
 github.com/decred/dcrd/dcrec/secp256k1/v4 v4.1.0/go.mod h1:DZGJHZMqrU4JJqFAWUS2UO1+lbSKsdiOoYi9Zzey7Fc=
-github.com/diogo464/telemetry v0.5.3-0.20230205171031-ebc17844425c h1:mY3psEc33C8nrPTOE/EBH6VZbz3Q976NY5RZV6J8TQM=
-github.com/diogo464/telemetry v0.5.3-0.20230205171031-ebc17844425c/go.mod h1:UhmKIBacbtosQGs9HDvvwms5aH8YDTKltH3xzjJIMsY=
 github.com/diogo464/telemetry v0.5.3-0.20230205224218-eece5c0434e6 h1:s13qLkutvd15OAH2ER4CnjMvlcl4WWIe7YMmBtaVFVs=
 github.com/diogo464/telemetry v0.5.3-0.20230205224218-eece5c0434e6/go.mod h1:UhmKIBacbtosQGs9HDvvwms5aH8YDTKltH3xzjJIMsY=
 github.com/docker/go-units v0.4.0/go.mod h1:fgPhTUdO+D/Jk86RDLlptpiXQzgHJF7gydDDbaIK4Dk=
@@ -500,8 +498,6 @@ go.opencensus.io v0.22.0/go.mod h1:+kGneAE2xo2IficOXnaByMWTGM9T73dGwxeWcUqIpI8=
 go.opencensus.io v0.22.2/go.mod h1:yxeiOL68Rb0Xd1ddK5vPZ/oVn4vY4Ynel7k9FzqtOIw=
 go.opencensus.io v0.22.3/go.mod h1:yxeiOL68Rb0Xd1ddK5vPZ/oVn4vY4Ynel7k9FzqtOIw=
 go.opencensus.io v0.22.4/go.mod h1:yxeiOL68Rb0Xd1ddK5vPZ/oVn4vY4Ynel7k9FzqtOIw=
-go.opentelemetry.io/contrib v1.13.0 h1:mA+KzlhM6efNG521MRsty9X68ZphIOFw5HOJ4xud95o=
-go.opentelemetry.io/contrib v1.13.0/go.mod h1:O3SXx534x0bWzGJlxXiUXpV7Ao7Iweib+s/urIXELrs=
 go.opentelemetry.io/contrib/instrumentation/runtime v0.38.0 h1:uTd4XAyfZ51V5w+ZOCFPiNgzVN2Yp3ibNYKvZ7hWViM=
 go.opentelemetry.io/contrib/instrumentation/runtime v0.38.0/go.mod h1:LYI0Tb+eGfyp/IRpjSSERc3rv/3FT/IjqUeNNTZdJRQ=
 go.opentelemetry.io/otel v1.12.0 h1:IgfC7kqQrRccIKuB7Cl+SRUmsKbEwSGPr0Eu+/ht1SQ=

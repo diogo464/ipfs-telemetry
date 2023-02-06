@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"os"
 
-	backend_crawler "github.com/diogo464/ipfs_telemetry/crawler"
+	backend_crawler "github.com/diogo464/ipfs-telemetry/crawler"
 	"github.com/diogo464/telemetry/crawler"
 	"github.com/diogo464/telemetry/walker"
 	logging "github.com/ipfs/go-log"
