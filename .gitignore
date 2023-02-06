@@ -2,3 +2,7 @@
 /.mypy_cache/
 /bin/
 /.envrc
+
+# Local Files
+system.d2
+system.md
