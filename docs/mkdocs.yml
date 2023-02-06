@@ -1,0 +1,26 @@
+site_name: IPFS Telemetry
+theme:
+  name: material
+  features:
+    - content.code.copy
+    - content.code.annotate
+  palette:
+    # Palette toggle for dark mode
+    - scheme: default
+      toggle:
+        icon: material/brightness-2
+        name: Switch to dark mode
+
+    # Palette toggle for light mode
+    - scheme: slate
+      toggle:
+        icon: material/brightness-7
+        name: Switch to light mode
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - def_list

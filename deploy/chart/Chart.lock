@@ -1,0 +1,18 @@
+dependencies:
+- name: nats
+  repository: https://nats-io.github.io/k8s/helm/charts/
+  version: 0.19.8
+- name: timescaledb-single
+  repository: https://charts.timescale.com/
+  version: 0.33.1
+- name: redis
+  repository: https://charts.bitnami.com/bitnami
+  version: 17.6.0
+- name: minio
+  repository: https://charts.bitnami.com/bitnami
+  version: 12.1.1
+- name: victoria-metrics-single
+  repository: https://victoriametrics.github.io/helm-charts/
+  version: 0.8.51
+digest: sha256:97a07e581da971996a4364ffdfa86e8f57e088c8ab2e9c63f66e871d1fde8da6
+generated: "2023-02-04T23:49:21.579365106Z"

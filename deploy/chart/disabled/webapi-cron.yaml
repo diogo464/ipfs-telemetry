@@ -1,0 +1,34 @@
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ .Release.Name }}-webapi-cron
+  labels:
+    {{- include "ipfs-telemetry.labels" . | nindent 4 }}
+    app.kubernetes.io/component: webapi-cron
+spec:
+  jobTemplate:
+    metadata:
+      name: {{ .Release.Name }}-webapi-cron
+      labels:
+        {{- include "ipfs-telemetry.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: webapi-cron
+    spec:
+      template:
+        metadata:
+          name: {{ .Release.Name }}-webapi-cron
+          labels:
+            {{- include "ipfs-telemetry.selectorLabels" . | nindent 12 }}
+            app.kubernetes.io/component: webapi-cron
+        spec:
+          containers:
+            - name: {{ .Release.Name }}-webapi-cron
+              image: {{ include "ipfs-telemetry.image.backend.image" . | quote }}
+              imagePullPolicy: {{ include "ipfs-telemetry.image.backend.pullPolicy" . | quote }}
+              command: ["poetry", "run", "python", "-m", "apps.webapi-cron"]
+              env:
+                {{- include "ipfs-telemetry.env" . | nindent 16 }}
+          restartPolicy: Never
+      ttlSecondsAfterFinished: 240
+  concurrencyPolicy: Forbid
+  schedule: "*/1 * * * *"

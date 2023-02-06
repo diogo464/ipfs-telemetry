@@ -1,0 +1,292 @@
+# Default values for ipfs-telemetry.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+podAnnotations: {}
+
+services:
+  backendImage:
+    repository: ghcr.io/diogo464/ipfs_telemetry/backend
+    pullPolicy: IfNotPresent
+    # Overrides the image tag whose default is the chart appVersion.
+    tag: "latest"
+
+  # Monitor service
+  monitor:
+    # How many consecutive failed attempts to contact a peer before forgetting it
+    maxFailedAttempts: 5
+
+    # How long to wait before retrying a failed attempt to contact a peer
+    retryInterval: "15s"
+
+    # How often to collect metrics from a known peer
+    collectInterval: "5m"
+
+    # How long to wait before timing out a collection attempt
+    collectTimeout: "15s"
+
+    # Whether to enable bandwidth tests
+    bandwidthEnabled: true
+
+    # How long between each bandwidth test to a peer
+    bandwidthInterval: "10m"
+
+    # How long to wait before timing out a bandwidth test
+    bandwidthTimeout: "1m"
+
+    image:
+      repository: ghcr.io/diogo464/ipfs_telemetry/monitor
+      pullPolicy: IfNotPresent
+      # Overrides the image tag whose default is the chart appVersion.
+      tag: "latest"
+
+    # Resources for the monitor service
+    resources:
+      requests:
+        memory: "512Mi"
+        cpu: "100m"
+      limits:
+        memory: "2Gi"
+        cpu: "1"
+
+  # Exporter service
+  exporterS3:
+    # How many seconds to wait before flushing a batch of metrics to S3
+    batchTimeLimit: "60"
+
+    # Maximum size in bytes of a batch of metrics to flush to S3
+    batchSizeLimit: "1048576" # 1MiB
+
+    # Resources for the exporter service
+    resources:
+      requests:
+        memory: "64Mi"
+        cpu: "50m"
+      limits:
+        memory: "512Gi"
+        cpu: "500m"
+
+  # Exporter VM service
+  exporterVm:
+    # Resources for the exporter service
+    resources:
+      requests:
+        memory: "64Mi"
+        cpu: "50m"
+      limits:
+        memory: "512Gi"
+        cpu: "500m"
+
+  webapi:
+    ingress:
+      enabled: false
+      hostname: ""
+      ingressClassName: ""
+      labels: {}
+      annotations: {}
+
+    # Resources for the webapi service
+    resources:
+      requests:
+        memory: "64Mi"
+        cpu: "50m"
+      limits:
+        memory: "256Mi"
+        cpu: "500m"
+
+  webapiCron:
+    # Resources for the webapi-cron service
+    resources:
+      requests:
+        memory: "64Mi"
+        cpu: "50m"
+      limits:
+        memory: "256Mi"
+        cpu: "500m"
+
+  exporterS3Pg:
+    # Resources for the exporter-s3-pg service
+    resources:
+      requests:
+        memory: "64Mi"
+        cpu: "50m"
+      limits:
+        memory: "256Mi"
+        cpu: "500m"
+
+  toolbox:
+    resources:
+      requests:
+        memory: "16Mi"
+        cpu: "5m"
+      limits:
+        memory: "128Mi"
+        cpu: "500m"
+
+  # IPFS Bot service
+  ipfsbot:
+    # Enable or disable the ipfs bots
+    enabled: false
+
+    # How many ipfs bots to deploy
+    replicas: 3
+
+    image:
+      repository: ghcr.io/diogo464/ipfs_telemetry/ipfs-bot
+      pullPolicy: IfNotPresent
+      # Overrides the image tag whose default is the chart appVersion.
+      tag: "latest"
+
+    # Resources for each individual ipfs bot
+    resources:
+      requests:
+        memory: "128Mi"
+        cpu: "250m"
+      limits:
+        memory: "256Mi"
+        cpu: "500"
+
+  docs:
+    image:
+      repository: ghcr.io/diogo464/ipfs_telemetry/docs
+      pullPolicy: IfNotPresent
+      # Overrides the image tag whose default is the chart appVersion.
+      tag: "latest"
+
+    ingress:
+      enabled: false
+      hostname: ""
+      ingressClassName: ""
+      labels: {}
+      annotations: {}
+
+    # Resources for the docs service
+    resources:
+      requests:
+        memory: "16Mi"
+        cpu: "50m"
+      limits:
+        memory: "128Mi"
+        cpu: "100m"
+
+  # Configure access to nats
+  # This should be modified if using an external nats instance
+  nats:
+    # nats endpoint
+    # this is the value used in an environment variable
+    # https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#environment-variables
+    endpoint:
+      value: "nats://{{ .Release.Name }}-nats:4222"
+
+  # Configure access to redis
+  # This should be modified if using an external redis instance
+  redis:
+    # redis host
+    # this is the value used in an environment variable
+    # https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#environment-variables
+    host:
+      value: "{{ .Release.Name }}-redis-master"
+
+    # redis port
+    # this is the value used in an environment variable
+    # https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#environment-variables
+    port:
+      value: "6379"
+
+    # redis password
+    # this is the value used in an environment variable
+    # https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#environment-variables
+    password:
+      valueFrom:
+        secretKeyRef:
+          name: "{{ .Release.Name }}-redis"
+          key: "redis-password"
+
+  # Configure access for minio, or any other S3 compatible storage
+  # This should be modified if using an external minio instance
+  minio:
+    # minio endpoint
+    # this is the value used in an environment variable
+    # https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#environment-variables
+    endpoint:
+      value: "{{ .Release.Name }}-minio:9000"
+
+    # minio access key
+    # this is the value used in an environment variable
+    # https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#environment-variables
+    accessKey:
+      valueFrom:
+        secretKeyRef:
+          name: "{{ .Release.Name }}-minio"
+          key: "root-user"
+
+    # minio secret key
+    # this is the value used in an environment variable
+    # https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#environment-variables
+    secretKey:
+      valueFrom:
+        secretKeyRef:
+          name: "{{ .Release.Name }}-minio"
+          key: "root-password"
+
+    # minio use ssl
+    # this is the value used in an environment variable
+    # https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#environment-variables
+    useSSL:
+      value: "false"
+
+    # minio bucket
+    # this is the value used in an environment variable
+    # https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#environment-variables
+    bucketTelemetry:
+      value: "telemetry"
+
+redis:
+  enabled: true
+  architecture: standalone
+
+# https://artifacthub.io/packages/helm/bitnami/minio
+minio:
+  enabled: true
+
+prometheus:
+  # Enable/Disable creation of Prometheus Operator CRDs
+  enabled: true
+
+  # Additional labels to add to the monitor CRDs
+  monitorLabels: {}
+
+grafana:
+  # Enable/Disable creation of Grafana Operator CRDs
+  enabled: true
+
+## dont edit these values ##
+
+nats:
+  enabled: true
+  nats:
+    jetstream:
+      enabled: true
+
+timescaledb:
+  enabled: true
+  replicaCount: 1
+  fullnameOverride: "{{ .Release.Name }}-tsdb"
+  secrets:
+    credentials:
+      PATRONI_SUPERUSER_PASSWORD: "postgres"
+  patroni:
+    postgresql:
+      pg_hba:
+        - host      all             all               all                 trust
+        - local     all             postgres                              peer
+        - local     all             all                                   md5
+        - hostnossl all,replication all                all                reject
+        - hostssl   all             all                127.0.0.1/32       md5
+        - hostssl   all             all                ::1/128            md5
+        - hostssl   replication     standby            all                md5
+        - hostssl   all             all                all                md5

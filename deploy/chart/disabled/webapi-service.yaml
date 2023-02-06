@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-webapi
+  labels:
+    {{- include "ipfs-telemetry.labels" . | nindent 4 }}
+    app.kubernetes.io/component: webapi
+spec:
+  selector:
+    {{- include "ipfs-telemetry.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: webapi
+  ports:
+    - name: http
+      port: 80
+      targetPort: http

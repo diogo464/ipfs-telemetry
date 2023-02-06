@@ -1,0 +1,58 @@
+services:
+  backendImage:
+    repository: localhost:5000/backend
+    pullPolicy: Always
+    tag: latest
+
+  monitor:
+    collectInterval: "10s"
+
+    image:
+      repository: localhost:5000/monitor
+      pullPolicy: Always
+      tag: latest
+
+  webapi:
+    ingress:
+      enabled: true
+      hostname: "telemetry.d464.sh"
+      ingressClassName: "nginx"
+
+  ipfsbot:
+    enabled: true
+
+    image:
+      repository: localhost:5000/ipfs-bot
+      pullPolicy: Always
+      tag: latest
+
+  docs:
+    image:
+      repository: localhost:5000/docs
+      pullPolicy: Always
+      tag: latest
+
+    ingress:
+      enabled: true
+      hostname: "telemetry.d464.sh"
+      ingressClassName: "nginx"
+
+  minio:
+    endpoint:
+      value: "minio:9000"
+    accessKey:
+      valueFrom:
+        secretKeyRef:
+          name: minio-credentials
+          key: accesskey
+    secretKey:
+      valueFrom:
+        secretKeyRef:
+          name: minio-credentials
+          key: secretkey
+
+minio:
+  enabled: false
+
+timescaledb:
+  enabled: true

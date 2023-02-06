@@ -1,12 +1,4 @@
-/dist/
+/.vscode/
+/.mypy_cache/
 /bin/
-/*.sh
-/*.json
-
-# /third_party
-
-# generated files
-/pkg/models
-/pkg/proto
-
-/*.mmdb
+/.envrc

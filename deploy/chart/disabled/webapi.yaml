@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-webapi
+  labels:
+    {{- include "ipfs-telemetry.labels" . | nindent 4 }}
+    app.kubernetes.io/component: webapi
+spec:
+  selector:
+    matchLabels:
+      {{- include "ipfs-telemetry.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: webapi
+  template:
+    metadata:
+      labels:
+        {{- include "ipfs-telemetry.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: webapi
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      containers:
+        - name: {{ .Release.Name }}-webapi
+          image: {{ include "ipfs-telemetry.image.backend.image" . | quote }}
+          imagePullPolicy: {{ include "ipfs-telemetry.image.backend.pullPolicy" . | quote }}
+          command: ["poetry", "run", "uvicorn", "--host", "0.0.0.0", "apps.webapi:app"]
+          {{- with .Values.services.webapi.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          env:
+            {{- include "ipfs-telemetry.env" . | nindent 12 }}
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+            - name: metrics
+              containerPort: 9090
+              protocol: TCP

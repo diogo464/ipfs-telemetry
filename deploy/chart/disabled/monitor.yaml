@@ -1,0 +1,51 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-monitor
+  labels:
+    {{- include "ipfs-telemetry.labels" . | nindent 4 }}
+    app.kubernetes.io/component: monitor
+spec:
+  selector:
+    matchLabels:
+      {{- include "ipfs-telemetry.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: monitor
+  template:
+    metadata:
+      labels:
+        {{- include "ipfs-telemetry.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: monitor
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      containers:
+        - name: {{ .Release.Name }}-monitor
+          image: "{{ .Values.services.monitor.image.repository }}:{{ .Values.services.monitor.image.tag }}"
+          imagePullPolicy: {{ .Values.services.monitor.image.pullPolicy }}
+          {{- with .Values.services.monitor.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          env:
+            - name: MONITOR_MAX_FAILED_ATTEMPS
+              value: {{ .Values.services.monitor.maxFailedAttempts | quote }}
+            - name: MONITOR_RETRY_INTERVAL
+              value: {{ .Values.services.monitor.retryInterval | quote }}
+            - name: MONITOR_COLLECT_INTERVAL
+              value: {{ .Values.services.monitor.collectInterval | quote }}
+            - name: MONITOR_COLLECT_TIMEOUT
+              value: {{ .Values.services.monitor.collectTimeout | quote }}
+            - name: MONITOR_BANDWIDTH_ENABLED
+              value: {{ .Values.services.monitor.bandwidthEnabled | quote }}
+            - name: MONITOR_BANDWIDTH_INTERVAL
+              value: {{ .Values.services.monitor.bandwidthInterval | quote }}
+            - name: MONITOR_BANDWIDTH_TIMEOUT
+              value: {{ .Values.services.monitor.bandwidthTimeout | quote }}
+            {{- include "ipfs-telemetry.env" . | nindent 12 }}
+          ports:
+            - name: metrics
+              containerPort: 9090
+              protocol: TCP
