@@ -8,6 +8,7 @@ from geoip2.database import Reader
 from nats.aio.client import Client as NatsClient
 from nats.js.api import ConsumerConfig
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 
 import backend.monitor
 import backend.db
@@ -51,10 +52,14 @@ async def _export_telemetry(nc: NatsClient, session: Session):
     )
 
     async for msg in sub.messages:
-        export = backend.monitor.Export.parse_raw(msg.data)
-        model_data = backend.db.convert_export(export)
-        model_data.bulk_save(session)
-        session.commit()
+        try:
+            export = backend.monitor.Export.parse_raw(msg.data)
+            model_data = backend.db.convert_export(export)
+            model_data.bulk_save(session)
+            session.commit()
+        except IntegrityError as e:
+            session.rollback()
+            logger.exception("Integrity error, skipping export", exc_info=True)
         await msg.ack()
 
 
