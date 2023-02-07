@@ -11,8 +11,8 @@ from backend.db.connection import DbConnectionInfo
 logger = logging.getLogger(__name__)
 
 NATS_ENDPOINT = os.environ.get("NATS_ENDPOINT", "nats://nats:4222")
-NATS_SUBJECT_TELEMETRY = os.environ.get("NATS_SUBJECT_TELEMETRY", "telemetry")
 
+# Not in use right now
 S3_ENDPOINT = os.environ.get("S3_ENDPOINT", "minio:9000")
 S3_USE_SSL = os.environ.get("S3_USE_SSL", "false") == "true"
 S3_ACCESS_KEY = os.environ.get("S3_ACCESS_KEY", "minio")
@@ -24,6 +24,7 @@ POSTGRES_USER = os.environ.get("POSTGRES_USER", "postgres")
 POSTGRES_PASSWORD = os.environ.get("POSTGRES_PASSWORD", "postgres")
 POSTGRES_DATABASE = os.environ.get("POSTGRES_DB", "postgres")
 
+# Not in use right now
 REDIS_HOST = os.environ.get("REDIS_HOST", "redis")
 REDIS_PORT = int(os.environ.get("REDIS_PORT", "6379"))
 REDIS_PASSWORD = os.environ.get("REDIS_PASSWORD", "redis")
