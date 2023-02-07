@@ -1,5 +1,9 @@
 # Welcome to MkDocs
 
+## Grafana
+
+[Grafana Dashboards](https://grafana.ipfs-telemetry.org/d/7eb2654bc089071fcec5777ea28778d106a9653e/world-view?orgId=1)
+
 ## Configuration
 
 ```go
