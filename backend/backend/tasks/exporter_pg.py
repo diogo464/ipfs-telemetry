@@ -106,7 +106,7 @@ def _get_first_public_ip_from_discovery(
     discovery: backend.discovery.DiscoveryNotification,
 ) -> Optional[str]:
     for addr in discovery.addresses:
-        if "circuit" in addr:
+        if "circuit" in addr or "ip6" in addr:
             continue
         _, ip = backend.util.split_multiaddr_to_peer_and_ip(addr)
         ip_info = ipaddress.ip_address(ip)
