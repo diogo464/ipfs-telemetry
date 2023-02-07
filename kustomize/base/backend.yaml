@@ -1,0 +1,53 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  labels:
+    app.kubernetes.io/component: backend
+spec:
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+        app.kubernetes.io/component: backend
+    spec:
+      initContainers:
+        - name: init
+          image: ghcr.io/diogo464/ipfs-telemetry/backend:main
+          imagePullPolicy: Always
+          command: ["poetry", "run", "python", "-m", "backend.job.init"]
+          envFrom:
+            - configMapRef:
+                name: envconfig
+      containers:
+        - name: backend
+          image: ghcr.io/diogo464/ipfs-telemetry/backend:main
+          imagePullPolicy: Always
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "800m"
+          envFrom:
+            - configMapRef:
+                name: envconfig
+          ports:
+            - name: http
+              containerPort: 8000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+spec:
+  selector:
+    app: backend
+  ports:
+    - port: 80
+      targetPort: http

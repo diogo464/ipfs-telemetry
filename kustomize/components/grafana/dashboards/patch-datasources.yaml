@@ -1,0 +1,9 @@
+- op: add
+  path: /spec/datasources
+  value:
+    - datasourceName: Prometheus
+      inputName: DS_PROMETHEUS
+    - datasourceName: Postgres
+      inputName: DS_POSTGRES
+    - datasourceName: VictoriaMetrics
+      inputName: DS_VICTORIAMETRICS

@@ -1,0 +1,16 @@
+apiVersion: integreatly.org/v1alpha1
+kind: GrafanaDataSource
+metadata:
+  name: grafana-victoria-metrics
+spec:
+  name: victoria-metrics
+  datasources:
+    - name: VictoriaMetrics
+      type: prometheus
+      access: proxy
+      url: http://victoria-metrics:8428
+      version: 1
+      editable: false
+      jsonData:
+        tlsSkipVerify: true
+        timeInterval: "5s"

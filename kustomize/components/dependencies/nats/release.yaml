@@ -1,0 +1,19 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: nats
+spec:
+  chart:
+    spec:
+      chart: nats
+      version: 0.19.8
+      reconcileStrategy: ChartVersion
+      sourceRef:
+        kind: HelmRepository
+        name: nats
+  interval: 60m0s
+  values:
+    nats:
+      jetstream:
+        enabled: true

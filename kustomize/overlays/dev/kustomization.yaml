@@ -1,0 +1,28 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../base
+
+components:
+  # Dependencies
+  - ../../components/dependencies/repos
+  - ../../components/dependencies/redis
+  - ../../components/dependencies/nats
+  - ../../components/dependencies/victoria-metrics
+  - ../../components/dependencies/timescaledb
+  - ../../components/dependencies/grafana-operator
+  - ../../components/dependencies/prometheus-operator
+  # Application Components
+  - ../../components/ipfs-bot
+  - ../../components/grafana
+  - ../../components/prometheus
+
+patchesStrategicMerge:
+  - grafana-ingress.yaml
+  - monitor-collect-interval.yaml
+
+labels:
+  - includeSelectors: false
+    pairs:
+      app.kubernetes.io/name: ipfs-telemetry
+      app.kubernetes.io/instance: ipfs-telemetry-dev

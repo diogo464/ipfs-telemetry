@@ -1,0 +1,17 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: grafana-operator
+spec:
+  chart:
+    spec:
+      chart: grafana-operator
+      reconcileStrategy: ChartVersion
+      sourceRef:
+        kind: HelmRepository
+        name: bitnami
+  interval: 60m0s
+  values:
+    grafana:
+      enabled: false

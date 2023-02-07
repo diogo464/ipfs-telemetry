@@ -1,0 +1,31 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: monitor
+  labels:
+    app.kubernetes.io/component: monitor
+spec:
+  selector:
+    matchLabels:
+      app: monitor
+  template:
+    metadata:
+      labels:
+        app: monitor
+        app.kubernetes.io/component: monitor
+    spec:
+      containers:
+        - name: monitor
+          image: ghcr.io/diogo464/ipfs-telemetry/monitor:main
+          imagePullPolicy: Always
+          resources:
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
+          envFrom:
+            - configMapRef:
+                name: envconfig
+          ports:
+            - name: metrics
+              containerPort: 9090

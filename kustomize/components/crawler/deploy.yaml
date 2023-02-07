@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: crawler
+  labels:
+    app.kubernetes.io/component: crawler
+spec:
+  selector:
+    matchLabels:
+      app: crawler
+  template:
+    metadata:
+      labels:
+        app: crawler
+        app.kubernetes.io/component: crawler
+    spec:
+      containers:
+        - name: crawler
+          image: ghcr.io/diogo464/ipfs-telemetry/crawler:main
+          imagePullPolicy: Always
+          envFrom:
+            - configMapRef:
+                name: envconfig
+          resources:
+            limits:
+              memory: "512Mi"
+              cpu: "1"

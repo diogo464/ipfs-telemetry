@@ -1,0 +1,22 @@
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: victoria-metrics
+spec:
+  chart:
+    spec:
+      chart: victoria-metrics-single
+      version: 0.8.51
+      reconcileStrategy: ChartVersion
+      sourceRef:
+        kind: HelmRepository
+        name: victoria-metrics
+  interval: 60m0s
+  values:
+    server:
+      fullnameOverride: victoria-metrics
+    # At the time of writting this there is a missplaced line in the chart that causes this to fail with rbac enabled
+    # https://github.com/VictoriaMetrics/helm-charts/blob/42447613fded40c415e2634f73697ef33bb1cd39/charts/victoria-metrics-single/templates/role.yaml#L16
+    # https://github.com/VictoriaMetrics/helm-charts/pull/416
+    rbac:
+      create: false

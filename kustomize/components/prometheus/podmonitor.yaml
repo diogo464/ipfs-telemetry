@@ -1,0 +1,15 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: podmonitor
+  labels:
+    prometheus: prometheus
+spec:
+  selector:
+    matchExpressions:
+      - key: app.kubernetes.io/component
+        operator: in
+        values:
+          - monitor
+  podMetricsEndpoints:
+    - port: metrics

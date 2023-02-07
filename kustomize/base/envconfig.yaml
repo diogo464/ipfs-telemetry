@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: envconfig
+data:
+  # NATS
+  NATS_ENDPOINT: "nats://nats:4222"
+  # POSTGRES
+  POSTGRES_HOST: "timescaledb"
+  POSTGRES_USER: "postgres"
+  POSTGRES_PASSWORD: "postgres"
+  POSTGRES_DATABASE: "postgres"
+  # VictoriaMetrics
+  VM_ENDPOINT: "http://victoria-metrics:8428"

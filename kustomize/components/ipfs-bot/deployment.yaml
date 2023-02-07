@@ -1,0 +1,29 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ipfs-bot
+  labels:
+    app.kubernetes.io/component: ipfs-bot
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: ipfs-bot
+  template:
+    metadata:
+      labels:
+        app: ipfs-bot
+        app.kubernetes.io/component: ipfs-bot
+    spec:
+      containers:
+        - name: ipfs-bot
+          image: ghcr.io/diogo464/ipfs-telemetry/ipfs-bot:main
+          imagePullPolicy: Always
+          resources:
+            limits:
+              memory: "350Mi"
+              cpu: "500m"
+          envFrom:
+            - configMapRef:
+                name: envconfig
