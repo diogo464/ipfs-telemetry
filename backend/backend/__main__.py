@@ -34,9 +34,11 @@ async def exception_wrapper(coroutine):
 
 
 async def main(host: str, port: int, root_path: str):
-    app = FastAPI(root_path=root_path)
+    root = FastAPI()
+    app = FastAPI(root_path="/api/v1")
     app.include_router(raw.router)
     app.include_router(discovery.router)
+    root.mount("/api/v1", app)
 
     rocket = Rocketry(execution="async")
     rocket.include_grouper(raw.group)
@@ -44,7 +46,7 @@ async def main(host: str, port: int, root_path: str):
 
     server = Service(
         config=uvicorn.Config(
-            app,
+            root,
             loop="asyncio",
             log_level="info",
             host=host,
