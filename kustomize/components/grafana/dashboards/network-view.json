@@ -35,7 +35,13 @@
       "type": "grafana",
       "id": "grafana",
       "name": "Grafana",
-      "version": "9.3.2"
+      "version": "9.3.6"
+    },
+    {
+      "type": "panel",
+      "id": "histogram",
+      "name": "Histogram",
+      "version": ""
     },
     {
       "type": "datasource",
@@ -53,6 +59,12 @@
       "type": "panel",
       "id": "stat",
       "name": "Stat",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "table",
+      "name": "Table",
       "version": ""
     },
     {
@@ -99,37 +111,12 @@
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "palette-classic"
+            "mode": "thresholds"
           },
           "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
+            "align": "center",
+            "displayMode": "auto",
+            "inspect": false
           },
           "mappings": [],
           "thresholds": {
@@ -144,27 +131,297 @@
                 "value": 80
               }
             ]
-          }
+          },
+          "unit": "percentunit"
         },
         "overrides": []
       },
       "gridPos": {
         "h": 14,
-        "w": 12,
+        "w": 4,
         "x": 0,
         "y": 0
       },
       "id": 40,
       "options": {
+        "footer": {
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "9.3.6",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "${DS_POSTGRES}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "hide": false,
+          "rawQuery": true,
+          "rawSql": "-- https://stackoverflow.com/questions/43527730/postgres-count-instances-and-put-in-buckets\nWITH buckets as (\n  SELECT (CASE WHEN cnt <= 2 THEN '<= 2'\n             WHEN cnt <= 4 THEN '<= 4'\n             WHEN cnt <= 8 THEN '<= 8'\n             WHEN cnt <= 16 THEN '<= 16'\n             ELSE '16+'\n        END) as bucket, COUNT(*) as n\n  FROM (\n    SELECT DISTINCT ON(peer) NULLIF(value, '')::int as cnt\n     FROM properties\n     WHERE name = 'process.runtime.numcpu'\n   ) l\n   GROUP BY bucket\n   ORDER BY MIN(cnt)\n ) SELECT bucket \"Cores\", (n / (SELECT SUM(n) FROM buckets)) \"Total\"\n FROM buckets;",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "CPU Core Counts",
+      "transformations": [],
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "${DS_POSTGRES}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "displayMode": "auto",
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 14,
+        "w": 4,
+        "x": 4,
+        "y": 0
+      },
+      "id": 41,
+      "options": {
+        "footer": {
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "9.3.6",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "${DS_POSTGRES}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "hide": false,
+          "rawQuery": true,
+          "rawSql": "WITH architectures AS (\n  SELECT DISTINCT ON (peer) peer, value \"arch\"\n  FROM properties  where name = 'process.runtime.arch'\n)\nSELECT arch \"Architecture\", (COUNT(peer) / (SELECT COUNT(arch) FROM architectures)) \"Total\"\nFROM architectures GROUP BY arch;",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "Architecture",
+      "transformations": [],
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "${DS_POSTGRES}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "displayMode": "auto",
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 14,
+        "w": 4,
+        "x": 8,
+        "y": 0
+      },
+      "id": 42,
+      "options": {
+        "footer": {
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "9.3.6",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "${DS_POSTGRES}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "hide": false,
+          "rawQuery": true,
+          "rawSql": "WITH oss AS (\n  SELECT DISTINCT ON (peer) peer, value \"os\"\n  FROM properties  where name = 'process.runtime.os'\n)\nSELECT os \"OS\", (COUNT(peer) / (SELECT COUNT(os) FROM oss)) \"Total\"\nFROM oss GROUP BY os;",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "Operating System",
+      "transformations": [],
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "${DS_POSTGRES}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 1
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "s"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "dur"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "none"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 14,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "id": 44,
+      "options": {
+        "bucketOffset": 0,
         "legend": {
           "calcs": [],
           "displayMode": "list",
           "placement": "bottom",
           "showLegend": true
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
         }
       },
       "targets": [
@@ -173,11 +430,38 @@
             "type": "postgres",
             "uid": "${DS_POSTGRES}"
           },
-          "refId": "A"
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "-- https://stackoverflow.com/questions/14020919/find-difference-between-timestamps-in-seconds-in-postgresql\nWITH durations  AS (\n  SELECT sessions.session \"session\", (EXTRACT(EPOCH FROM sessions.last_seen) - NULLIF(properties.value, '')::int) \"dur\"\n  FROM sessions\n  INNER JOIN properties ON sessions.session = properties.session\n  WHERE properties.name = 'process.boottime'\n)\nSELECT session, MAX(dur) \"dur\" FROM durations GROUP BY session;",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
         }
       ],
-      "title": "Panel Title",
-      "type": "timeseries"
+      "title": "Session Lifetime",
+      "transformations": [
+        {
+          "id": "histogram",
+          "options": {}
+        }
+      ],
+      "type": "histogram"
     },
     {
       "collapsed": true,
@@ -237,7 +521,7 @@
             },
             "textMode": "auto"
           },
-          "pluginVersion": "9.3.2",
+          "pluginVersion": "9.3.6",
           "targets": [
             {
               "datasource": {
@@ -322,7 +606,7 @@
             },
             "textMode": "auto"
           },
-          "pluginVersion": "9.3.2",
+          "pluginVersion": "9.3.6",
           "targets": [
             {
               "datasource": {
@@ -411,7 +695,7 @@
             },
             "textMode": "auto"
           },
-          "pluginVersion": "9.3.2",
+          "pluginVersion": "9.3.6",
           "targets": [
             {
               "datasource": {
@@ -855,8 +1139,7 @@
                 "mode": "percentage",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "dark-red",
@@ -884,7 +1167,7 @@
             "h": 13,
             "w": 7,
             "x": 0,
-            "y": 10
+            "y": 26
           },
           "id": 13,
           "options": {
@@ -931,8 +1214,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -961,7 +1243,7 @@
             "h": 13,
             "w": 17,
             "x": 7,
-            "y": 10
+            "y": 26
           },
           "id": 14,
           "options": {
@@ -1041,8 +1323,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -1058,7 +1339,7 @@
             "h": 15,
             "w": 12,
             "x": 0,
-            "y": 23
+            "y": 39
           },
           "id": 2,
           "options": {
@@ -1158,8 +1439,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -1175,7 +1455,7 @@
             "h": 15,
             "w": 12,
             "x": 12,
-            "y": 23
+            "y": 39
           },
           "id": 10,
           "options": {
@@ -1259,8 +1539,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -1275,7 +1554,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 11
+            "y": 27
           },
           "id": 16,
           "options": {
@@ -1325,8 +1604,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -1341,7 +1619,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 19
+            "y": 35
           },
           "id": 18,
           "options": {
@@ -1391,8 +1669,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -1407,7 +1684,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 27
+            "y": 43
           },
           "id": 19,
           "options": {
@@ -1487,8 +1764,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -1504,7 +1780,7 @@
             "h": 12,
             "w": 24,
             "x": 0,
-            "y": 35
+            "y": 51
           },
           "id": 21,
           "options": {
@@ -1594,8 +1870,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -1611,7 +1886,7 @@
             "h": 11,
             "w": 12,
             "x": 0,
-            "y": 12
+            "y": 28
           },
           "id": 26,
           "options": {
@@ -1707,8 +1982,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -1723,7 +1997,7 @@
             "h": 11,
             "w": 12,
             "x": 12,
-            "y": 12
+            "y": 28
           },
           "id": 27,
           "options": {
@@ -1786,8 +2060,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -1803,7 +2076,7 @@
             "h": 13,
             "w": 24,
             "x": 0,
-            "y": 23
+            "y": 39
           },
           "id": 23,
           "options": {
@@ -1847,13 +2120,13 @@
     "list": []
   },
   "time": {
-    "from": "now-1h",
+    "from": "now-6h",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "",
   "title": "Network View",
-  "uid": "ZjxTAfAVz",
-  "version": 6,
+  "uid": "5f1dc160641632130fcb00907088d7ac44dafc08",
+  "version": 5,
   "weekStart": ""
 }
