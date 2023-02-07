@@ -12,7 +12,7 @@ router = APIRouter(prefix="/discovery")
 group = Grouper()
 
 
-@router.post("/")
+@router.post("")
 async def discover(notif: discovery.DiscoveryNotification):
     logger.info(f"Received discovery notification: {notif}")
     nc = await env.create_nats_client()
