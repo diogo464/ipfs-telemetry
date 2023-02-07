@@ -1,0 +1,25 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: nats
+spec:
+  values:
+    nats:
+      gomemlimit: "4GiB"
+      jetstream:
+        memStorage:
+          enabled: true
+          size: "2Gi"
+
+        fileStorage:
+          enabled: true
+          size: "100Gi"
+          storageClassName: nfs-blackmesa-arch
+    resources:
+      requests:
+        cpu: 4
+        memory: "4Gi"
+      limits:
+        cpu: 6
+        memory: "6Gi"

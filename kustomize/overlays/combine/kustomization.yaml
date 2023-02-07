@@ -1,0 +1,40 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: ipfs-telemetry
+resources:
+  - namespace.yaml
+  - ../../base
+  - docs-ingress.yaml
+
+# TODO: maybe add storageClass to timescaledb
+# values:
+#   persistentVolumes:
+#     data:
+#       size: 20Gi
+#       storageClass: nfs-blackmesa-arch
+
+components:
+  # Dependencies
+  - ../../components/dependencies/repos
+  - ../../components/dependencies/redis
+  - ../../components/dependencies/nats
+  - ../../components/dependencies/victoria-metrics
+  - ../../components/dependencies/timescaledb
+  # Currently there is not support for Grafana CRDs in namespaces other than the one where the operator is installed.
+  # https://github.com/grafana-operator/grafana-operator/blob/master/documentation/multi_namespace_support.md
+  - ../../components/dependencies/grafana-operator
+  # Application Components
+  - ../../components/ipfs-bot
+  - ../../components/grafana
+  - ../../components/prometheus
+
+patchesStrategicMerge:
+  - patch-monitor-collect-interval.yaml
+  - patch-grafana-ingress.yaml
+  - patch-nats.yaml
+
+labels:
+  - includeSelectors: false
+    pairs:
+      app.kubernetes.io/name: ipfs-telemetry
+      app.kubernetes.io/instance: ipfs-telemetry-main

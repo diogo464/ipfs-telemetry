@@ -4,3 +4,4 @@ resources:
   - backend.yaml
   - envconfig.yaml
   - monitor.yaml
+  - docs.yaml
