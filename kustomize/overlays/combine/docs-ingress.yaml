@@ -25,3 +25,10 @@ spec:
                 name: docs
                 port:
                   name: http
+          - pathType: Prefix
+            path: "/api"
+            backend:
+              service:
+                name: backend
+                port:
+                  name: http
