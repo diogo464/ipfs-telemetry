@@ -24,7 +24,7 @@ while true; do
 
         CID_IDX=$(expr $RANDOM % $CIDS_COUNT + 1)
         CID=$(head -n $CID_IDX cids.txt | tail -n 1)
-        timeout -s 9 10 ipfs get $CID
+        timeout -s 9 10 ipfs get $CID -o /dev/null
         ipfs pin ls | cut -d' ' -f1 | xargs -I{} ipfs pin rm -r {}
         sleep 15
     else
