@@ -54,6 +54,7 @@ async def _export_telemetry(nc: NatsClient, session: Session):
         export = backend.monitor.Export.parse_raw(msg.data)
         model_data = backend.db.convert_export(export)
         model_data.bulk_save(session)
+        session.commit()
         await msg.ack()
 
 
