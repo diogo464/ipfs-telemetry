@@ -22,4 +22,4 @@ COPY poetry.lock pyproject.toml ./
 RUN poetry install --only main
 COPY . .
 
-ENTRYPOINT [ "poetry", "run", "python", "-m", "backend" ]
+ENTRYPOINT [ "poetry", "run", "python", "-m", "backend", "--host", "0.0.0.0" ]
