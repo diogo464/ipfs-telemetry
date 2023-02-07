@@ -14,6 +14,9 @@ patches:
   - path: patch-datasources.yaml
     target:
       kind: GrafanaDashboard
+  - path: patch-foldername.yaml
+    target:
+      kind: GrafanaDashboard
 
 configMapGenerator:
   - name: dashboard-monitor
