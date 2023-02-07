@@ -37,7 +37,7 @@ var (
 		Name:    "http-url",
 		Usage:   "http api url. used when output mode is 'http'",
 		EnvVars: []string{"CRAWLER_HTTP_URL"},
-		Value:   "TODO.example.com/api/v1",
+		Value:   "ipfs-telemetry.org/api/v1",
 	}
 
 	FLAG_CONCURRENCY = &cli.IntFlag{
