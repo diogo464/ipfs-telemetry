@@ -6,6 +6,7 @@ from nats.js.api import StreamConfig
 from nats.js.client import JetStreamContext
 
 import backend.env
+import backend.db
 
 
 async def upsert_stream(js: JetStreamContext, config: StreamConfig):
@@ -18,10 +19,14 @@ async def upsert_stream(js: JetStreamContext, config: StreamConfig):
 
 
 async def main():
+    conn_info = backend.env.create_db_conn_info()
+    engine = backend.db.create_engine(conn_info)
     nc = await backend.env.create_nats_client()
     js = nc.jetstream()
 
-    print(await js.account_info())
+    if backend.db.requires_setup_database(engine):
+        logging.info("Setting up database")
+        backend.db.setup_database(engine)
 
     # Configure telemetry JetStream
     telemetry_config = StreamConfig(
