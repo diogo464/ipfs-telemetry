@@ -82,14 +82,14 @@ class DockerImage:
         self._resource = resource
 
     def build(self):
-        subprocess.run(["podman", "build", "-t", self.tag, "-f", self.path, self.root])
+        subprocess.run(["docker", "build", "-t", self.tag, "-f", self.path, self.root])
 
     def push(self):
-        subprocess.run(["podman", "push", "--tls-verify=false", self.tag])
+        subprocess.run(["docker", "push", "--tls-verify=false", self.tag])
 
     def get_digest(self):
         inspect = subprocess.run(
-            ["podman", "inspect", self.tag], capture_output=True, text=True
+            ["docker", "inspect", self.tag], capture_output=True, text=True
         )
         if inspect.returncode != 0:
             return None

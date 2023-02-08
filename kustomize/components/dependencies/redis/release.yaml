@@ -12,7 +12,6 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: bitnami
-        namespace: flux-system
   interval: 60m0s
   values:
     architecture: standalone

@@ -1,0 +1,96 @@
+= kustomize
+
+== Local development using minikube
+
+=== Prerequisites
+The following tools are required:
+
+[cols="1,1"]
+|===
+| **Tool**
+| **Link**
+
+| `kubectl`
+| https://kubernetes.io/docs/tasks/tools/
+
+| `minikube`
+| https://minikube.sigs.k8s.io/docs/start/
+
+| `flux`
+| https://fluxcd.io/flux/installation/
+
+|===
+
+=== Setup minikube
+
+To setup minikube use the `minikube start` command.
+The following addons are required:
+
+* registry
+* ingress
+* ingress-dns
+
+.Example setup
+[source="shell"]
+----
+# run `minikube start --help` for more options
+$ minikube start --addons=registry,ingress,ingress-dns,metrics-server
+----
+
+If everything worked out then running `kubectl get nodes` should return something like:
+
+----
+❯ kubectl get nodes
+NAME       STATUS   ROLES           AGE     VERSION
+minikube   Ready    control-plane   4m43s   v1.26.1
+----
+
+=== Install flux
+
+Installing flux inside minikube should be as simple as:
+
+[source="shell"]
+----
+$ flux install
+----
+
+=== Build images
+
+Before building the images we need to have access to minikube's registry.
+[source="shell"]
+----
+$ kubectl port-forward -n kube-system service/registry 5000:80
+----
+This will forward port `5000` on `localhost` to the registry's port `80`.
+
+Now, to build the images, run `scripts/minikube-build --no-restart` from the root directory.
+This should build all the images and push them to minikube.
+
+=== Apply the resource files
+
+Running this command the first time may output some errors about CRDs.
+Wait a few seconds and re-run the command. This should only happen the first time.
+
+[source="shell"]
+----
+$ kubectl apply -k kustomize/overlays/dev --server-side
+----
+
+Now it should take a few seconds for everything to start and then the output of `kubectl get deploy` should look like:
+----
+❯ kubectl get deploy
+NAME                  READY   UP-TO-DATE   AVAILABLE   AGE
+backend               1/1     1            1           9m37s
+docs                  1/1     1            1           9m37s
+grafana-deployment    1/1     1            1           9m5s
+grafana-operator      1/1     1            1           9m29s
+ipfs-bot              1/1     1            1           9m37s
+monitor               1/1     1            1           9m37s
+nats-box              1/1     1            1           9m30s
+prometheus-operator   1/1     1            1           9m37s
+----
+
+=== Updating containers
+
+After editing some component, its image can be rebuilt using `scripts/minikube-build <name>`.
+This should rebuild the image, push the image to minikube and restart the deployment to update the image.
