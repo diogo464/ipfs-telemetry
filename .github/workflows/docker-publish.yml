@@ -60,7 +60,7 @@ jobs:
             type=ref,event=branch
             type=ref,event=tag
             type=ref,event=pr
-            type=raw,value=${{ github.ref_name }}-${{ github.sha }}-${{ github.run_number }}
+            type=raw,enabled=${{ github.event_name != 'pull_request' }},value=${{ github.ref_name }}-${{ github.sha }}-${{ github.run_number }}
 
       # Build and push Docker image with Buildx (don't push on PR)
       # https://github.com/docker/build-push-action
