@@ -13,6 +13,7 @@ from .model import (
     Property as Property,
     Event as Event,
     Discovery as Discovery,
+    Description as Description,
 )
 
 from .transform import (

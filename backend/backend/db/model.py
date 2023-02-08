@@ -112,5 +112,5 @@ class Description(Base):
     scope: Mapped[str] = mapped_column(primary_key=True)
     version: Mapped[str] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(primary_key=True)
+    type: Mapped[str] = mapped_column(primary_key=True)
     description: Mapped[str] = mapped_column()
-    type: Mapped[str] = mapped_column()

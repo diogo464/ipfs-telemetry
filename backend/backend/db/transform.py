@@ -9,10 +9,19 @@ from sqlalchemy.orm import Session as SqlSession
 
 from backend.monitor import Export
 
-from . import Session, Property, Event, Metric, Histogram
+from . import Session, Property, Event, Metric, Histogram, Description
 from .model import Base
 
 logger = logging.getLogger(__name__)
+
+
+@dataclasses.dataclass(eq=True, frozen=True)
+class DescriptionData:
+    scope: str
+    version: str
+    name: str
+    description: str
+    type: str
 
 
 @dataclasses.dataclass
@@ -22,31 +31,45 @@ class FromRawResults:
     events: list[Event]
     metrics: list[Metric]
     histograms: list[Histogram]
+    descriptions: list[Description]
 
     def bulk_save(self, session: SqlSession) -> None:
         logger.info(
-            f"Saving {len(self.sessions)} sessions, {len(self.properties)} properties, {len(self.events)} events, {len(self.metrics)} metrics, {len(self.histograms)} histograms"
+            f"Saving {len(self.sessions)} sessions, {len(self.properties)} properties, {len(self.events)} events, {len(self.metrics)} metrics, {len(self.histograms)} histograms, and {len(self.descriptions)} descriptions."
         )
         _store_db_objects(session, self.sessions)
         _store_db_objects(session, self.properties)
         _store_db_objects(session, self.events)
         _store_db_objects(session, self.metrics)
         _store_db_objects(session, self.histograms)
+        _store_db_objects(session, self.descriptions)
 
 
 def convert_export_object(export: Export) -> FromRawResults:
-    db_sessions = []
-    db_properties = []
-    db_events = []
-    db_metrics = []
-    db_histograms = []
+    db_sessions: list[Session] = []
+    db_properties: list[Property] = []
+    db_events: list[Event] = []
+    db_metrics: list[Metric] = []
+    db_histograms: list[Histogram] = []
+    db_descriptions: list[Description] = []
+    descriptions: set[DescriptionData] = set()
 
     db_sessions.append(_convert_export_session(export))
-    db_properties.extend(_convert_export_properties(export))
-    db_events.extend(_convert_export_events(export))
-    metrics, histograms = _convert_export_metrics(export)
+    db_properties.extend(_convert_export_properties(export, descriptions))
+    db_events.extend(_convert_export_events(export, descriptions))
+    metrics, histograms = _convert_export_metrics(export, descriptions)
     db_metrics.extend(metrics)
     db_histograms.extend(histograms)
+    for desc in descriptions:
+        db_descriptions.append(
+            Description(
+                scope=desc.scope,
+                version=desc.version,
+                name=desc.name,
+                description=desc.description,
+                type=desc.type,
+            )
+        )
 
     return FromRawResults(
         sessions=db_sessions,
@@ -54,12 +77,17 @@ def convert_export_object(export: Export) -> FromRawResults:
         events=db_events,
         metrics=db_metrics,
         histograms=db_histograms,
+        descriptions=db_descriptions,
     )
 
 
 def _store_db_objects(session: SqlSession, db_objects: Sequence[Base]):
     sessions = [ss for ss in db_objects if isinstance(ss, Session)]
     others = [obj for obj in db_objects if not isinstance(obj, Session)]
+
+    descriptions = [desc for desc in others if isinstance(desc, Description)]
+    others = [obj for obj in others if not isinstance(obj, Description)]
+
     for ss in sessions:
         ins = insert(Session).values(
             {
@@ -75,6 +103,22 @@ def _store_db_objects(session: SqlSession, db_objects: Sequence[Base]):
             where=Session.last_seen < ins.excluded.last_seen,
         )
         session.execute(ins)
+
+    logger.info(f"saving {len(descriptions)} descriptions")
+    for desc in descriptions:
+        ins = insert(Description).values(
+            {
+                "scope": desc.scope,
+                "version": desc.version,
+                "name": desc.name,
+                "description": desc.description,
+                "type": desc.type,
+            }
+        )
+        ins = ins.on_conflict_do_nothing(
+            constraint=Description.__table__.primary_key,
+        )
+        session.execute(ins)
     session.bulk_save_objects(others)
 
 
@@ -87,23 +131,34 @@ def _convert_export_session(export: Export) -> Session:
     )
 
 
-def _convert_export_properties(export: Export) -> list[Property]:
+def _convert_export_properties(
+    export: Export, descriptions: set[DescriptionData]
+) -> list[Property]:
     db_props = []
     for property in export.properties:
-        db_props.append(
-            Property(
-                session=export.session,
-                peer=export.peer,
-                scope=property.scope.name,
-                version=property.scope.version,
-                name=property.name,
-                value=str(property.value),
-            )
+        description = DescriptionData(
+            scope=property.scope.name,
+            version=property.scope.version,
+            name=property.name,
+            description=property.description,
+            type="property",
         )
+        prop = Property(
+            session=export.session,
+            peer=export.peer,
+            scope=property.scope.name,
+            version=property.scope.version,
+            name=property.name,
+            value=str(property.value),
+        )
+        db_props.append(prop)
+        descriptions.add(description)
     return db_props
 
 
-def _convert_export_events(export: Export) -> list[Event]:
+def _convert_export_events(
+    export: Export, descriptions: set[DescriptionData]
+) -> list[Event]:
     db_events = []
     for event_export in export.events:
         descriptor = event_export.descriptor
@@ -112,24 +167,31 @@ def _convert_export_events(export: Export) -> list[Event]:
                 event_data = event.decode().decode("utf-8")
                 _ = json.loads(event_data)  # Check that it is valid JSON
 
-                db_events.append(
-                    Event(
-                        session=export.session,
-                        peer=export.peer,
-                        scope=descriptor.scope.name,
-                        version=descriptor.scope.version,
-                        name=descriptor.name,
-                        timestamp=event.timestamp,
-                        value=event_data,
-                    )
+                description = DescriptionData(
+                    scope=descriptor.scope.name,
+                    version=descriptor.scope.version,
+                    name=descriptor.name,
+                    description=descriptor.description,
+                    type="event",
                 )
+                ev = Event(
+                    session=export.session,
+                    peer=export.peer,
+                    scope=descriptor.scope.name,
+                    version=descriptor.scope.version,
+                    name=descriptor.name,
+                    timestamp=event.timestamp,
+                    value=event_data,
+                )
+                db_events.append(ev)
+                descriptions.add(description)
             except Exception as e:
                 logger.warn(f"Failed to decode event {descriptor}: {e}")
     return db_events
 
 
 def _convert_export_metrics(
-    export: Export,
+    export: Export, descriptions: set[DescriptionData]
 ) -> tuple[list[Metric], list[Histogram]]:
     db_metrics = []
     db_histograms = []
@@ -150,6 +212,14 @@ def _convert_export_metrics(
                         attributes = _convert_otel_attributes(dp.attributes)
                         timestamp = _convert_otel_timestamp(dp.time_unix_nano)
                         value = _convert_otel_numberdatapoint(dp)
+                        description = DescriptionData(
+                            scope=scope,
+                            version=version,
+                            name=name,
+                            description=metric.description,
+                            type="metric",
+                        )
+                        descriptions.add(description)
                         db_metrics.append(
                             Metric(
                                 session=session,
@@ -167,6 +237,14 @@ def _convert_export_metrics(
                         attributes = _convert_otel_attributes(dp.attributes)
                         timestamp = _convert_otel_timestamp(dp.time_unix_nano)
                         value = _convert_otel_numberdatapoint(dp)
+                        description = DescriptionData(
+                            scope=scope,
+                            version=version,
+                            name=name,
+                            description=metric.description,
+                            type="metric",
+                        )
+                        descriptions.add(description)
                         db_metrics.append(
                             Metric(
                                 session=session,
@@ -189,6 +267,14 @@ def _convert_export_metrics(
                         max = dp.max
                         counts = [x for x in dp.bucket_counts]
                         bounds = [x for x in dp.explicit_bounds]
+                        description = DescriptionData(
+                            scope=scope,
+                            version=version,
+                            name=name,
+                            description=metric.description,
+                            type="histogram",
+                        )
+                        descriptions.add(description)
                         db_histograms.append(
                             Histogram(
                                 session=session,

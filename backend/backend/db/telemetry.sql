@@ -100,5 +100,5 @@ CREATE TABLE descriptions (
     name        VARCHAR(255) NOT NULL,
     description VARCHAR(255) NOT NULL,
     type        VARCHAR(255) NOT NULL,
-    PRIMARY KEY (scope, version, name)
+    PRIMARY KEY (scope, version, name, type)
 );
