@@ -41,6 +41,7 @@ patchesStrategicMerge:
   - patch-monitor-collect-interval.yaml
   - patch-grafana-ingress.yaml
   - patch-nats.yaml
+  - patch-timescaledb.yaml
 
 labels:
   - includeSelectors: false
