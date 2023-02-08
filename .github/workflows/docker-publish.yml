@@ -57,6 +57,7 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.component }}
           tags: |
+            type=semver,pattern={{version}}
             type=ref,event=branch
             type=ref,event=tag
             type=ref,event=pr
