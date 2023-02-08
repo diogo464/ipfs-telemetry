@@ -3,6 +3,20 @@ kind: Kustomization
 resources:
   - ../../base
 
+images:
+  - name: ghcr.io/diogo464/ipfs-telemetry/ipfs-bot
+    newName: localhost:5000/ipfs-bot
+    newTag: latest
+  - name: ghcr.io/diogo464/ipfs-telemetry/monitor
+    newName: localhost:5000/monitor
+    newTag: latest
+  - name: ghcr.io/diogo464/ipfs-telemetry/crawler
+    newName: localhost:5000/crawler
+    newTag: latest
+  - name: ghcr.io/diogo464/ipfs-telemetry/backend
+    newName: localhost:5000/backend
+    newTag: latest
+
 components:
   # Dependencies
   - ../../components/dependencies/repos
@@ -16,6 +30,15 @@ components:
   - ../../components/ipfs-bot
   - ../../components/grafana
   - ../../components/prometheus
+
+patches:
+  - patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 1
+    target:
+      kind: Deployment
+      name: ipfs-bot
 
 patchesStrategicMerge:
   - grafana-ingress.yaml
