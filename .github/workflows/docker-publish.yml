@@ -57,11 +57,8 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.component }}
           tags: |
-            # branch event
             type=ref,event=branch
-            # tag event
             type=ref,event=tag
-            # pull request event
             type=ref,event=pr
             type=raw,value=${{ github.ref_name }}-${{ github.sha }}-${{ github.run_number }}
 
