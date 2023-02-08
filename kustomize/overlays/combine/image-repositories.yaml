@@ -1,0 +1,44 @@
+---
+apiVersion: image.toolkit.fluxcd.io/v1beta1
+kind: ImageRepository
+metadata:
+  name: monitor
+spec:
+  image: ghcr.io/diogo464/ipfs-telemetry/monitor
+  interval: 1m0s
+
+---
+apiVersion: image.toolkit.fluxcd.io/v1beta1
+kind: ImageRepository
+metadata:
+  name: crawler
+spec:
+  image: ghcr.io/diogo464/ipfs-telemetry/crawler
+  interval: 1m0s
+
+---
+apiVersion: image.toolkit.fluxcd.io/v1beta1
+kind: ImageRepository
+metadata:
+  name: backend
+spec:
+  image: ghcr.io/diogo464/ipfs-telemetry/backend
+  interval: 1m0s
+
+---
+apiVersion: image.toolkit.fluxcd.io/v1beta1
+kind: ImageRepository
+metadata:
+  name: docs
+spec:
+  image: ghcr.io/diogo464/ipfs-telemetry/docs
+  interval: 1m0s
+
+---
+apiVersion: image.toolkit.fluxcd.io/v1beta1
+kind: ImageRepository
+metadata:
+  name: ipfs-bot
+spec:
+  image: ghcr.io/diogo464/ipfs-telemetry/ipfs-bot
+  interval: 1m0s

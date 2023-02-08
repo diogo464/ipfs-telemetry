@@ -1,0 +1,59 @@
+---
+apiVersion: image.toolkit.fluxcd.io/v1beta1
+kind: ImagePolicy
+metadata:
+  name: monitor
+spec:
+  imageRepositoryRef:
+    name: monitor
+  policy:
+    semver:
+      range: ">=0.0.0"
+
+---
+apiVersion: image.toolkit.fluxcd.io/v1beta1
+kind: ImagePolicy
+metadata:
+  name: crawler
+spec:
+  imageRepositoryRef:
+    name: crawler
+  policy:
+    semver:
+      range: ">=0.0.0"
+
+---
+apiVersion: image.toolkit.fluxcd.io/v1beta1
+kind: ImagePolicy
+metadata:
+  name: backend
+spec:
+  imageRepositoryRef:
+    name: backend
+  policy:
+    semver:
+      range: ">=0.0.0"
+
+---
+apiVersion: image.toolkit.fluxcd.io/v1beta1
+kind: ImagePolicy
+metadata:
+  name: docs
+spec:
+  imageRepositoryRef:
+    name: docs
+  policy:
+    semver:
+      range: ">=0.0.0"
+
+---
+apiVersion: image.toolkit.fluxcd.io/v1beta1
+kind: ImagePolicy
+metadata:
+  name: ipfs-bot
+spec:
+  imageRepositoryRef:
+    name: ipfs-bot
+  policy:
+    semver:
+      range: ">=0.0.0"
