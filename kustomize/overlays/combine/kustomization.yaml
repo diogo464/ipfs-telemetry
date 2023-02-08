@@ -28,6 +28,15 @@ components:
   - ../../components/grafana
   - ../../components/prometheus
 
+patches:
+  - patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 1
+    target:
+      kind: Deployment
+      name: ipfs-bot
+
 patchesStrategicMerge:
   - patch-monitor-collect-interval.yaml
   - patch-grafana-ingress.yaml
