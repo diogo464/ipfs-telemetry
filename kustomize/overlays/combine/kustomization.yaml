@@ -1,32 +1,29 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: ipfs-telemetry
-
 # TODO: maybe add storageClass to timescaledb
 # values:
 #   persistentVolumes:
 #     data:
 #       size: 20Gi
 #       storageClass: nfs-blackmesa-arch
-
 resources:
   - namespace.yaml
   - ../../base
   - docs-ingress.yaml
-
 images:
   - name: ghcr.io/diogo464/ipfs-telemetry/ipfs-bot
     newName: ghcr.io/diogo464/ipfs-telemetry/ipfs-bot # {"$imagepolicy": "ipfs-telemetry:ipfs-bot:name"}
-    newTag: 0.5.0 # {"$imagepolicy": "ipfs-telemetry:ipfs-bot:tag"}
-  # - name: ghcr.io/diogo464/ipfs-telemetry/monitor
-  #   newName: localhost:5000/monitor
-  #   newTag: latest
-  # - name: ghcr.io/diogo464/ipfs-telemetry/crawler
-  #   newName: localhost:5000/crawler
-  #   newTag: latest
-  # - name: ghcr.io/diogo464/ipfs-telemetry/backend
-  #   newName: localhost:5000/backend
-  #   newTag: latest
+    newTag: 0.5.1 # {"$imagepolicy": "ipfs-telemetry:ipfs-bot:tag"}
+# - name: ghcr.io/diogo464/ipfs-telemetry/monitor
+#   newName: localhost:5000/monitor
+#   newTag: latest
+# - name: ghcr.io/diogo464/ipfs-telemetry/crawler
+#   newName: localhost:5000/crawler
+#   newTag: latest
+# - name: ghcr.io/diogo464/ipfs-telemetry/backend
+#   newName: localhost:5000/backend
+#   newTag: latest
 
 components:
   # Dependencies
@@ -42,7 +39,6 @@ components:
   - ../../components/ipfs-bot
   - ../../components/grafana
   - ../../components/prometheus
-
 patches:
   - patch: |-
       - op: replace
@@ -51,13 +47,11 @@ patches:
     target:
       kind: Deployment
       name: ipfs-bot
-
 patchesStrategicMerge:
   - patch-monitor-collect-interval.yaml
   - patch-grafana-ingress.yaml
   - patch-nats.yaml
   - patch-timescaledb.yaml
-
 labels:
   - includeSelectors: false
     pairs:
