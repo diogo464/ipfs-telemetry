@@ -16,8 +16,8 @@ resources:
 
 images:
   - name: ghcr.io/diogo464/ipfs-telemetry/ipfs-bot
-    newName: ghcr.io/diogo464/ipfs-telemetry/ipfs-bot # {"$imagepolicy": "flux-system:ipfs-bot:name"}
-    newTag: 0.5.0 # {"$imagepolicy": "flux-system:ipfs-bot:tag"}
+    newName: ghcr.io/diogo464/ipfs-telemetry/ipfs-bot # {"$imagepolicy": "ipfs-telemetry:ipfs-bot:name"}
+    newTag: 0.5.0 # {"$imagepolicy": "ipfs-telemetry:ipfs-bot:tag"}
   # - name: ghcr.io/diogo464/ipfs-telemetry/monitor
   #   newName: localhost:5000/monitor
   #   newTag: latest
