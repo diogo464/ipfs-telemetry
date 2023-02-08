@@ -42,7 +42,7 @@ TEMPLATES = [
     DockerImageTemplate(
         "crawler",
         "crawler/Dockerfile",
-        None,
+        "deploy/crawler",
         root="crawler/",
     ),
     DockerImageTemplate(
@@ -50,38 +50,19 @@ TEMPLATES = [
         "monitor/Dockerfile",
         "deploy/monitor",
         root="monitor/",
-    )
-    # DockerImageTemplate(
-    #     "monitor",
-    #     "images/monitor.dockerfile",
-    #     "deployment/ipfs-telemetry-monitor",
-    # ),
-    # DockerImageTemplate(
-    #     "crawler",
-    #     "images/crawler.dockerfile",
-    #     "deployment/ipfs-telemetry-crawler",
-    # ),
-    # DockerImageTemplate(
-    #     "ipfs-bot",
-    #     "images/ipfs-bot.dockerfile",
-    #     "deployment/ipfs-telemetry-ipfs-bot",
-    # ),
-    # DockerImageTemplate(
-    #     "backend",
-    #     "images/backend.dockerfile",
-    #     [
-    #         "deployment/ipfs-telemetry-exporter-s3",
-    #         "deployment/ipfs-telemetry-exporter-s3-pg",
-    #         "deployment/ipfs-telemetry-webapi",
-    #         "deployment/ipfs-telemetry-toolbox",
-    #     ],
-    # ),
-    # DockerImageTemplate(
-    #     "docs",
-    #     "docs/Dockerfile",
-    #     "deployment/ipfs-telemetry-docs",
-    #     root="docs",
-    # ),
+    ),
+    DockerImageTemplate(
+        "backend",
+        "backend/Dockerfile",
+        "deploy/backend",
+        root="backend/",
+    ),
+    DockerImageTemplate(
+        "docs",
+        "docs/Dockerfile",
+        "deployment/docs",
+        root="docs",
+    ),
 ]
 
 
