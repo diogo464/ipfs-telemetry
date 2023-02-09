@@ -4,7 +4,7 @@ import opentelemetry.proto.metrics.v1.metrics_pb2 as otlp
 
 from re import IGNORECASE, UNICODE, compile
 
-from backend.monitor import Export, ExportMetrics
+from backend.monitor import MonitorExport, ExportMetrics
 
 logger = logging.getLogger(__name__)
 
@@ -98,7 +98,7 @@ class PromGroup:
         return "\n".join(lines) + "\n"
 
 
-def convert_export(export: Export) -> str:
+def convert_export(export: MonitorExport) -> str:
     output = ""
     metrics = [m.decode_otlp() for m in export.metrics]
     for resource_metrics in metrics:

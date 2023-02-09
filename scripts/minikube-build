@@ -54,7 +54,7 @@ TEMPLATES = [
     DockerImageTemplate(
         "backend",
         "backend/Dockerfile",
-        "deploy/backend",
+        ["deploy/webapi", "deploy/exporter-pg", "deploy/exporter-vm"],
         root="backend/",
     ),
     DockerImageTemplate(

@@ -51,7 +51,7 @@ class ExportProperty(BaseModel):
     value: str = Field(description="Property value")
 
 
-class Export(BaseModel):
+class MonitorExport(BaseModel):
     observed_at: datetime.datetime = Field(description="Timestamp of the export")
     peer: str = Field(description="Peer ID")
     session: uuid.UUID = Field(description="Session UUID")

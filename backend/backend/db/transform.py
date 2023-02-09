@@ -7,7 +7,7 @@ from typing import Any, Sequence
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session as SqlSession
 
-from backend.monitor import Export
+from backend.monitor import MonitorExport
 
 from . import Session, Property, Event, Metric, Histogram, Description
 from .model import Base
@@ -45,7 +45,7 @@ class FromRawResults:
         _store_db_objects(session, self.descriptions)
 
 
-def convert_export_object(export: Export) -> FromRawResults:
+def convert_export_object(export: MonitorExport) -> FromRawResults:
     db_sessions: list[Session] = []
     db_properties: list[Property] = []
     db_events: list[Event] = []
@@ -122,7 +122,7 @@ def _store_db_objects(session: SqlSession, db_objects: Sequence[Base]):
     session.bulk_save_objects(others)
 
 
-def _convert_export_session(export: Export) -> Session:
+def _convert_export_session(export: MonitorExport) -> Session:
     return Session(
         session=export.session,
         peer=export.peer,
@@ -132,7 +132,7 @@ def _convert_export_session(export: Export) -> Session:
 
 
 def _convert_export_properties(
-    export: Export, descriptions: set[DescriptionData]
+    export: MonitorExport, descriptions: set[DescriptionData]
 ) -> list[Property]:
     db_props = []
     for property in export.properties:
@@ -157,7 +157,7 @@ def _convert_export_properties(
 
 
 def _convert_export_events(
-    export: Export, descriptions: set[DescriptionData]
+    export: MonitorExport, descriptions: set[DescriptionData]
 ) -> list[Event]:
     db_events = []
     for event_export in export.events:
@@ -191,7 +191,7 @@ def _convert_export_events(
 
 
 def _convert_export_metrics(
-    export: Export, descriptions: set[DescriptionData]
+    export: MonitorExport, descriptions: set[DescriptionData]
 ) -> tuple[list[Metric], list[Histogram]]:
     db_metrics = []
     db_histograms = []

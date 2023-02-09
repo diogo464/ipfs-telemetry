@@ -1,9 +1,9 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: docs
+  name: backend
   labels:
-    name: docs
+    name: backend
   annotations:
     kubernetes.io/tls-acme: "true"
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
@@ -29,6 +29,6 @@ spec:
             path: "/api"
             backend:
               service:
-                name: backend
+                name: webapi
                 port:
                   name: http

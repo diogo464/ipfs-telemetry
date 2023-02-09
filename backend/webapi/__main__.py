@@ -8,7 +8,6 @@ from rocketry import Rocketry
 from signal import SIGINT, SIGTERM
 
 from .routers import raw, discovery
-from .tasks import exporter_vm, exporter_pg
 
 
 logger = logging.getLogger(__name__)
@@ -58,9 +57,6 @@ async def main(host: str, port: int, root_path: str):
     couroutines = [
         server.serve(),  # web server
         rocket.serve(),  # rocketry
-        # tasks
-        exporter_vm.run(),
-        exporter_pg.run(),
     ]
 
     async_tasks = [asyncio.create_task(exception_wrapper(c)) for c in couroutines]

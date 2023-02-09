@@ -1,0 +1,40 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: exporter-pg
+  labels:
+    app.kubernetes.io/component: exporter-pg
+spec:
+  selector:
+    matchLabels:
+      app: exporter-pg
+  template:
+    metadata:
+      labels:
+        app: exporter-pg
+        app.kubernetes.io/component: exporter-pg
+    spec:
+      initContainers:
+        - name: init
+          image: ghcr.io/diogo464/ipfs-telemetry/backend:main
+          imagePullPolicy: Always
+          command: ["poetry", "run", "python", "-m", "backend.job.init"]
+          envFrom:
+            - configMapRef:
+                name: envconfig
+      containers:
+        - name: exporter-pg
+          image: ghcr.io/diogo464/ipfs-telemetry/backend:main
+          imagePullPolicy: Always
+          command: ["poetry", "run", "python", "-m", "component.exporter-pg"]
+          resources:
+            requests:
+              memory: "96Mi"
+              cpu: "10m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+          envFrom:
+            - configMapRef:
+                name: envconfig

@@ -10,7 +10,7 @@ namespace: ipfs-telemetry
 resources:
   - namespace.yaml
   - ../../base
-  - docs-ingress.yaml
+  - backend-ingress.yaml
 images:
   - name: ghcr.io/diogo464/ipfs-telemetry/ipfs-bot
     newName: ghcr.io/diogo464/ipfs-telemetry/ipfs-bot # {"$imagepolicy": "ipfs-telemetry:ipfs-bot:name"}
