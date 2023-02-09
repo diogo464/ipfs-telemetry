@@ -20,7 +20,7 @@ images:
     newTag: 0.5.2 # {"$imagepolicy": "ipfs-telemetry:monitor:tag"}
   - name: ghcr.io/diogo464/ipfs-telemetry/crawler
     newName: ghcr.io/diogo464/ipfs-telemetry/crawler # {"$imagepolicy": "ipfs-telemetry:crawler:name"}
-    newTag: 0.5.1 # {"$imagepolicy": "ipfs-telemetry:crawler:tag"}
+    newTag: 0.5.2 # {"$imagepolicy": "ipfs-telemetry:crawler:tag"}
   - name: ghcr.io/diogo464/ipfs-telemetry/backend
     newName: ghcr.io/diogo464/ipfs-telemetry/backend # {"$imagepolicy": "ipfs-telemetry:backend:name"}
     newTag: 0.5.2 # {"$imagepolicy": "ipfs-telemetry:backend:tag"}
