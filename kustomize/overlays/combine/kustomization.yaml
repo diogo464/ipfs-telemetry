@@ -26,7 +26,7 @@ images:
     newTag: 0.5.1 # {"$imagepolicy": "ipfs-telemetry:backend:tag"}
   - name: ghcr.io/diogo464/ipfs-telemetry/docs
     newName: ghcr.io/diogo464/ipfs-telemetry/docs # {"$imagepolicy": "ipfs-telemetry:docs:name"}
-    newTag: 0.5.1 # {"$imagepolicy": "ipfs-telemetry:docs:tag"}
+    newTag: 0.5.2 # {"$imagepolicy": "ipfs-telemetry:docs:tag"}
 components:
   # Dependencies
   - ../../components/dependencies/repos
