@@ -1,0 +1,22 @@
+#!/bin/sh
+
+ADDRESS="127.0.0.1"
+
+# Registry
+kubectl port-forward --namespace kube-system --address $ADDRESS service/registry 5000:80 &
+
+# Nats
+kubectl port-forward --address $ADDRESS service/nats 4222 &
+
+# TimescaleDB
+kubectl port-forward --address $ADDRESS service/timescaledb 5432 &
+
+# Redis
+kubectl port-forward --address $ADDRESS service/redis-master 6379 &
+
+# VictoriaMetrics
+kubectl port-forward --address $ADDRESS service/victoria-metrics 8428 &
+
+echo "Port forwarding..."
+echo "Press Ctrl+C to stop"
+wait
