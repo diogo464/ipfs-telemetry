@@ -34,6 +34,14 @@ func actionMetrics(c *cli.Context) error {
 		return err
 	}
 	metrics := cmetrics.OTLP
+	j, err := json.MarshalIndent(metrics, "", "  ")
+	if err != nil {
+		return err
+	}
+	fmt.Println(string(j))
+	if true {
+		return nil
+	}
 
 	if c.Bool(FLAG_METRICS_RAW.Name) {
 		m, err := json.MarshalIndent(metrics, "", "  ")

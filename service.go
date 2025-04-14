@@ -107,12 +107,10 @@ func NewService(h host.Host, os ...ServiceOption) (*Service, MeterProvider, erro
 
 	t.meter_provider = newServiceMeterProvider(t, meter_provider)
 
-	fmt.Println("PRE KEK")
 	aclMetrics, err := metrics.NewAclMetrics(t.meter_provider)
 	if err != nil {
 		return nil, nil, err
 	}
-	fmt.Println("KEK")
 	t.serviceAcl = newServiceAccessControl(opts.serviceAccessType, opts.serviceAccessWhitelist, aclMetrics)
 
 	smetrics, err := metrics.NewMetrics(t.meter_provider)

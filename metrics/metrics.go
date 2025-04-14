@@ -132,9 +132,7 @@ func (m *Metrics) RegisterCallback(cb func(context.Context, metric.Observer) err
 }
 
 func NewAclMetrics(meterProvider metric.MeterProvider) (*AclMetrics, error) {
-	fmt.Println("KEKAA")
 	m := meterProvider.Meter(AclScope.Name, metric.WithInstrumentationVersion(AclScope.Version), metric.WithSchemaURL(AclScope.SchemaURL))
-	fmt.Println("KEKB")
 
 	BlockedRequests, err := m.Int64Counter(
 		"telemetry.acl.blocked_requests",
