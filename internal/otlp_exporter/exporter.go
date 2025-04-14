@@ -5,35 +5,34 @@ import (
 
 	"github.com/diogo464/telemetry/internal/otlp_exporter/transform"
 	"github.com/diogo464/telemetry/internal/stream"
-	sdk_metric "go.opentelemetry.io/otel/sdk/metric"
-	"go.opentelemetry.io/otel/sdk/metric/aggregation"
+	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"google.golang.org/protobuf/proto"
 )
 
-var _ sdk_metric.Exporter = (*exporter)(nil)
+var _ metric.Exporter = (*exporter)(nil)
 
 type exporter struct {
 	stream              *stream.Stream
-	aggregationSelector sdk_metric.AggregationSelector
-	temporalitySelector sdk_metric.TemporalitySelector
+	aggregationSelector metric.AggregationSelector
+	temporalitySelector metric.TemporalitySelector
 }
 
-func New(stream *stream.Stream) sdk_metric.Exporter {
+func New(stream *stream.Stream) metric.Exporter {
 	return &exporter{
 		stream:              stream,
-		aggregationSelector: sdk_metric.DefaultAggregationSelector,
-		temporalitySelector: sdk_metric.DefaultTemporalitySelector,
+		aggregationSelector: metric.DefaultAggregationSelector,
+		temporalitySelector: metric.DefaultTemporalitySelector,
 	}
 }
 
 // Aggregation implements metric.Exporter
-func (e *exporter) Aggregation(kind sdk_metric.InstrumentKind) aggregation.Aggregation {
+func (e *exporter) Aggregation(kind metric.InstrumentKind) metric.Aggregation {
 	return e.aggregationSelector(kind)
 }
 
 // Export implements metric.Exporter
-func (e *exporter) Export(ctx context.Context, rm metricdata.ResourceMetrics) error {
+func (e *exporter) Export(ctx context.Context, rm *metricdata.ResourceMetrics) error {
 	pbrm, err := transform.ResourceMetrics(rm)
 	if err != nil {
 		return err
@@ -56,6 +55,6 @@ func (*exporter) Shutdown(context.Context) error {
 }
 
 // Temporality implements metric.Exporter
-func (e *exporter) Temporality(kind sdk_metric.InstrumentKind) metricdata.Temporality {
+func (e *exporter) Temporality(kind metric.InstrumentKind) metricdata.Temporality {
 	return e.temporalitySelector(kind)
 }

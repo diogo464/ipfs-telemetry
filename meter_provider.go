@@ -16,12 +16,11 @@ type MeterProvider interface {
 
 type serviceMeterId struct {
 	instrumentationName string
-	config              metric.MeterConfig
 }
 
 type serviceMeterProvider struct {
-	service        *Service
-	meter_provider metric.MeterProvider
+	metric.MeterProvider
+	service *Service
 
 	mu     sync.Mutex
 	meters map[serviceMeterId]*serviceMeter
@@ -29,21 +28,17 @@ type serviceMeterProvider struct {
 
 func newServiceMeterProvider(service *Service, meter_provider metric.MeterProvider) *serviceMeterProvider {
 	return &serviceMeterProvider{
-		service:        service,
-		meter_provider: meter_provider,
+		MeterProvider: meter_provider,
+		service:       service,
 
 		meters: make(map[serviceMeterId]*serviceMeter),
 	}
 }
 
-// Meter implements MeterProvider
-func (mp *serviceMeterProvider) Meter(instrumentationName string, opts ...metric.MeterOption) metric.Meter {
-	return mp.TelemetryMeter(instrumentationName, opts...)
-}
-
 func (mp *serviceMeterProvider) TelemetryMeter(instrumentationName string, opts ...metric.MeterOption) Meter {
+	// TODO: why am I saving the meters in a map? can't I just create a new one every time?
 	cfg := metric.NewMeterConfig(opts...)
-	meterId := serviceMeterId{instrumentationName: instrumentationName, config: cfg}
+	meterId := serviceMeterId{instrumentationName: instrumentationName}
 
 	mp.mu.Lock()
 	defer mp.mu.Unlock()
@@ -51,17 +46,9 @@ func (mp *serviceMeterProvider) TelemetryMeter(instrumentationName string, opts 
 		return meter
 	}
 
-	meter := mp.meter_provider.Meter(instrumentationName, opts...)
+	meter := mp.Meter(instrumentationName, opts...)
 	smeter := newServiceMeter(mp.service, instrumentationName, cfg, meter)
 	mp.meters[meterId] = smeter
 
 	return smeter
-}
-
-func DowncastMeterProvider(provider metric.MeterProvider) MeterProvider {
-	if tprovider, ok := provider.(MeterProvider); ok {
-		return tprovider
-	} else {
-		return NewNoopMeterProvider()
-	}
 }

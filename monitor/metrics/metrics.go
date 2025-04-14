@@ -5,8 +5,6 @@ import (
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/instrument"
-	"go.opentelemetry.io/otel/metric/unit"
 	"go.opentelemetry.io/otel/sdk/instrumentation"
 )
 
@@ -30,20 +28,20 @@ type Metrics struct {
 	m metric.Meter
 
 	// Synchronous
-	DiscoveredPeers   instrument.Int64Counter
-	RediscoveredPeers instrument.Int64Counter
+	DiscoveredPeers   metric.Int64Counter
+	RediscoveredPeers metric.Int64Counter
 
 	// Asynchronous
-	ActivePeers instrument.Int64ObservableGauge
+	ActivePeers metric.Int64ObservableGauge
 }
 
 type PeerTaskMetrics struct {
-	CollectCompleted instrument.Int64Counter
-	CollectFailure   instrument.Int64Counter
+	CollectCompleted metric.Int64Counter
+	CollectFailure   metric.Int64Counter
 }
 
 type ExporterMetrics struct {
-	Exports instrument.Int64Counter
+	Exports metric.Int64Counter
 }
 
 func New(meterProvider metric.MeterProvider) (*Metrics, error) {
@@ -51,8 +49,8 @@ func New(meterProvider metric.MeterProvider) (*Metrics, error) {
 
 	DiscoveredPeers, err := m.Int64Counter(
 		"monitor.discovered_peers",
-		instrument.WithDescription("Number of peers discovered, including duplicates"),
-		instrument.WithUnit(unit.Dimensionless),
+		metric.WithDescription("Number of peers discovered, including duplicates"),
+		metric.WithUnit("1"),
 	)
 	if err != nil {
 		return nil, err
@@ -60,8 +58,8 @@ func New(meterProvider metric.MeterProvider) (*Metrics, error) {
 
 	RediscoveredPeers, err := m.Int64Counter(
 		"monitor.rediscovered_peers",
-		instrument.WithDescription("Number of peers rediscovered"),
-		instrument.WithUnit(unit.Dimensionless),
+		metric.WithDescription("Number of peers rediscovered"),
+		metric.WithUnit("1"),
 	)
 	if err != nil {
 		return nil, err
@@ -69,8 +67,8 @@ func New(meterProvider metric.MeterProvider) (*Metrics, error) {
 
 	ActivePeers, err := m.Int64ObservableGauge(
 		"monitor.active_peers",
-		instrument.WithDescription("Number of peers currently being monitored"),
-		instrument.WithUnit(unit.Dimensionless),
+		metric.WithDescription("Number of peers currently being monitored"),
+		metric.WithUnit("1"),
 	)
 	if err != nil {
 		return nil, err
@@ -85,7 +83,7 @@ func New(meterProvider metric.MeterProvider) (*Metrics, error) {
 }
 
 func (m *Metrics) RegisterCallback(cb func(context.Context, metric.Observer) error) error {
-	instruments := []instrument.Asynchronous{
+	instruments := []metric.Asynchronous{
 		m.ActivePeers,
 	}
 	_, err := m.m.RegisterCallback(cb, instruments...)
@@ -97,8 +95,8 @@ func NewPeerTaskMetrics(meterProvider metric.MeterProvider) (*PeerTaskMetrics, e
 
 	CollectCompleted, err := m.Int64Counter(
 		"monitor.collect_completed",
-		instrument.WithDescription("Number of collect completions"),
-		instrument.WithUnit(unit.Dimensionless),
+		metric.WithDescription("Number of collect completions"),
+		metric.WithUnit("1"),
 	)
 	if err != nil {
 		return nil, err
@@ -106,8 +104,8 @@ func NewPeerTaskMetrics(meterProvider metric.MeterProvider) (*PeerTaskMetrics, e
 
 	CollectFailure, err := m.Int64Counter(
 		"monitor.collect_failure",
-		instrument.WithDescription("Number of collect failures"),
-		instrument.WithUnit(unit.Dimensionless),
+		metric.WithDescription("Number of collect failures"),
+		metric.WithUnit("1"),
 	)
 	if err != nil {
 		return nil, err
@@ -124,8 +122,8 @@ func NewExportMetrics(meterProvider metric.MeterProvider) (*ExporterMetrics, err
 
 	Exports, err := m.Int64Counter(
 		"monitor.exports",
-		instrument.WithDescription("Number of exports"),
-		instrument.WithUnit(unit.Dimensionless),
+		metric.WithDescription("Number of exports"),
+		metric.WithUnit("1"),
 	)
 	if err != nil {
 		return nil, err

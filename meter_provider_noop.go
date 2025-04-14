@@ -1,14 +1,18 @@
 package telemetry
 
-import "go.opentelemetry.io/otel/metric"
+import (
+	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/metric/noop"
+)
 
 var _ (MeterProvider) = (*noOpMeterProvider)(nil)
 
 type noOpMeterProvider struct {
+	noop.MeterProvider
 }
 
 func NewNoopMeterProvider() MeterProvider {
-	return &noOpMeterProvider{}
+	return &noOpMeterProvider{MeterProvider: noop.NewMeterProvider()}
 }
 
 // Meter implements MeterProvider
@@ -17,8 +21,7 @@ func (n *noOpMeterProvider) Meter(instrumentationName string, opts ...metric.Met
 }
 
 // TelemetryMeter implements MeterProvider
-func (*noOpMeterProvider) TelemetryMeter(instrumentationName string, opts ...metric.MeterOption) Meter {
-	n := metric.NewNoopMeterProvider()
-	m := n.Meter(instrumentationName, opts...)
-	return &noOpMeter{noop_meter: m}
+func (p *noOpMeterProvider) TelemetryMeter(instrumentationName string, opts ...metric.MeterOption) Meter {
+	m := p.MeterProvider.Meter(instrumentationName, opts...)
+	return &noOpMeter{m}
 }

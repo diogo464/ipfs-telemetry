@@ -6,6 +6,7 @@ import (
 
 	"github.com/diogo464/telemetry/internal/pb"
 	"github.com/diogo464/telemetry/metrics"
+	"go.opentelemetry.io/otel/metric"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -27,10 +28,10 @@ var (
 
 func (s *Service) GetSession(ctx context.Context, req *pb.GetSessionRequest) (*pb.GetSessionResponse, error) {
 	methodAttr := metrics.KeyGrpcMethod.String("GetSession")
-	s.smetrics.GrpcReqCount.Add(ctx, 1, methodAttr)
+	s.smetrics.GrpcReqCount.Add(ctx, 1, metric.WithAttributes(methodAttr))
 	startTime := time.Now()
 	defer func() {
-		s.smetrics.GrpcReqDur.Record(ctx, time.Since(startTime).Milliseconds(), methodAttr)
+		s.smetrics.GrpcReqDur.Record(ctx, time.Since(startTime).Milliseconds(), metric.WithAttributes(methodAttr))
 	}()
 
 	return &pb.GetSessionResponse{
@@ -40,10 +41,10 @@ func (s *Service) GetSession(ctx context.Context, req *pb.GetSessionRequest) (*p
 
 func (s *Service) GetProperties(req *pb.GetPropertiesRequest, srv pb.Telemetry_GetPropertiesServer) error {
 	methodAttr := metrics.KeyGrpcMethod.String("GetProperties")
-	s.smetrics.GrpcReqCount.Add(srv.Context(), 1, methodAttr)
+	s.smetrics.GrpcReqCount.Add(srv.Context(), 1, metric.WithAttributes(methodAttr))
 	startTime := time.Now()
 	defer func() {
-		s.smetrics.GrpcReqDur.Record(srv.Context(), time.Since(startTime).Milliseconds(), methodAttr)
+		s.smetrics.GrpcReqDur.Record(srv.Context(), time.Since(startTime).Milliseconds(), metric.WithAttributes(methodAttr))
 	}()
 
 	properties := s.properties.copyProperties()
@@ -57,10 +58,10 @@ func (s *Service) GetProperties(req *pb.GetPropertiesRequest, srv pb.Telemetry_G
 
 func (s *Service) GetStreamDescriptors(ctx context.Context, req *pb.GetStreamDescriptorsRequest) (*pb.GetStreamDescriptorsResponse, error) {
 	methodAttr := metrics.KeyGrpcMethod.String("GetStreamDescriptors")
-	s.smetrics.GrpcReqCount.Add(ctx, 1, methodAttr)
+	s.smetrics.GrpcReqCount.Add(ctx, 1, metric.WithAttributes(methodAttr))
 	startTime := time.Now()
 	defer func() {
-		s.smetrics.GrpcReqDur.Record(ctx, time.Since(startTime).Milliseconds(), methodAttr)
+		s.smetrics.GrpcReqDur.Record(ctx, time.Since(startTime).Milliseconds(), metric.WithAttributes(methodAttr))
 	}()
 
 	descriptors := s.streams.copyDescriptors()
@@ -71,10 +72,10 @@ func (s *Service) GetStreamDescriptors(ctx context.Context, req *pb.GetStreamDes
 
 func (s *Service) GetStream(req *pb.GetStreamRequest, srv pb.Telemetry_GetStreamServer) error {
 	methodAttr := metrics.KeyGrpcMethod.String("GetStream")
-	s.smetrics.GrpcReqCount.Add(srv.Context(), 1, methodAttr)
+	s.smetrics.GrpcReqCount.Add(srv.Context(), 1, metric.WithAttributes(methodAttr))
 	startTime := time.Now()
 	defer func() {
-		s.smetrics.GrpcReqDur.Record(srv.Context(), time.Since(startTime).Milliseconds(), methodAttr)
+		s.smetrics.GrpcReqDur.Record(srv.Context(), time.Since(startTime).Milliseconds(), metric.WithAttributes(methodAttr))
 	}()
 
 	streamId := StreamId(req.GetStreamId())
@@ -104,6 +105,6 @@ func (s *Service) GetStream(req *pb.GetStreamRequest, srv pb.Telemetry_GetStream
 		}
 	}
 
-	s.smetrics.GrpcStreamSegRet.Record(srv.Context(), int64(segmentCount), methodAttr)
+	s.smetrics.GrpcStreamSegRet.Record(srv.Context(), int64(segmentCount), metric.WithAttributes(methodAttr))
 	return nil
 }

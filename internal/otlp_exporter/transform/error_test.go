@@ -1,18 +1,10 @@
-// Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Code created by gotmpl. DO NOT MODIFY.
+// source: internal/shared/otlp/otlpmetric/transform/error_test.go.tmpl
 
-package transform // import "go.opentelemetry.io/otel/exporters/otlp/otlpmetric/internal/transform"
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package transform
 
 import (
 	"strings"
@@ -43,7 +35,7 @@ func TestMultiErr(t *testing.T) {
 	me := &multiErr{datatype: name}
 
 	t.Run("ErrOrNil", func(t *testing.T) {
-		require.Nil(t, me.errOrNil())
+		require.NoError(t, me.errOrNil())
 		me.errs = []error{e0}
 		assert.Error(t, me.errOrNil())
 	})
@@ -65,7 +57,7 @@ func TestMultiErr(t *testing.T) {
 		// language so this doesn't become a change-indicator.
 		msg := me.Error()
 		lines := strings.Split(msg, "\n")
-		assert.Equalf(t, 4, len(lines), "expected a 4 line error message, got:\n\n%s", msg)
+		assert.Lenf(t, lines, 4, "expected a 4 line error message, got:\n\n%s", msg)
 		assert.Contains(t, msg, name)
 		assert.Contains(t, msg, e0.Error())
 		assert.Contains(t, msg, testErr.Error())

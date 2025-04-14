@@ -7,6 +7,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/multiformats/go-multiaddr"
 	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/metric/noop"
 	sdk_metric "go.opentelemetry.io/otel/sdk/metric"
 )
 
@@ -15,7 +16,7 @@ type ServiceOption func(*serviceOptions) error
 type MeterProviderFactory = func(sdk_metric.Reader) (metric.MeterProvider, error)
 
 var NoOpMeterProviderFactory = func(sdk_metric.Reader) (metric.MeterProvider, error) {
-	return metric.NewNoopMeterProvider(), nil
+	return noop.NewMeterProvider(), nil
 }
 
 type serviceOptions struct {

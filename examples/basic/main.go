@@ -11,12 +11,11 @@ import (
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/urfave/cli/v2"
-	"go.opentelemetry.io/otel/metric/global"
-	"go.opentelemetry.io/otel/metric/instrument"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 
 	otel_host "go.opentelemetry.io/contrib/instrumentation/host"
 	otel_runtime "go.opentelemetry.io/contrib/instrumentation/runtime"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/metric"
 	sdk_metric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
@@ -44,6 +43,7 @@ func actionMain(c *cli.Context) error {
 		return err
 	}
 
+	fmt.Println("creating telemetry service")
 	_, mp, err := telemetry.NewService(
 		h,
 		telemetry.WithServiceDebug(true),
@@ -65,17 +65,19 @@ func actionMain(c *cli.Context) error {
 		return err
 	}
 
-	global.SetMeterProvider(mp)
+	fmt.Println("setting otel")
+	otel.SetMeterProvider(mp)
 	otel_host.Start()
 	otel_runtime.Start()
 
+	fmt.Println("creating basic metrics")
 	tmp := mp
 	m1 := tmp.TelemetryMeter("libp2p.io/host")
 
 	m1.Property(
 		"os",
 		telemetry.NewPropertyValueString(runtime.GOOS),
-		instrument.WithDescription("golang runtime.GOOS"))
+		metric.WithDescription("golang runtime.GOOS"))
 
 	m2 := tmp.TelemetryMeter("libp2p.io/network")
 
@@ -87,11 +89,11 @@ func actionMain(c *cli.Context) error {
 			e.Emit(h.Addrs())
 			return nil
 		},
-		instrument.WithDescription("some description"),
+		metric.WithDescription("some description"),
 	)
 
 	m3 := tmp.TelemetryMeter("libp2p.io/kad")
-	ev := m3.Event("handler_timing", instrument.WithDescription("Handler timings"))
+	ev := m3.Event("handler_timing", metric.WithDescription("Handler timings"))
 
 	go func() {
 		c := 1
@@ -114,9 +116,11 @@ func actionMain(c *cli.Context) error {
 }
 
 func createHost() (host.Host, error) {
+	fmt.Println("creating host...")
 	h, err := libp2p.New(libp2p.ListenAddrStrings("/ip4/127.0.0.1/tcp/3001"))
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println("host created")
 	return h, nil
 }

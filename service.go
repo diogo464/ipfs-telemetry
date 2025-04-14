@@ -105,10 +105,12 @@ func NewService(h host.Host, os ...ServiceOption) (*Service, MeterProvider, erro
 
 	t.meter_provider = newServiceMeterProvider(t, meter_provider)
 
+	fmt.Println("PRE KEK")
 	aclMetrics, err := metrics.NewAclMetrics(t.meter_provider)
 	if err != nil {
 		return nil, nil, err
 	}
+	fmt.Println("KEK")
 	t.serviceAcl = newServiceAccessControl(opts.serviceAccessType, opts.serviceAccessWhitelist, aclMetrics)
 
 	smetrics, err := metrics.NewMetrics(t.meter_provider)
@@ -131,8 +133,8 @@ func NewService(h host.Host, os ...ServiceOption) (*Service, MeterProvider, erro
 	streamMetrics.RegisterCallback(func(ctx context.Context, obs metric.Observer) error {
 		for _, s := range t.streams.getStats() {
 			attr := metrics.KeyStreamID.Int(int(s.streamId))
-			obs.ObserveInt64(streamMetrics.UsedSize, int64(s.stats.UsedSize), attr)
-			obs.ObserveInt64(streamMetrics.TotalSize, int64(s.stats.TotalSize), attr)
+			obs.ObserveInt64(streamMetrics.UsedSize, int64(s.stats.UsedSize), metric.WithAttributes(attr))
+			obs.ObserveInt64(streamMetrics.TotalSize, int64(s.stats.TotalSize), metric.WithAttributes(attr))
 		}
 		return nil
 	})

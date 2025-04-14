@@ -1,21 +1,16 @@
-// Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Code created by gotmpl. DO NOT MODIFY.
+// source: internal/shared/otlp/otlpmetric/transform/metricdata.go.tmpl
 
-package transform // import "go.opentelemetry.io/otel/exporters/otlp/otlpmetric/internal/transform"
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+// Package transform provides transformation functionality from the
+// sdk/metric/metricdata data-types into OTLP data-types.
+package transform // import "go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp/internal/transform"
 
 import (
 	"fmt"
+	"time"
 
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	cpb "go.opentelemetry.io/proto/otlp/common/v1"
@@ -26,7 +21,7 @@ import (
 // ResourceMetrics returns an OTLP ResourceMetrics generated from rm. If rm
 // contains invalid ScopeMetrics, an error will be returned along with an OTLP
 // ResourceMetrics that contains partial OTLP ScopeMetrics.
-func ResourceMetrics(rm metricdata.ResourceMetrics) (*mpb.ResourceMetrics, error) {
+func ResourceMetrics(rm *metricdata.ResourceMetrics) (*mpb.ResourceMetrics, error) {
 	sms, err := ScopeMetrics(rm.ScopeMetrics)
 	return &mpb.ResourceMetrics{
 		Resource: &rpb.Resource{
@@ -51,8 +46,9 @@ func ScopeMetrics(sms []metricdata.ScopeMetrics) ([]*mpb.ScopeMetrics, error) {
 
 		out = append(out, &mpb.ScopeMetrics{
 			Scope: &cpb.InstrumentationScope{
-				Name:    sm.Scope.Name,
-				Version: sm.Scope.Version,
+				Name:       sm.Scope.Name,
+				Version:    sm.Scope.Version,
+				Attributes: AttrIter(sm.Scope.Attributes.Iter()),
 			},
 			Metrics:   ms,
 			SchemaUrl: sm.Scope.SchemaURL,
@@ -84,19 +80,27 @@ func metric(m metricdata.Metrics) (*mpb.Metric, error) {
 	out := &mpb.Metric{
 		Name:        m.Name,
 		Description: m.Description,
-		Unit:        string(m.Unit),
+		Unit:        m.Unit,
 	}
 	switch a := m.Data.(type) {
 	case metricdata.Gauge[int64]:
-		out.Data = Gauge[int64](a)
+		out.Data = Gauge(a)
 	case metricdata.Gauge[float64]:
-		out.Data = Gauge[float64](a)
+		out.Data = Gauge(a)
 	case metricdata.Sum[int64]:
-		out.Data, err = Sum[int64](a)
+		out.Data, err = Sum(a)
 	case metricdata.Sum[float64]:
-		out.Data, err = Sum[float64](a)
-	case metricdata.Histogram:
+		out.Data, err = Sum(a)
+	case metricdata.Histogram[int64]:
 		out.Data, err = Histogram(a)
+	case metricdata.Histogram[float64]:
+		out.Data, err = Histogram(a)
+	case metricdata.ExponentialHistogram[int64]:
+		out.Data, err = ExponentialHistogram(a)
+	case metricdata.ExponentialHistogram[float64]:
+		out.Data, err = ExponentialHistogram(a)
+	case metricdata.Summary:
+		out.Data = Summary(a)
 	default:
 		return out, fmt.Errorf("%w: %T", errUnknownAggregation, a)
 	}
@@ -112,8 +116,8 @@ func Gauge[N int64 | float64](g metricdata.Gauge[N]) *mpb.Metric_Gauge {
 	}
 }
 
-// Sum returns an OTLP Metric_Sum generated from s. An error is returned with
-// a partial Metric_Sum if the temporality of s is unknown.
+// Sum returns an OTLP Metric_Sum generated from s. An error is returned
+// if the temporality of s is unknown.
 func Sum[N int64 | float64](s metricdata.Sum[N]) (*mpb.Metric_Sum, error) {
 	t, err := Temporality(s.Temporality)
 	if err != nil {
@@ -134,8 +138,9 @@ func DataPoints[N int64 | float64](dPts []metricdata.DataPoint[N]) []*mpb.Number
 	for _, dPt := range dPts {
 		ndp := &mpb.NumberDataPoint{
 			Attributes:        AttrIter(dPt.Attributes.Iter()),
-			StartTimeUnixNano: uint64(dPt.StartTime.UnixNano()),
-			TimeUnixNano:      uint64(dPt.Time.UnixNano()),
+			StartTimeUnixNano: timeUnixNano(dPt.StartTime),
+			TimeUnixNano:      timeUnixNano(dPt.Time),
+			Exemplars:         Exemplars(dPt.Exemplars),
 		}
 		switch v := any(dPt.Value).(type) {
 		case int64:
@@ -153,9 +158,8 @@ func DataPoints[N int64 | float64](dPts []metricdata.DataPoint[N]) []*mpb.Number
 }
 
 // Histogram returns an OTLP Metric_Histogram generated from h. An error is
-// returned with a partial Metric_Histogram if the temporality of h is
-// unknown.
-func Histogram(h metricdata.Histogram) (*mpb.Metric_Histogram, error) {
+// returned if the temporality of h is unknown.
+func Histogram[N int64 | float64](h metricdata.Histogram[N]) (*mpb.Metric_Histogram, error) {
 	t, err := Temporality(h.Temporality)
 	if err != nil {
 		return nil, err
@@ -170,28 +174,93 @@ func Histogram(h metricdata.Histogram) (*mpb.Metric_Histogram, error) {
 
 // HistogramDataPoints returns a slice of OTLP HistogramDataPoint generated
 // from dPts.
-func HistogramDataPoints(dPts []metricdata.HistogramDataPoint) []*mpb.HistogramDataPoint {
+func HistogramDataPoints[N int64 | float64](dPts []metricdata.HistogramDataPoint[N]) []*mpb.HistogramDataPoint {
 	out := make([]*mpb.HistogramDataPoint, 0, len(dPts))
 	for _, dPt := range dPts {
-		sum := dPt.Sum
+		sum := float64(dPt.Sum)
 		hdp := &mpb.HistogramDataPoint{
 			Attributes:        AttrIter(dPt.Attributes.Iter()),
-			StartTimeUnixNano: uint64(dPt.StartTime.UnixNano()),
-			TimeUnixNano:      uint64(dPt.Time.UnixNano()),
+			StartTimeUnixNano: timeUnixNano(dPt.StartTime),
+			TimeUnixNano:      timeUnixNano(dPt.Time),
 			Count:             dPt.Count,
 			Sum:               &sum,
 			BucketCounts:      dPt.BucketCounts,
 			ExplicitBounds:    dPt.Bounds,
+			Exemplars:         Exemplars(dPt.Exemplars),
 		}
 		if v, ok := dPt.Min.Value(); ok {
-			hdp.Min = &v
+			vF64 := float64(v)
+			hdp.Min = &vF64
 		}
 		if v, ok := dPt.Max.Value(); ok {
-			hdp.Max = &v
+			vF64 := float64(v)
+			hdp.Max = &vF64
 		}
 		out = append(out, hdp)
 	}
 	return out
+}
+
+// ExponentialHistogram returns an OTLP Metric_ExponentialHistogram generated from h. An error is
+// returned if the temporality of h is unknown.
+func ExponentialHistogram[N int64 | float64](
+	h metricdata.ExponentialHistogram[N],
+) (*mpb.Metric_ExponentialHistogram, error) {
+	t, err := Temporality(h.Temporality)
+	if err != nil {
+		return nil, err
+	}
+	return &mpb.Metric_ExponentialHistogram{
+		ExponentialHistogram: &mpb.ExponentialHistogram{
+			AggregationTemporality: t,
+			DataPoints:             ExponentialHistogramDataPoints(h.DataPoints),
+		},
+	}, nil
+}
+
+// ExponentialHistogramDataPoints returns a slice of OTLP ExponentialHistogramDataPoint generated
+// from dPts.
+func ExponentialHistogramDataPoints[N int64 | float64](
+	dPts []metricdata.ExponentialHistogramDataPoint[N],
+) []*mpb.ExponentialHistogramDataPoint {
+	out := make([]*mpb.ExponentialHistogramDataPoint, 0, len(dPts))
+	for _, dPt := range dPts {
+		sum := float64(dPt.Sum)
+		ehdp := &mpb.ExponentialHistogramDataPoint{
+			Attributes:        AttrIter(dPt.Attributes.Iter()),
+			StartTimeUnixNano: timeUnixNano(dPt.StartTime),
+			TimeUnixNano:      timeUnixNano(dPt.Time),
+			Count:             dPt.Count,
+			Sum:               &sum,
+			Scale:             dPt.Scale,
+			ZeroCount:         dPt.ZeroCount,
+			Exemplars:         Exemplars(dPt.Exemplars),
+
+			Positive: ExponentialHistogramDataPointBuckets(dPt.PositiveBucket),
+			Negative: ExponentialHistogramDataPointBuckets(dPt.NegativeBucket),
+		}
+		if v, ok := dPt.Min.Value(); ok {
+			vF64 := float64(v)
+			ehdp.Min = &vF64
+		}
+		if v, ok := dPt.Max.Value(); ok {
+			vF64 := float64(v)
+			ehdp.Max = &vF64
+		}
+		out = append(out, ehdp)
+	}
+	return out
+}
+
+// ExponentialHistogramDataPointBuckets returns an OTLP ExponentialHistogramDataPoint_Buckets generated
+// from bucket.
+func ExponentialHistogramDataPointBuckets(
+	bucket metricdata.ExponentialBucket,
+) *mpb.ExponentialHistogramDataPoint_Buckets {
+	return &mpb.ExponentialHistogramDataPoint_Buckets{
+		Offset:       bucket.Offset,
+		BucketCounts: bucket.Counts,
+	}
 }
 
 // Temporality returns an OTLP AggregationTemporality generated from t. If t
@@ -207,4 +276,81 @@ func Temporality(t metricdata.Temporality) (mpb.AggregationTemporality, error) {
 		err := fmt.Errorf("%w: %s", errUnknownTemporality, t)
 		return mpb.AggregationTemporality_AGGREGATION_TEMPORALITY_UNSPECIFIED, err
 	}
+}
+
+// timeUnixNano returns t as a Unix time, the number of nanoseconds elapsed
+// since January 1, 1970 UTC as uint64.
+// The result is undefined if the Unix time
+// in nanoseconds cannot be represented by an int64
+// (a date before the year 1678 or after 2262).
+// timeUnixNano on the zero Time returns 0.
+// The result does not depend on the location associated with t.
+func timeUnixNano(t time.Time) uint64 {
+	return uint64(max(0, t.UnixNano())) // nolint:gosec // Overflow checked.
+}
+
+// Exemplars returns a slice of OTLP Exemplars generated from exemplars.
+func Exemplars[N int64 | float64](exemplars []metricdata.Exemplar[N]) []*mpb.Exemplar {
+	out := make([]*mpb.Exemplar, 0, len(exemplars))
+	for _, exemplar := range exemplars {
+		e := &mpb.Exemplar{
+			FilteredAttributes: KeyValues(exemplar.FilteredAttributes),
+			TimeUnixNano:       timeUnixNano(exemplar.Time),
+			SpanId:             exemplar.SpanID,
+			TraceId:            exemplar.TraceID,
+		}
+		switch v := any(exemplar.Value).(type) {
+		case int64:
+			e.Value = &mpb.Exemplar_AsInt{
+				AsInt: v,
+			}
+		case float64:
+			e.Value = &mpb.Exemplar_AsDouble{
+				AsDouble: v,
+			}
+		}
+		out = append(out, e)
+	}
+	return out
+}
+
+// Summary returns an OTLP Metric_Summary generated from s.
+func Summary(s metricdata.Summary) *mpb.Metric_Summary {
+	return &mpb.Metric_Summary{
+		Summary: &mpb.Summary{
+			DataPoints: SummaryDataPoints(s.DataPoints),
+		},
+	}
+}
+
+// SummaryDataPoints returns a slice of OTLP SummaryDataPoint generated from
+// dPts.
+func SummaryDataPoints(dPts []metricdata.SummaryDataPoint) []*mpb.SummaryDataPoint {
+	out := make([]*mpb.SummaryDataPoint, 0, len(dPts))
+	for _, dPt := range dPts {
+		sdp := &mpb.SummaryDataPoint{
+			Attributes:        AttrIter(dPt.Attributes.Iter()),
+			StartTimeUnixNano: timeUnixNano(dPt.StartTime),
+			TimeUnixNano:      timeUnixNano(dPt.Time),
+			Count:             dPt.Count,
+			Sum:               dPt.Sum,
+			QuantileValues:    QuantileValues(dPt.QuantileValues),
+		}
+		out = append(out, sdp)
+	}
+	return out
+}
+
+// QuantileValues returns a slice of OTLP SummaryDataPoint_ValueAtQuantile
+// generated from quantiles.
+func QuantileValues(quantiles []metricdata.QuantileValue) []*mpb.SummaryDataPoint_ValueAtQuantile {
+	out := make([]*mpb.SummaryDataPoint_ValueAtQuantile, 0, len(quantiles))
+	for _, q := range quantiles {
+		quantile := &mpb.SummaryDataPoint_ValueAtQuantile{
+			Quantile: q.Quantile,
+			Value:    q.Value,
+		}
+		out = append(out, quantile)
+	}
+	return out
 }
