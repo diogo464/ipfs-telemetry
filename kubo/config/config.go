@@ -40,6 +40,7 @@ type Config struct {
 	Pinning      Pinning
 	Import       Import
 	Version      Version
+	Telemetry    Telemetry
 
 	Internal Internal // experimental/unstable options
 }

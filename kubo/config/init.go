@@ -83,6 +83,11 @@ func InitWithIdentity(identity Identity) (*Config, error) {
 			DownloadSources: []string{},
 			Keep:            "",
 		},
+		Telemetry: Telemetry{
+			Enabled:          true,
+			BandwidthEnabled: true,
+			AccessType:       DefaultAccessType,
+		},
 	}
 
 	return conf, nil
