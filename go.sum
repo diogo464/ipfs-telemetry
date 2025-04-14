@@ -409,6 +409,8 @@ github.com/yusufpapurcu/wmi v1.2.4/go.mod h1:SBZ9tNy3G9/m5Oi98Zks0QjeHVDvuK0qfxQ
 go.opencensus.io v0.18.0/go.mod h1:vKdFvxhtzZ9onBp9VKHK8z/sRpBMnKAsufL7wlDrCOA=
 go.opentelemetry.io/auto/sdk v1.1.0 h1:cH53jehLUN6UFLY71z+NDOiNJqDdPRaXzTel0sJySYA=
 go.opentelemetry.io/auto/sdk v1.1.0/go.mod h1:3wSPjt5PWp2RhlCcmmOial7AvC4DQqZb7a7wCow3W8A=
+go.opentelemetry.io/contrib/bridges/prometheus v0.60.0 h1:x7sPooQCwSg27SjtQee8GyIIRTQcF4s7eSkac6F2+VA=
+go.opentelemetry.io/contrib/bridges/prometheus v0.60.0/go.mod h1:4K5UXgiHxV484efGs42ejD7E2J/sIlepYgdGoPXe7hE=
 go.opentelemetry.io/contrib/instrumentation/host v0.60.0 h1:LD6TMRg2hfNzkMD36Pq0jeYBcSP9W0aJt41Zmje43Ig=
 go.opentelemetry.io/contrib/instrumentation/host v0.60.0/go.mod h1:GN4xnih1u2OQeRs8rNJ13XR8XsTqFopc57e/3Kf0h6c=
 go.opentelemetry.io/contrib/instrumentation/runtime v0.60.0 h1:0NgN/3SYkqYJ9NBlDfl/2lzVlwos/YQLvi8sUrzJRBE=

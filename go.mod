@@ -15,6 +15,7 @@ require (
 	github.com/multiformats/go-multihash v0.2.3
 	github.com/stretchr/testify v1.10.0
 	github.com/urfave/cli/v2 v2.11.1
+	go.opentelemetry.io/contrib/bridges/prometheus v0.60.0
 	go.opentelemetry.io/contrib/instrumentation/host v0.60.0
 	go.opentelemetry.io/contrib/instrumentation/runtime v0.60.0
 	go.opentelemetry.io/otel v1.35.0

@@ -11,6 +11,7 @@ import (
 	"github.com/diogo464/telemetry/internal/stream"
 	"github.com/diogo464/telemetry/metrics"
 	"github.com/libp2p/go-libp2p/core/host"
+	"go.opentelemetry.io/contrib/bridges/prometheus"
 	"go.opentelemetry.io/otel/metric"
 	sdk_metric "go.opentelemetry.io/otel/sdk/metric"
 	"google.golang.org/grpc"
@@ -96,6 +97,7 @@ func NewService(h host.Host, os ...ServiceOption) (*Service, MeterProvider, erro
 	reader := sdk_metric.NewPeriodicReader(
 		exporter,
 		sdk_metric.WithInterval(opts.metricsPeriod),
+		sdk_metric.WithProducer(prometheus.NewMetricProducer()),
 	)
 
 	meter_provider, err := opts.meterProviderFactory(reader)
