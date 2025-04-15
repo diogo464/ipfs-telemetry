@@ -119,18 +119,18 @@ func (m *Monitor) discover(pid peer.ID) {
 	m.metrics.DiscoveredPeers.Add(context.Background(), 1)
 	if pt, ok := m.peers[pid]; ok {
 		m.metrics.RediscoveredPeers.Add(context.Background(), 1)
-		m.logger.Info("rediscover peer", zap.String("peer", pid.Pretty()))
+		m.logger.Info("rediscover peer", zap.String("peer", pid.String()))
 		pt.sendCommand(newPeerCommandResetErrors())
 		return
 	}
-	m.logger.Info("discover peer", zap.String("peer", pid.Pretty()))
+	m.logger.Info("discover peer", zap.String("peer", pid.String()))
 	m.peers[pid] = newPeerTask(
 		pid,
 		m.host,
 		m.opts,
 		m.exporter,
 		m,
-		m.logger.With(zap.String("peer", pid.Pretty())),
+		m.logger.With(zap.String("peer", pid.String())),
 		m.ptmetrics,
 	)
 }

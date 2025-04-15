@@ -8,6 +8,7 @@ import (
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p/core/host"
 	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/metric/noop"
 	"go.uber.org/zap"
 )
 
@@ -56,7 +57,7 @@ func defaults() *options {
 		BandwidthTimeout: DEFAULT_BANDWIDTH_TIMEOUT,
 		Listener:         nil,
 		Logger:           zap.NewNop(),
-		MeterProvider:    metric.NewNoopMeterProvider(),
+		MeterProvider:    noop.NewMeterProvider(),
 	}
 }
 

@@ -83,10 +83,7 @@ func New(meterProvider metric.MeterProvider) (*Metrics, error) {
 }
 
 func (m *Metrics) RegisterCallback(cb func(context.Context, metric.Observer) error) error {
-	instruments := []metric.Asynchronous{
-		m.ActivePeers,
-	}
-	_, err := m.m.RegisterCallback(cb, instruments...)
+	_, err := m.m.RegisterCallback(cb, m.ActivePeers)
 	return err
 }
 

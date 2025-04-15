@@ -8,6 +8,7 @@ import (
 	"github.com/diogo464/telemetry/monitor/metrics"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 )
 
@@ -210,12 +211,12 @@ func (p *peerTask) bandwidthTest(ctx context.Context) {
 	if err := p.tryBandwidthTest(ctx); err != nil {
 		p.logger.Warn("failed to test bandwidth", zap.Error(err))
 		p.fail(err)
-		p.metrics.CollectFailure.Add(ctx, 1, metrics.KeyPeerID.String(p.pid.String()))
+		p.metrics.CollectFailure.Add(ctx, 1, metric.WithAttributes(metrics.KeyPeerID.String(p.pid.String())))
 		p.exporter.PeerFailure(p.pid, err)
 	} else {
 		p.logger.Info("successfully tested bandwidth")
 		p.success()
-		p.metrics.CollectCompleted.Add(ctx, 1, metrics.KeyPeerID.String(p.pid.String()))
+		p.metrics.CollectCompleted.Add(ctx, 1, metric.WithAttributes(metrics.KeyPeerID.String(p.pid.String())))
 		p.exporter.PeerSuccess(p.pid)
 	}
 }

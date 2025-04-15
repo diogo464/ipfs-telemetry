@@ -6,6 +6,7 @@ import (
 	"github.com/diogo464/telemetry"
 	"github.com/diogo464/telemetry/monitor/metrics"
 	"github.com/libp2p/go-libp2p/core/peer"
+	"go.opentelemetry.io/otel/metric"
 )
 
 var _ (Exporter) = (*noOpExporter)(nil)
@@ -83,30 +84,30 @@ func (e *observableExporter) PeerSuccess(p peer.ID) {
 
 // Bandwidth implements Exporter
 func (e *observableExporter) Bandwidth(p peer.ID, b telemetry.Bandwidth) {
-	e.m.Exports.Add(context.Background(), 1, metrics.AttrExportKindBandwidth)
+	e.m.Exports.Add(context.Background(), 1, metric.WithAttributes(metrics.AttrExportKindBandwidth))
 	e.e.Bandwidth(p, b)
 }
 
 // Events implements Exporter
 func (e *observableExporter) Events(p peer.ID, s telemetry.Session, d telemetry.EventDescriptor, ev []telemetry.Event) {
-	e.m.Exports.Add(context.Background(), 1, metrics.AttrExportKindEvents)
+	e.m.Exports.Add(context.Background(), 1, metric.WithAttributes(metrics.AttrExportKindEvents))
 	e.e.Events(p, s, d, ev)
 }
 
 // Metrics implements Exporter
 func (e *observableExporter) Metrics(p peer.ID, s telemetry.Session, m telemetry.Metrics) {
-	e.m.Exports.Add(context.Background(), 1, metrics.AttrExportKindMetrics)
+	e.m.Exports.Add(context.Background(), 1, metric.WithAttributes(metrics.AttrExportKindMetrics))
 	e.e.Metrics(p, s, m)
 }
 
 // Properties implements Exporter
 func (e *observableExporter) Properties(p peer.ID, s telemetry.Session, pp []telemetry.Property) {
-	e.m.Exports.Add(context.Background(), 1, metrics.AttrExportKindProperties)
+	e.m.Exports.Add(context.Background(), 1, metric.WithAttributes(metrics.AttrExportKindProperties))
 	e.e.Properties(p, s, pp)
 }
 
 // Session implements Exporter
 func (e *observableExporter) Session(p peer.ID, s telemetry.Session) {
-	e.m.Exports.Add(context.Background(), 1, metrics.AttrExportKindSession)
+	e.m.Exports.Add(context.Background(), 1, metric.WithAttributes(metrics.AttrExportKindSession))
 	e.e.Session(p, s)
 }
