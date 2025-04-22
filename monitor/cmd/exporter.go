@@ -16,12 +16,12 @@ import (
 var _ (monitor.Exporter) = (*natsExporter)(nil)
 
 const (
-	TELEMETRY_SUBJECT = "telemetry"
-	KIND_SESSION      = "session"
-	KIND_METRICS      = "metrics"
-	KIND_PROPERTIES   = "properties"
-	KIND_EVENTS       = "events"
-	KIND_BANDWIDTH    = "bandwidth"
+	TELEMETRY_EXPORT_SUBJECT = "telemetry.export"
+	KIND_SESSION             = "session"
+	KIND_METRICS             = "metrics"
+	KIND_PROPERTIES          = "properties"
+	KIND_EVENTS              = "events"
+	KIND_BANDWIDTH           = "bandwidth"
 )
 
 type ExportBandwidth struct {
@@ -95,15 +95,6 @@ func newNatsExporter(client *nats.Conn, logger *zap.Logger) *natsExporter {
 	}
 }
 
-func (e *natsExporter) export(exp exportKind) {
-	marshaled, err := json.Marshal(&exp)
-	if err != nil {
-		e.logger.Warn("failed to marshal telemetry export", zap.Error(err))
-		return
-	}
-	e.client.Publish(TELEMETRY_SUBJECT, marshaled)
-}
-
 // PeerBegin implements monitor.Exporter
 func (e *natsExporter) PeerBegin(p peer.ID) {
 	e.inprogress[p] = defaultExport(p)
@@ -120,7 +111,7 @@ func (e *natsExporter) PeerSuccess(p peer.ID) {
 	exp := e.inprogress[p]
 	delete(e.inprogress, p)
 	if marshaled, err := json.Marshal(exp); err == nil {
-		if err := e.client.Publish("telemetry.export", marshaled); err != nil {
+		if err := e.client.Publish(TELEMETRY_EXPORT_SUBJECT, marshaled); err != nil {
 			e.logger.Error("failed to publish telemetry export", zap.Error(err))
 		}
 	} else {
