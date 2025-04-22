@@ -57,14 +57,6 @@ type Export struct {
 	Bandwidth  *ExportBandwidth `json:"bandwidth"`
 }
 
-type exportKind struct {
-	Peer      peer.ID           `json:"peer"`
-	Session   telemetry.Session `json:"session"`
-	Kind      string            `json:"kind"`
-	Timestamp time.Time         `json:"timestamp"`
-	Value     interface{}       `json:"value"`
-}
-
 type natsExporter struct {
 	client     *nats.Conn
 	logger     *zap.Logger
