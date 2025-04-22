@@ -7,6 +7,8 @@ cd $(dirname $0)/..
 mkdir -p data/nats
 podman run -d --name nats --network host \
     -v ./data/nats:/data:z \
+    -v ./scripts/nats.conf:/etc/nats.conf:ro \
     docker.io/nats:latest \
-    -js -sd /data
+    -js -sd /data \
+    -c /etc/nats.conf
 
