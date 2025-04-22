@@ -16,7 +16,7 @@ var (
 		Aliases: []string{"nats"},
 		Usage:   "url of the nats server",
 		EnvVars: []string{"NATS_ENDPOINT"},
-		Value:   "nats://nats:4222",
+		Value:   "nats://localhost:4222",
 	}
 
 	FLAG_MAX_FAILED_ATTEMPTS = &cli.IntFlag{
