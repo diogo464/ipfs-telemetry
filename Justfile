@@ -28,9 +28,19 @@ fetch-nats:
     ./scripts/fetch-nats-cli.sh
 
 # start the nats container
-container-nats:
+nats:
     ./scripts/podman-nats.sh
 
 # start the victoria metrics container
-container-vm:
+vm:
     ./scripts/podman-vm.sh
+
+monitor: build-monitor
+    MONITOR_COLLECT_INTERVAL=5s bin/monitor
+
+exporter-vm:
+    cd backend && poetry run python -m jobs.export-vm
+
+# show logs for a given container
+logs name:
+    podman logs -f {{name}}
