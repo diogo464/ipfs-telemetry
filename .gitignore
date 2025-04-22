@@ -1,6 +1,7 @@
 /.vscode/
 /.mypy_cache/
 /bin/
+/data/
 /.envrc
 
 # Local Files
