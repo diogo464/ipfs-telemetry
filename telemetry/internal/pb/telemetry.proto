@@ -1,0 +1,71 @@
+syntax = "proto3";
+package telemetry;
+
+import "opentelemetry/proto/common/v1/common.proto";
+
+option go_package = "internal/pb";
+
+service Telemetry {
+  rpc GetSession(GetSessionRequest) returns (GetSessionResponse);
+
+  rpc GetProperties(GetPropertiesRequest) returns (stream Property);
+
+  rpc GetStreamDescriptors(GetStreamDescriptorsRequest)
+      returns (GetStreamDescriptorsResponse);
+
+  rpc GetStream(GetStreamRequest) returns (stream StreamSegment);
+}
+message GetSessionRequest {}
+
+message GetSessionResponse {
+  // The random UUID of this session
+  string uuid = 1;
+}
+
+message GetPropertiesRequest {}
+
+message Property {
+  opentelemetry.proto.common.v1.InstrumentationScope scope = 1;
+  string name = 2;
+  string description = 3;
+  oneof value {
+    int64 integer_value = 4;
+    string string_value = 5;
+  }
+}
+
+message GetStreamDescriptorsRequest {}
+message GetStreamDescriptorsResponse {
+  repeated StreamDescriptor stream_descriptors = 1;
+}
+
+message StreamType {
+  oneof type {
+    MetricDescriptor metric = 1;
+    EventDescriptor event = 2;
+  }
+}
+
+message StreamDescriptor {
+  uint32 stream_id = 1;
+  StreamType stream_type = 2;
+}
+
+message MetricDescriptor {}
+
+message EventDescriptor {
+  opentelemetry.proto.common.v1.InstrumentationScope scope = 1;
+  string name = 2;
+  string description = 3;
+}
+
+message GetStreamRequest {
+  uint32 stream_id = 1;
+  // The sequence number of the first segment that should be returned.
+  uint32 sequence_number_since = 2;
+}
+
+message StreamSegment {
+  uint32 sequence_number = 1;
+  bytes data = 2;
+}
