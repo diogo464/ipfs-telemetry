@@ -165,9 +165,6 @@ func mainAction(c *cli.Context) error {
 
 			for _, info := range infos {
 				mon.DiscoverWithAddr(c.Context, info)
-				if err != nil {
-					logger.Error("failed to add node", zap.Error(err))
-				}
 			}
 		}
 	}
