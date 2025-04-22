@@ -16,8 +16,12 @@ build-ipfs:
 build-telemetry:
     ./scripts/build-telemetry.sh
 
+# build the monitor binary
+build-monitor:
+    ./scripts/build-monitor.sh
+
 # build all binaries
-build: build-ipfs build-telemetry
+build: build-ipfs build-telemetry build-monitor
 
 # fetch the nats cli
 fetch-nats:
