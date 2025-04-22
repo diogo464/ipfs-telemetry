@@ -1,6 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: envconfig
-data:
-  MONITOR_COLLECT_INTERVAL: "10s"

@@ -1,9 +1,0 @@
-apiVersion: kustomize.config.k8s.io/v1alpha1
-kind: Component
-resources:
-  - cluster-role.yaml
-  - service-account.yaml
-  - role-binding.yaml
-  - prometheus.yaml
-  - service.yaml
-  - podmonitor.yaml

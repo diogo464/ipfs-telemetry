@@ -1,9 +1,0 @@
-#!/bin/sh
-
-minikube start \
-    --cpus=10 \
-    --memory=6g \
-    --disk-size=50g \
-    --driver=kvm2 \
-    --addons=registry,ingress,ingress-dns,dashboard,metrics-server \
-    --kvm-qemu-uri='qemu:///system'
