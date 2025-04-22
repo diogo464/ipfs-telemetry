@@ -41,6 +41,9 @@ monitor: build-monitor
 exporter-vm:
     cd backend && poetry run python -m jobs.export-vm
 
+webapi:
+    cd backend && poetry run python -m webapi
+
 # show logs for a given container
 logs name:
     podman logs -f {{name}}
