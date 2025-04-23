@@ -235,7 +235,7 @@ func (c *Client) GetStreamSegments(ctx context.Context, key clientStreamKey) ([]
 	var srv grpc.ServerStreamingClient[pb.StreamSegment] = nil
 	switch key.streamType {
 	case clientStreamType_Metrics:
-		srv, err = client.GetMetrics(ctx, &pb.GetMetricsRequest{})
+		srv, err = client.GetMetrics(ctx, &pb.GetMetricsRequest{SequenceNumberSince: c.s.sequenceNumbers[key]})
 		break
 	case clientStreamType_Events:
 		srv, err = client.GetEvents(ctx, &pb.GetEventsRequest{
