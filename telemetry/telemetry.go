@@ -9,9 +9,9 @@ import (
 var log = logging.Logger("telemetry")
 
 const (
-	ID_TELEMETRY = "/telemetry/telemetry/0.5.0"
-	ID_UPLOAD    = "/telemetry/upload/0.5.0"
-	ID_DOWNLOAD  = "/telemetry/download/0.5.0"
+	ID_TELEMETRY = "/telemetry/telemetry/0.6.0"
+	ID_UPLOAD    = "/telemetry/upload/0.6.0"
+	ID_DOWNLOAD  = "/telemetry/download/0.6.0"
 
 	DEFAULT_BANDWIDTH_PAYLOAD_SIZE     = 32 * 1024 * 1024
 	DEFAULT_MAX_BANDWIDTH_PAYLOAD_SIZE = 128 * 1024 * 1024
