@@ -43,6 +43,9 @@ nats:
 vm:
     ./scripts/podman-vm.sh
 
+grafana:
+    ./scripts/podman-grafana.sh
+
 monitor: build-monitor
     MONITOR_COLLECT_INTERVAL=5s bin/monitor
 
