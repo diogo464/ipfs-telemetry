@@ -2,6 +2,7 @@ import env
 import requests
 import logging
 import asyncio
+
 import export
 import export.monitor
 
@@ -29,7 +30,6 @@ class VictoriaMetricsExporter(export.TelemetryExporter):
 
 
 async def main():
-    env.setup_logging()
     client = await env.create_nats_client()
     stream = await export.NatsTelemetryStream.new(
         client,
@@ -43,5 +43,6 @@ async def main():
 
 
 if __name__ == "__main__":
+    env.setup_logging()
     asyncio.run(main())
 
