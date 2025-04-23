@@ -1,6 +1,7 @@
 /.vscode/
 /.mypy_cache/
 /bin/
+/dist/
 /data/
 /.envrc
 
