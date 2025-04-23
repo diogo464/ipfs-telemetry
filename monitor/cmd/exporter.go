@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"time"
 
@@ -8,12 +9,31 @@ import (
 	"github.com/diogo464/telemetry/monitor"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/nats-io/nats.go"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/sdk/instrumentation"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 )
 
 var _ (monitor.Exporter) = (*natsExporter)(nil)
+
+var (
+	Scope = instrumentation.Scope{
+		Name:    "telemetry.d464.sh/monitor/nats",
+		Version: "0.0.0",
+	}
+
+	meter = otel.Meter("telemetry.d464.sh/monitor/nats")
+
+	publishSizeKb, _ = meter.Int64Histogram(
+		"publish_size",
+		metric.WithDescription("Size of a published export message"),
+		metric.WithUnit("kBy"),
+	)
+
+	publishSizeLatest, _ = meter.Int64Gauge("publish_size_latest")
+)
 
 const (
 	TELEMETRY_EXPORT_SUBJECT = "telemetry.export"
@@ -80,6 +100,7 @@ func defaultExport(p peer.ID) *Export {
 }
 
 func newNatsExporter(client *nats.Conn, logger *zap.Logger) *natsExporter {
+
 	return &natsExporter{
 		client:     client,
 		logger:     logger,
@@ -103,6 +124,8 @@ func (e *natsExporter) PeerSuccess(p peer.ID) {
 	exp := e.inprogress[p]
 	delete(e.inprogress, p)
 	if marshaled, err := json.Marshal(exp); err == nil {
+		publishSizeKb.Record(context.Background(), int64(len(marshaled))/1024)
+		publishSizeLatest.Record(context.Background(), int64(len(marshaled)))
 		if err := e.client.Publish(TELEMETRY_EXPORT_SUBJECT, marshaled); err != nil {
 			e.logger.Error("failed to publish telemetry export", zap.Error(err))
 		}

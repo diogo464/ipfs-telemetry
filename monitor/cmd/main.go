@@ -15,6 +15,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/urfave/cli/v2"
 	"go.opentelemetry.io/contrib/instrumentation/runtime"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/prometheus"
 	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
@@ -69,6 +70,7 @@ func mainAction(c *cli.Context) error {
 		)),
 	)
 	runtime.Start(runtime.WithMeterProvider(provider))
+	otel.SetMeterProvider(provider)
 
 	monitorOptions := make([]monitor.Option, 0)
 
