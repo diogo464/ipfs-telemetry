@@ -106,8 +106,8 @@ func NewClient(ctx context.Context, opts ...ClientOption) (*Client, error) {
 	}
 
 	if options.h != nil {
-		conn, err := grpc.Dial(
-			"",
+		conn, err := grpc.NewClient(
+			"passthrough:",
 			grpc.WithTransportCredentials(insecure.NewCredentials()),
 			grpc.WithContextDialer(func(ctx context.Context, s string) (net.Conn, error) {
 				conn, err := gostream.Dial(ctx, options.h, options.p, ID_TELEMETRY)
@@ -122,7 +122,7 @@ func NewClient(ctx context.Context, opts ...ClientOption) (*Client, error) {
 		client.p = options.p
 		client.c = conn
 	} else {
-		conn, err := grpc.Dial(options.target, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		conn, err := grpc.NewClient(fmt.Sprintf("ipv4:%s", options.target), grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
 			return nil, err
 		}
