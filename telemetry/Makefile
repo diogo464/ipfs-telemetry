@@ -31,4 +31,3 @@ tools:
 .PHONY: proto
 proto:
 	protoc $(GOGOPROTO_FLAGS) internal/pb/telemetry.proto
-	protoc $(GOGOPROTO_FLAGS) crawler/pb/crawler.proto
