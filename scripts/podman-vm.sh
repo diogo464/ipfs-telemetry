@@ -7,5 +7,7 @@ cd $(dirname $0)/..
 mkdir -p data/vm
 podman run -d --name vm --network host \
     -v ./data/vm:/victoria-metrics-data:z \
+    -v ./scripts/scrape.yaml:/etc/scrape.yaml:ro \
     docker.io/victoriametrics/victoria-metrics:latest \
-    --selfScrapeInterval=5s -storageDataPath=/victoria-metrics-data
+    --selfScrapeInterval=5s -storageDataPath=/victoria-metrics-data \
+    -promscrape.config=/etc/scrape.yaml
