@@ -8,6 +8,14 @@ setup-remotes:
     git remote add kad https://github.com/libp2p/go-libp2p-kad-dht
     git remote add libp2p https://github.com/libp2p/go-libp2p
 
+tidy:
+    cd boxo && go mod tidy
+    cd kad && go mod tidy
+    cd kubo && go mod tidy
+    cd libp2p && go mod tidy
+    cd monitor && go mod tidy
+    cd telemetry && go mod tidy
+
 # build the ipfs binary
 build-ipfs:
     ./scripts/build-ipfs.sh

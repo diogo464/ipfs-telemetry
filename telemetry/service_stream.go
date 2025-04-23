@@ -3,7 +3,6 @@ package telemetry
 import (
 	"sync"
 
-	"github.com/diogo464/telemetry/internal/pb"
 	"github.com/diogo464/telemetry/internal/stream"
 )
 
@@ -13,15 +12,13 @@ type serviceStreamStats struct {
 }
 
 type serviceStream struct {
-	stream           *stream.Stream
-	streamId         StreamId
-	streamDescriptor *pb.StreamDescriptor
+	stream   *stream.Stream
+	streamId StreamId
 }
 
 type serviceStreams struct {
 	mu             sync.Mutex
 	streams        map[StreamId]*serviceStream
-	descriptors    []*pb.StreamDescriptor
 	nextID         StreamId
 	defaultOptions []stream.Option
 }
@@ -33,17 +30,7 @@ func newServiceStreams(defaultOptions ...stream.Option) *serviceStreams {
 	}
 }
 
-func (s *serviceStreams) copyDescriptors() []*pb.StreamDescriptor {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	descriptors := make([]*pb.StreamDescriptor, len(s.descriptors))
-	copy(descriptors, s.descriptors)
-
-	return descriptors
-}
-
-func (s *serviceStreams) create(ty *pb.StreamType, options ...stream.Option) *serviceStream {
+func (s *serviceStreams) create(options ...stream.Option) *serviceStream {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -57,12 +44,7 @@ func (s *serviceStreams) create(ty *pb.StreamType, options ...stream.Option) *se
 	s.streams[id] = &serviceStream{
 		stream:   stream,
 		streamId: id,
-		streamDescriptor: &pb.StreamDescriptor{
-			StreamId:   uint32(id),
-			StreamType: ty,
-		},
 	}
-	s.descriptors = append(s.descriptors, s.streams[id].streamDescriptor)
 
 	return s.streams[id]
 }

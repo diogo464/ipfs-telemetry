@@ -5,11 +5,14 @@ import (
 )
 
 type serviceMetrics struct {
-	stream *stream.Stream
+	streamId StreamId
+	stream   *stream.Stream
 }
 
-func newServiceMetrics(stream *stream.Stream) *serviceMetrics {
+func newServiceMetrics(streams *serviceStreams) *serviceMetrics {
+	metricsStream := streams.create()
 	return &serviceMetrics{
-		stream: stream,
+		streamId: metricsStream.streamId,
+		stream:   metricsStream.stream,
 	}
 }

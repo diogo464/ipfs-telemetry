@@ -18,6 +18,7 @@ type EventEmitter interface {
 }
 
 type EventDescriptor struct {
+	EventId     uint32
 	Scope       instrumentation.Scope `json:"scope"`
 	Name        string                `json:"name"`
 	Description string                `json:"description"`
@@ -33,16 +34,10 @@ type eventEmitter struct {
 	stream *stream.Stream
 }
 
-func newEventEmitter(streams *serviceStreams, desc EventDescriptor) *eventEmitter {
-	streamType := &pb.StreamType{
-		Type: &pb.StreamType_Event{
-			Event: eventDescriptorToPb(desc),
-		},
-	}
-	sstream := streams.create(streamType)
+func newEventEmitter(stream *stream.Stream, desc EventDescriptor) *eventEmitter {
 	return &eventEmitter{
 		name:   desc.Name,
-		stream: sstream.stream,
+		stream: stream,
 	}
 }
 

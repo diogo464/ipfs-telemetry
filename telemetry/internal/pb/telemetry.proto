@@ -10,10 +10,11 @@ service Telemetry {
 
   rpc GetProperties(GetPropertiesRequest) returns (stream Property);
 
-  rpc GetStreamDescriptors(GetStreamDescriptorsRequest)
-      returns (GetStreamDescriptorsResponse);
+  rpc GetMetrics(GetMetricsRequest) returns (stream StreamSegment);
 
-  rpc GetStream(GetStreamRequest) returns (stream StreamSegment);
+  rpc GetEventDescriptors(GetEventDescriptorsRequest) returns (stream EventDescriptor);
+
+  rpc GetEvents(GetEventsRequest) returns (stream StreamSegment);
 }
 message GetSessionRequest {}
 
@@ -34,29 +35,24 @@ message Property {
   }
 }
 
-message GetStreamDescriptorsRequest {}
-message GetStreamDescriptorsResponse {
-  repeated StreamDescriptor stream_descriptors = 1;
+message GetMetricsRequest {
+  uint32 sequence_number_since = 1;
 }
 
-message StreamType {
-  oneof type {
-    MetricDescriptor metric = 1;
-    EventDescriptor event = 2;
-  }
-}
-
-message StreamDescriptor {
-  uint32 stream_id = 1;
-  StreamType stream_type = 2;
-}
-
-message MetricDescriptor {}
+message GetEventDescriptorsRequest {}
 
 message EventDescriptor {
-  opentelemetry.proto.common.v1.InstrumentationScope scope = 1;
-  string name = 2;
-  string description = 3;
+  uint32 event_id = 1;
+  opentelemetry.proto.common.v1.InstrumentationScope scope = 2;
+  string name = 3;
+  string description = 4;
+}
+
+message GetEventsRequest {
+  uint32 event_id = 1;
+
+  // the sequence number of the first segment that should be returned.
+  uint32 sequence_number_since = 2;
 }
 
 message GetStreamRequest {

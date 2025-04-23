@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/diogo464/telemetry"
 	"github.com/urfave/cli/v2"
 )
 
@@ -28,7 +27,7 @@ func actionEvent(c *cli.Context) error {
 		return err
 	}
 
-	events, err := client.GetEvents(c.Context, telemetry.StreamId(id))
+	events, err := client.GetEvents(c.Context, uint32(id))
 	if err != nil {
 		return err
 	}

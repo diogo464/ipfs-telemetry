@@ -177,27 +177,25 @@ func (p *peerTask) tryExportMetrics(ctx context.Context, client *telemetry.Clien
 }
 
 func (p *peerTask) tryExportEvents(ctx context.Context, client *telemetry.Client, sess telemetry.Session) error {
-	descriptors, err := client.GetStreamDescriptors(ctx)
+	descriptors, err := client.GetEventDescriptors(ctx)
 	if err != nil {
 		p.logger.Warn("failed to get stream descriptors", zap.Error(err))
 		return err
 	}
 
 	for _, descriptor := range descriptors {
-		if ed, ok := descriptor.Type.(*telemetry.StreamTypeEvent); ok {
-			events, err := client.GetEvents(ctx, descriptor.ID)
-			if err != nil {
-				p.logger.Warn("failed to get events", zap.Error(err))
-				return err
-			}
+		events, err := client.GetEvents(ctx, descriptor.EventId)
+		if err != nil {
+			p.logger.Warn("failed to get events", zap.Error(err))
+			return err
+		}
 
-			if len(events) > 0 {
-				p.exporter.Events(p.pid, sess, telemetry.EventDescriptor{
-					Scope:       ed.Scope,
-					Name:        ed.Name,
-					Description: ed.Description,
-				}, events)
-			}
+		if len(events) > 0 {
+			p.exporter.Events(p.pid, sess, telemetry.EventDescriptor{
+				Scope:       descriptor.Scope,
+				Name:        descriptor.Name,
+				Description: descriptor.Description,
+			}, events)
 		}
 	}
 

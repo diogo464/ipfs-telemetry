@@ -78,9 +78,7 @@ func NewService(h host.Host, os ...ServiceOption) (*Service, MeterProvider, erro
 
 		serviceAcl: nil,
 		streams:    streams,
-		metrics: newServiceMetrics(streams.create(&pb.StreamType{
-			Type: &pb.StreamType_Metric{},
-		}).stream),
+		metrics:    newServiceMetrics(streams),
 		properties: newServiceProperties(),
 		events:     newServiceEvents(streams),
 

@@ -22,6 +22,24 @@ import (
 var ErrInvalidResponse = fmt.Errorf("invalid response")
 var ErrNotUsingLibp2p = fmt.Errorf("not using libp2p")
 
+var (
+	clientStreamType_Metrics = 0
+	clientStreamType_Events  = 1
+)
+
+type clientStreamKey struct {
+	streamType int
+	eventId    uint32
+}
+
+func newStreamKeyMetrics() clientStreamKey {
+	return clientStreamKey{streamType: clientStreamType_Metrics}
+}
+
+func newStreamKeyEvent(eventId uint32) clientStreamKey {
+	return clientStreamKey{streamType: clientStreamType_Metrics, eventId: eventId}
+}
+
 type ClientOption = func(*clientOptions)
 
 type clientOptions struct {
@@ -37,11 +55,11 @@ type clientOptions struct {
 
 type ClientState struct {
 	session         Session
-	sequenceNumbers map[StreamId]uint32
+	sequenceNumbers map[clientStreamKey]uint32
 }
 
 func (s *ClientState) String() string {
-	return fmt.Sprintf("Session: %s, SequenceNumbers: %v", s.session, s.sequenceNumbers)
+	return fmt.Sprintf("Session: %s, SequenceNumbers: %v %v", s.session, s.sequenceNumbers)
 }
 
 type Client struct {
@@ -83,7 +101,7 @@ func NewClient(ctx context.Context, opts ...ClientOption) (*Client, error) {
 	} else {
 		client.s = &ClientState{
 			session:         Session{},
-			sequenceNumbers: make(map[StreamId]uint32),
+			sequenceNumbers: make(map[clientStreamKey]uint32),
 		}
 	}
 
@@ -119,7 +137,7 @@ func NewClient(ctx context.Context, opts ...ClientOption) (*Client, error) {
 
 	if sess != client.s.session {
 		client.s.session = sess
-		client.s.sequenceNumbers = make(map[StreamId]uint32)
+		client.s.sequenceNumbers = make(map[clientStreamKey]uint32)
 	}
 
 	return client, nil
@@ -188,27 +206,8 @@ func (c *Client) GetProperties(ctx context.Context) ([]Property, error) {
 	return properties, nil
 }
 
-func (c *Client) GetStreamDescriptors(ctx context.Context) ([]StreamDescriptor, error) {
-	client, err := c.newGrpcClient()
-	if err != nil {
-		return nil, err
-	}
-
-	resp, err := client.GetStreamDescriptors(ctx, &pb.GetStreamDescriptorsRequest{})
-	if err != nil {
-		return nil, err
-	}
-
-	descriptors := make([]StreamDescriptor, 0)
-	for _, pbdesc := range resp.GetStreamDescriptors() {
-		descriptors = append(descriptors, streamDescriptorFromPb(pbdesc))
-	}
-
-	return descriptors, nil
-}
-
-func (c *Client) GetStream(ctx context.Context, streamId StreamId) ([]stream.MessageBin, error) {
-	segments, err := c.GetStreamSegments(ctx, streamId)
+func (c *Client) GetStream(ctx context.Context, key clientStreamKey) ([]stream.MessageBin, error) {
+	segments, err := c.GetStreamSegments(ctx, key)
 	if err != nil {
 		return nil, err
 	}
@@ -227,16 +226,27 @@ func (c *Client) GetStream(ctx context.Context, streamId StreamId) ([]stream.Mes
 	return messages, nil
 }
 
-func (c *Client) GetStreamSegments(ctx context.Context, streamId StreamId) ([]stream.Segment, error) {
+func (c *Client) GetStreamSegments(ctx context.Context, key clientStreamKey) ([]stream.Segment, error) {
 	client, err := c.newGrpcClient()
 	if err != nil {
 		return nil, err
 	}
 
-	srv, err := client.GetStream(ctx, &pb.GetStreamRequest{
-		StreamId:            uint32(streamId),
-		SequenceNumberSince: uint32(c.s.sequenceNumbers[streamId]),
-	})
+	var srv grpc.ServerStreamingClient[pb.StreamSegment] = nil
+	switch key.streamType {
+	case clientStreamType_Metrics:
+		srv, err = client.GetMetrics(ctx, &pb.GetMetricsRequest{})
+		break
+	case clientStreamType_Events:
+		srv, err = client.GetEvents(ctx, &pb.GetEventsRequest{
+			EventId:             key.eventId,
+			SequenceNumberSince: c.s.sequenceNumbers[key],
+		})
+		break
+	default:
+		panic("unreachable")
+	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -252,22 +262,22 @@ func (c *Client) GetStreamSegments(ctx context.Context, streamId StreamId) ([]st
 		}
 		segment := pbSegmentToSegment(pbseg)
 		segments = append(segments, segment)
-		if uint32(segment.SeqN) > c.s.sequenceNumbers[streamId] {
-			c.s.sequenceNumbers[streamId] = uint32(segment.SeqN)
+		if uint32(segment.SeqN) > c.s.sequenceNumbers[key] {
+			c.s.sequenceNumbers[key] = uint32(segment.SeqN)
 		}
 	}
 
 	// If we received at least one segment, we need to increment the sequence number
 	// to avoid requesting the same segment again next time we use this stream.
 	if len(segments) > 0 {
-		c.s.sequenceNumbers[streamId]++
+		c.s.sequenceNumbers[key]++
 	}
 
 	return segments, nil
 }
 
 func (c *Client) GetMetrics(ctx context.Context) (Metrics, error) {
-	messages, err := c.GetStream(ctx, METRICS_STREAM_ID)
+	messages, err := c.GetStream(ctx, newStreamKeyMetrics())
 	if err != nil {
 		return Metrics{}, err
 	}
@@ -287,8 +297,43 @@ func (c *Client) GetMetrics(ctx context.Context) (Metrics, error) {
 	}, nil
 }
 
-func (c *Client) GetEvents(ctx context.Context, streamId StreamId) ([]Event, error) {
-	messages, err := c.GetStream(ctx, streamId)
+func (c *Client) GetEventDescriptors(ctx context.Context) ([]EventDescriptor, error) {
+	client, err := c.newGrpcClient()
+	if err != nil {
+		return nil, err
+	}
+
+	srv, err := client.GetEventDescriptors(ctx, &pb.GetEventDescriptorsRequest{})
+	if err != nil {
+		return nil, err
+	}
+
+	descriptors := make([]EventDescriptor, 0)
+	for {
+		d, err := srv.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		descriptors = append(descriptors, EventDescriptor{
+			EventId: d.EventId,
+			Scope: instrumentation.Scope{
+				Name:    d.Scope.Name,
+				Version: d.Scope.Version,
+			},
+			Name:        d.Name,
+			Description: d.Description,
+		})
+	}
+
+	return descriptors, nil
+}
+
+func (c *Client) GetEvents(ctx context.Context, eventId uint32) ([]Event, error) {
+	messages, err := c.GetStream(ctx, newStreamKeyEvent(eventId))
 	if err != nil {
 		return nil, err
 	}
