@@ -2,7 +2,13 @@ module github.com/libp2p/go-libp2p-kad-dht
 
 go 1.23.0
 
+replace github.com/ipfs/boxo => ../boxo
+
 replace github.com/libp2p/go-libp2p => ../libp2p
+
+replace github.com/libp2p/go-libp2p-kad-dht => ../kad
+
+replace github.com/diogo464/telemetry => ../telemetry
 
 require (
 	github.com/google/gopacket v1.1.19
