@@ -10,7 +10,7 @@ set -e
 cd $(dirname $0)/..
 
 pushd kubo
-    make build
+    CGO_ENABLED=0 make build
 popd
 
 mkdir -p bin/
