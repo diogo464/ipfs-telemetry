@@ -2,9 +2,13 @@ module github.com/diogo464/ipfs-telemetry/monitor
 
 go 1.23.0
 
-replace github.com/diogo464/telemetry => ../telemetry
+replace github.com/ipfs/boxo => ../boxo
 
 replace github.com/libp2p/go-libp2p => ../libp2p
+
+replace github.com/libp2p/go-libp2p-kad-dht => ../kad
+
+replace github.com/diogo464/telemetry => ../telemetry
 
 require (
 	github.com/diogo464/telemetry v0.5.3-0.20250414191353-cb4f986200b0
@@ -20,7 +24,7 @@ require (
 	go.opentelemetry.io/otel/sdk v1.35.0
 	go.opentelemetry.io/otel/sdk/metric v1.35.0
 	go.uber.org/zap v1.27.0
-	google.golang.org/protobuf v1.36.5
+	google.golang.org/protobuf v1.36.6
 )
 
 require (
@@ -117,14 +121,14 @@ require (
 	go.uber.org/fx v1.23.0 // indirect
 	go.uber.org/mock v0.5.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/crypto v0.35.0 // indirect
-	golang.org/x/exp v0.0.0-20250218142911-aa4b98e5adaa // indirect
-	golang.org/x/mod v0.23.0 // indirect
-	golang.org/x/net v0.35.0 // indirect
-	golang.org/x/sync v0.11.0 // indirect
-	golang.org/x/sys v0.30.0 // indirect
-	golang.org/x/text v0.22.0 // indirect
-	golang.org/x/tools v0.30.0 // indirect
+	golang.org/x/crypto v0.36.0 // indirect
+	golang.org/x/exp v0.0.0-20250305212735-054e65f0b394 // indirect
+	golang.org/x/mod v0.24.0 // indirect
+	golang.org/x/net v0.38.0 // indirect
+	golang.org/x/sync v0.12.0 // indirect
+	golang.org/x/sys v0.31.0 // indirect
+	golang.org/x/text v0.23.0 // indirect
+	golang.org/x/tools v0.31.0 // indirect
 	google.golang.org/genproto v0.0.0-20211118181313-81c1377c94b1 // indirect
 	google.golang.org/grpc v1.72.0 // indirect
 	lukechampine.com/blake3 v1.4.0 // indirect
