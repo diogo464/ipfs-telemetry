@@ -58,3 +58,6 @@ webapi:
 # show logs for a given container
 logs name:
     podman logs -f {{name}}
+
+sync:
+    rsync -avzp --exclude data --exclude .git --exclude dist . ipfs:./
