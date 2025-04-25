@@ -14,6 +14,7 @@ tidy:
     cd kubo && go mod tidy
     cd libp2p && go mod tidy
     cd monitor && go mod tidy
+    cd crawler && go mod tidy
     cd telemetry && go mod tidy
 
 # build the ipfs binary
@@ -28,8 +29,12 @@ build-telemetry:
 build-monitor:
     ./scripts/build-monitor.sh
 
+# build the crawler binary
+build-crawler:
+    ./scripts/build-crawler.sh
+
 # build all binaries
-build: build-ipfs build-telemetry build-monitor
+build: build-ipfs build-telemetry build-monitor build-crawler
 
 # fetch the nats cli
 fetch-nats:
