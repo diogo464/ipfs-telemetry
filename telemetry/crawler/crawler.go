@@ -142,8 +142,14 @@ func (c *Crawler) ObservePeer(p *walker.Peer) {
 	}
 	c.peers_mu.Unlock()
 
+	for _, observer := range c.opts.observers {
+		observer.ObservePeer(p)
+	}
+
 	if hasTelemetry {
-		c.opts.observer.ObservePeer(p)
+		for _, observer := range c.opts.telemetryObservers {
+			observer.ObservePeer(p)
+		}
 		c.l.Info("found telemetry peer", zap.String("peer", p.ID.String()))
 	}
 }

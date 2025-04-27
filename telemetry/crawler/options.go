@@ -10,10 +10,11 @@ import (
 type Option func(*options) error
 
 type options struct {
-	logger        *zap.Logger
-	meterProvider metric.MeterProvider
-	observer      walker.Observer
-	walkerOpts    []walker.Option
+	logger             *zap.Logger
+	meterProvider      metric.MeterProvider
+	telemetryObservers []walker.Observer
+	observers          []walker.Observer
+	walkerOpts         []walker.Option
 }
 
 func WithLogger(l *zap.Logger) Option {
@@ -32,7 +33,14 @@ func WithMeterProvider(meterProvider metric.MeterProvider) Option {
 
 func WithObserver(observer walker.Observer) Option {
 	return func(o *options) error {
-		o.observer = observer
+		o.observers = append(o.observers, observer)
+		return nil
+	}
+}
+
+func WithTelemetryObserver(observer walker.Observer) Option {
+	return func(o *options) error {
+		o.telemetryObservers = append(o.telemetryObservers, observer)
 		return nil
 	}
 }
@@ -46,10 +54,11 @@ func WithWalkerOption(walkerOpt ...walker.Option) Option {
 
 func defaults() *options {
 	return &options{
-		logger:        zap.NewNop(),
-		meterProvider: noop.NewMeterProvider(),
-		observer:      &walker.NullObserver{},
-		walkerOpts:    []walker.Option{},
+		logger:             zap.NewNop(),
+		meterProvider:      noop.NewMeterProvider(),
+		telemetryObservers: []walker.Observer{},
+		observers:          []walker.Observer{},
+		walkerOpts:         []walker.Option{},
 	}
 }
 
