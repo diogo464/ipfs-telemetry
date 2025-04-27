@@ -2,4 +2,4 @@
 set -e
 cd $(dirname $0)/..
 
-bin/ipfs id | bin/nats publish discovery
+bin/ipfs id | nats publish discovery
