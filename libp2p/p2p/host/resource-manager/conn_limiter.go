@@ -27,7 +27,7 @@ type NetworkPrefixLimit struct {
 // 8 for now so that it matches the number of concurrent dials we may do
 // in swarm_dial.go. With future smart dialing work we should bring this
 // down
-var defaultMaxConcurrentConns = 8
+var defaultMaxConcurrentConns = 64
 
 var defaultIP4Limit = ConnLimitPerSubnet{
 	ConnCount:    defaultMaxConcurrentConns,
