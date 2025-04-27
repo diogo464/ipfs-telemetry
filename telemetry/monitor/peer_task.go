@@ -116,6 +116,7 @@ func (p *peerTask) tryCollectTelemetry(ctx context.Context) error {
 	}
 	defer func() {
 		p.client_state = client.GetClientState()
+		client.Close()
 	}()
 
 	sess, err := client.GetSession(ctx)
