@@ -141,7 +141,11 @@ func mainAction(c *cli.Context) error {
 	}()
 
 	ch := make(chan *nats.Msg)
-	nc.ChanSubscribe("discovery", ch)
+	sub, err := nc.ChanSubscribe("discovery", ch)
+	if err != nil {
+		return errors.Wrapf(err, "failed to subscribe to channel")
+	}
+	defer sub.Unsubscribe()
 
 	for {
 		select {
