@@ -7,6 +7,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/protocol"
 	"github.com/multiformats/go-multiaddr"
+	"slices"
 )
 
 type BucketEntry struct {
@@ -23,6 +24,10 @@ type Peer struct {
 	Requests        []Request             `json:"requests"`
 	ConnectStart    time.Time             `json:"connect_start"`
 	ConnectDuration time.Duration         `json:"connect_duration"`
+}
+
+func (p *Peer) ContainsProtocol(id protocol.ID) bool {
+	return slices.Contains(p.Protocols, id)
 }
 
 type Request struct {

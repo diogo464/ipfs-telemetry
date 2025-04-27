@@ -6,10 +6,8 @@ import (
 
 	"github.com/diogo464/telemetry"
 	"github.com/diogo464/telemetry/crawler/metrics"
-	"github.com/diogo464/telemetry/internal/utils"
 	"github.com/diogo464/telemetry/walker"
 	"github.com/libp2p/go-libp2p/core/peer"
-	"github.com/libp2p/go-libp2p/core/protocol"
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/atomic"
 	"go.uber.org/zap"
@@ -110,8 +108,16 @@ func (c *Crawler) Run(ctx context.Context) error {
 		default:
 		}
 
+		for _, observer := range c.opts.observers {
+			observer.CrawlBegin()
+		}
+
 		if err := c.w.Walk(ctx); err != nil {
 			return err
+		}
+
+		for _, observer := range c.opts.observers {
+			observer.CrawlEnd()
 		}
 
 		c.cold = c.cnow.clone()
@@ -125,7 +131,7 @@ func (c *Crawler) Run(ctx context.Context) error {
 
 // ObservePeer implements walker.Observer
 func (c *Crawler) ObservePeer(p *walker.Peer) {
-	hasTelemetry := utils.SliceAny(p.Protocols, func(t protocol.ID) bool { return t == telemetry.ID_TELEMETRY })
+	hasTelemetry := p.ContainsProtocol(telemetry.ID_TELEMETRY)
 
 	c.peers_mu.Lock()
 	{
@@ -147,9 +153,6 @@ func (c *Crawler) ObservePeer(p *walker.Peer) {
 	}
 
 	if hasTelemetry {
-		for _, observer := range c.opts.telemetryObservers {
-			observer.ObservePeer(p)
-		}
 		c.l.Info("found telemetry peer", zap.String("peer", p.ID.String()))
 	}
 }
