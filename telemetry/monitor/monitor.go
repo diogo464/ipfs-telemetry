@@ -7,7 +7,6 @@ import (
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/peerstore"
-	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 )
 
@@ -22,9 +21,8 @@ type monitorCommand interface {
 }
 
 type Monitor struct {
-	logger    *zap.Logger
-	metrics   *metrics.Metrics
-	ptmetrics *metrics.PeerTaskMetrics
+	logger  *zap.Logger
+	metrics *metrics.Metrics
 
 	// Safe for use outside task
 	command_sender chan<- monitorCommand
@@ -59,10 +57,6 @@ func Start(ctx context.Context, o ...Option) (*Monitor, error) {
 	if err != nil {
 		return nil, err
 	}
-	ptmetrics, err := metrics.NewPeerTaskMetrics(opts.MeterProvider)
-	if err != nil {
-		return nil, err
-	}
 	emetrics, err := metrics.NewExportMetrics(opts.MeterProvider)
 	if err != nil {
 		return nil, err
@@ -70,9 +64,8 @@ func Start(ctx context.Context, o ...Option) (*Monitor, error) {
 
 	command_channel := make(chan monitorCommand)
 	m := &Monitor{
-		logger:    opts.Logger,
-		metrics:   mmetrics,
-		ptmetrics: ptmetrics,
+		logger:  opts.Logger,
+		metrics: mmetrics,
 
 		command_sender: command_channel,
 		host:           opts.Host,
@@ -82,11 +75,6 @@ func Start(ctx context.Context, o ...Option) (*Monitor, error) {
 		command_receiver: command_channel,
 		peers:            map[peer.ID]*peerTask{},
 	}
-
-	mmetrics.RegisterCallback(func(ctx context.Context, observer metric.Observer) error {
-		observer.ObserveInt64(mmetrics.ActivePeers, int64(len(m.peers)))
-		return nil
-	})
 
 	go m.run(ctx)
 	return m, nil
@@ -116,14 +104,21 @@ func (m *Monitor) sendCommand(cmd monitorCommand) {
 }
 
 func (m *Monitor) discover(pid peer.ID) {
-	m.metrics.DiscoveredPeers.Add(context.Background(), 1)
 	if pt, ok := m.peers[pid]; ok {
-		m.metrics.RediscoveredPeers.Add(context.Background(), 1)
+		m.metrics.RecordRediscover(pid)
 		m.logger.Info("rediscover peer", zap.String("peer", pid.String()))
 		pt.sendCommand(newPeerCommandResetErrors())
 		return
+	} else {
+		m.metrics.RecordDiscover(pid)
 	}
 	m.logger.Info("discover peer", zap.String("peer", pid.String()))
+
+	peerTaskMetrics, err := metrics.NewPeerTaskMetrics(m.opts.MeterProvider, pid)
+	if err != nil {
+		panic("failed to create peer task metrics")
+	}
+
 	m.peers[pid] = newPeerTask(
 		pid,
 		m.host,
@@ -131,8 +126,9 @@ func (m *Monitor) discover(pid peer.ID) {
 		m.exporter,
 		m,
 		m.logger.With(zap.String("peer", pid.String())),
-		m.ptmetrics,
+		peerTaskMetrics,
 	)
+	m.metrics.RecordActivePeers(len(m.peers))
 }
 
 type monitorCommandDiscover struct {
@@ -177,4 +173,5 @@ func newMonitorCommandPeerFailed(pid peer.ID) *monitorCommandPeerFailed {
 // execute implements monitorCommand
 func (c *monitorCommandPeerFailed) execute(m *Monitor) {
 	delete(m.peers, c.pid)
+	m.metrics.RecordActivePeers(len(m.peers))
 }

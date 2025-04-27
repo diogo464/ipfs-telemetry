@@ -12,10 +12,13 @@ import (
 	rcmgr "github.com/libp2p/go-libp2p/p2p/host/resource-manager"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/nats-io/nats.go"
+	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/urfave/cli/v2"
+	"go.opentelemetry.io/contrib/instrumentation/host"
 	"go.opentelemetry.io/contrib/instrumentation/runtime"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/prometheus"
 	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
@@ -57,7 +60,7 @@ func main() {
 func mainAction(c *cli.Context) error {
 	logger, _ := zap.NewProduction()
 
-	prom_exporter, err := prometheus.New()
+	prom_exporter, err := prometheus.New(prometheus.WithResourceAsConstantLabels(func(kv attribute.KeyValue) bool { return true }))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -69,6 +72,7 @@ func mainAction(c *cli.Context) error {
 			semconv.ServiceVersionKey.String("0.0.0"),
 		)),
 	)
+	host.Start(host.WithMeterProvider(provider))
 	runtime.Start(runtime.WithMeterProvider(provider))
 	otel.SetMeterProvider(provider)
 

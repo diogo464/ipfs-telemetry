@@ -8,7 +8,6 @@ import (
 	"github.com/diogo464/telemetry/monitor/metrics"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
-	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 )
 
@@ -108,8 +107,11 @@ func (p *peerTask) collectTelemetry(ctx context.Context) {
 }
 
 func (p *peerTask) tryCollectTelemetry(ctx context.Context) error {
+	timestampBegin := time.Now()
+
 	client, err := p.createClient(ctx)
 	if err != nil {
+		p.metrics.RecordCollectFailure(ctx, "create client")
 		return err
 	}
 	defer func() {
@@ -119,33 +121,39 @@ func (p *peerTask) tryCollectTelemetry(ctx context.Context) error {
 	sess, err := client.GetSession(ctx)
 	if err != nil {
 		p.logger.Warn("failed to get session")
+		p.metrics.RecordCollectFailure(ctx, "get session")
 		return err
 	}
 
 	p.logger.Info("exporting session", zap.Any("session", sess))
 	if err := p.tryExportSession(ctx, client, sess); err != nil {
 		p.logger.Warn("failed to export session", zap.Error(err))
+		p.metrics.RecordCollectFailure(ctx, "export session")
 		return err
 	}
 
 	p.logger.Info("exporting properties", zap.Any("session", sess))
 	if err := p.tryExportProperties(ctx, client, sess); err != nil {
 		p.logger.Warn("failed to export properties", zap.Error(err))
+		p.metrics.RecordCollectFailure(ctx, "export properties")
 		return err
 	}
 
 	p.logger.Info("exporting metrics", zap.Any("session", sess))
 	if err := p.tryExportMetrics(ctx, client, sess); err != nil {
 		p.logger.Warn("failed to export metrics", zap.Error(err))
+		p.metrics.RecordCollectFailure(ctx, "export metrics")
 		return err
 	}
 
 	p.logger.Info("exporting events", zap.Any("session", sess))
 	if err := p.tryExportEvents(ctx, client, sess); err != nil {
 		p.logger.Warn("failed to export events", zap.Error(err))
+		p.metrics.RecordCollectFailure(ctx, "export events")
 		return err
 	}
 
+	p.metrics.RecordCollectSuccess(ctx, time.Since(timestampBegin))
 	return nil
 }
 
@@ -170,9 +178,7 @@ func (p *peerTask) tryExportMetrics(ctx context.Context, client *telemetry.Clien
 		p.logger.Warn("failed to get metrics", zap.Error(err))
 		return err
 	}
-
 	p.exporter.Metrics(p.pid, sess, cmetrics)
-
 	return nil
 }
 
@@ -209,12 +215,10 @@ func (p *peerTask) bandwidthTest(ctx context.Context) {
 	if err := p.tryBandwidthTest(ctx); err != nil {
 		p.logger.Warn("failed to test bandwidth", zap.Error(err))
 		p.fail(err)
-		p.metrics.CollectFailure.Add(ctx, 1, metric.WithAttributes(metrics.KeyPeerID.String(p.pid.String())))
 		p.exporter.PeerFailure(p.pid, err)
 	} else {
 		p.logger.Info("successfully tested bandwidth")
 		p.success()
-		p.metrics.CollectCompleted.Add(ctx, 1, metric.WithAttributes(metrics.KeyPeerID.String(p.pid.String())))
 		p.exporter.PeerSuccess(p.pid)
 	}
 }
@@ -239,11 +243,15 @@ func (p *peerTask) tryBandwidthTest(ctx context.Context) error {
 
 func (p *peerTask) createClient(ctx context.Context) (*telemetry.Client, error) {
 	p.logger.Info("creating telemetry client", zap.Any("state", p.client_state))
+
+	timestampBegin := time.Now()
 	client, err := telemetry.NewClient(
 		ctx,
 		telemetry.WithClientLibp2pDial(p.host, p.pid),
 		telemetry.WithClientState(p.client_state),
 	)
+	p.metrics.RecordCreateClientDuration(ctx, time.Since(timestampBegin))
+
 	if err != nil {
 		p.logger.Warn("failed to create telemetry client", zap.Error(err))
 		return nil, err

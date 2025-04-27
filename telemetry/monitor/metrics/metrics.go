@@ -2,7 +2,9 @@ package metrics
 
 import (
 	"context"
+	"time"
 
+	"github.com/libp2p/go-libp2p/core/peer"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/sdk/instrumentation"
@@ -16,28 +18,39 @@ var (
 
 	KeyPeerID     = attribute.Key("peer_id")
 	KeyExportKind = attribute.Key("export_kind")
+	KeyReason     = attribute.Key("reason")
+	KeyOperation  = attribute.Key("operation")
+
+	AttrPeerTaskOp_CreateClient  = KeyOperation.String("create_client")
+	AttrPeerTaskOp_GetSession    = KeyOperation.String("get_session")
+	AttrPeerTaskOp_ExportSession = KeyOperation.String("")
 
 	AttrExportKindBandwidth  = KeyExportKind.String("bandwidth")
 	AttrExportKindEvents     = KeyExportKind.String("events")
 	AttrExportKindMetrics    = KeyExportKind.String("metrics")
 	AttrExportKindProperties = KeyExportKind.String("properties")
 	AttrExportKindSession    = KeyExportKind.String("session")
+
+	histogramBucketsMs = []float64{0.01, 0.05, 0.1, 0.3, 0.6, 0.8, 1, 2, 3, 4, 5, 6, 8, 10, 13, 16, 20, 25, 30, 40, 50, 65, 80, 100, 130, 160, 200, 250, 300, 400, 500, 650, 800, 1000, 2000, 5000, 10000, 20000, 50000, 100000}
+
+	unitCount = "{count}"
+	unitMs    = "ms"
 )
 
 type Metrics struct {
 	m metric.Meter
 
-	// Synchronous
-	DiscoveredPeers   metric.Int64Counter
-	RediscoveredPeers metric.Int64Counter
-
-	// Asynchronous
-	ActivePeers metric.Int64ObservableGauge
+	discoveredPeers   metric.Int64Counter
+	rediscoveredPeers metric.Int64Counter
+	activePeers       metric.Int64Gauge
 }
 
 type PeerTaskMetrics struct {
-	CollectCompleted metric.Int64Counter
-	CollectFailure   metric.Int64Counter
+	peerId               peer.ID
+	collectSuccess       metric.Int64Counter
+	collectFailure       metric.Int64Counter
+	collectDuration      metric.Float64Histogram
+	createClientDuration metric.Float64Histogram
 }
 
 type ExporterMetrics struct {
@@ -47,28 +60,28 @@ type ExporterMetrics struct {
 func New(meterProvider metric.MeterProvider) (*Metrics, error) {
 	m := meterProvider.Meter(Scope.Name, metric.WithInstrumentationVersion(Scope.Version), metric.WithSchemaURL(Scope.SchemaURL))
 
-	DiscoveredPeers, err := m.Int64Counter(
-		"monitor.discovered_peers",
-		metric.WithDescription("Number of peers discovered, including duplicates"),
-		metric.WithUnit("1"),
+	discoveredPeers, err := m.Int64Counter(
+		"monitor.discovered",
+		metric.WithDescription("Total number of newly discovered peers. Peers that previously failed and have been rediscovered will count as a new discovery."),
+		metric.WithUnit(unitCount),
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	RediscoveredPeers, err := m.Int64Counter(
-		"monitor.rediscovered_peers",
-		metric.WithDescription("Number of peers rediscovered"),
-		metric.WithUnit("1"),
+	rediscoveredPeers, err := m.Int64Counter(
+		"monitor.rediscovered",
+		metric.WithDescription("Total number of peers rediscovered. The monitor was already tracking this peers."),
+		metric.WithUnit(unitCount),
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	ActivePeers, err := m.Int64ObservableGauge(
-		"monitor.active_peers",
-		metric.WithDescription("Number of peers currently being monitored"),
-		metric.WithUnit("1"),
+	activePeers, err := m.Int64Gauge(
+		"monitor.active",
+		metric.WithDescription("Total number of currently active/tracked peers by the monitor."),
+		metric.WithUnit(unitCount),
 	)
 	if err != nil {
 		return nil, err
@@ -76,42 +89,88 @@ func New(meterProvider metric.MeterProvider) (*Metrics, error) {
 
 	return &Metrics{
 		m:                 m,
-		DiscoveredPeers:   DiscoveredPeers,
-		RediscoveredPeers: RediscoveredPeers,
-		ActivePeers:       ActivePeers,
+		discoveredPeers:   discoveredPeers,
+		rediscoveredPeers: rediscoveredPeers,
+		activePeers:       activePeers,
 	}, nil
 }
 
-func (m *Metrics) RegisterCallback(cb func(context.Context, metric.Observer) error) error {
-	_, err := m.m.RegisterCallback(cb, m.ActivePeers)
-	return err
+func (m *Metrics) RecordDiscover(peerId peer.ID) {
+	m.discoveredPeers.Add(context.Background(), 1, metric.WithAttributes(KeyPeerID.String(peerId.String())))
 }
 
-func NewPeerTaskMetrics(meterProvider metric.MeterProvider) (*PeerTaskMetrics, error) {
+func (m *Metrics) RecordRediscover(peerId peer.ID) {
+	m.rediscoveredPeers.Add(context.Background(), 1, metric.WithAttributes(KeyPeerID.String(peerId.String())))
+}
+
+func (m *Metrics) RecordActivePeers(active int) {
+	m.activePeers.Record(context.Background(), int64(active))
+}
+
+func NewPeerTaskMetrics(meterProvider metric.MeterProvider, peerId peer.ID) (*PeerTaskMetrics, error) {
 	m := meterProvider.Meter(Scope.Name, metric.WithInstrumentationVersion(Scope.Version), metric.WithSchemaURL(Scope.SchemaURL))
 
-	CollectCompleted, err := m.Int64Counter(
-		"monitor.collect_completed",
-		metric.WithDescription("Number of collect completions"),
-		metric.WithUnit("1"),
+	collectSuccess, err := m.Int64Counter(
+		"monitor.peer.collect_success",
+		metric.WithDescription("Total number of successful telemetry collection attempts"),
+		metric.WithUnit(unitCount),
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	CollectFailure, err := m.Int64Counter(
-		"monitor.collect_failure",
-		metric.WithDescription("Number of collect failures"),
-		metric.WithUnit("1"),
+	collectFailure, err := m.Int64Counter(
+		"monitor.peer.collect_failure",
+		metric.WithDescription("Total number of failed telemetry collection attempts"),
+		metric.WithUnit(unitCount),
 	)
 	if err != nil {
 		return nil, err
 	}
+
+	collectDuration, err := m.Float64Histogram(
+		"monitor.peer.collect_duration",
+		metric.WithDescription("Duration of telemetry collection operations"),
+		metric.WithUnit(unitMs),
+		metric.WithExplicitBucketBoundaries(histogramBucketsMs...),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	createClientLatency, err := m.Float64Histogram(
+		"monitor.peer.create_client_duration",
+		metric.WithDescription("Duration of client creation operations"),
+		metric.WithUnit(unitMs),
+		metric.WithExplicitBucketBoundaries(histogramBucketsMs...),
+	)
 
 	return &PeerTaskMetrics{
-		CollectCompleted: CollectCompleted,
-		CollectFailure:   CollectFailure,
+		peerId:               peerId,
+		collectSuccess:       collectSuccess,
+		collectFailure:       collectFailure,
+		collectDuration:      collectDuration,
+		createClientDuration: createClientLatency,
 	}, nil
+}
+
+func (m *PeerTaskMetrics) RecordCollectSuccess(ctx context.Context, dur time.Duration) {
+	options := metric.WithAttributes(KeyPeerID.String(m.peerId.String()))
+	m.collectSuccess.Add(ctx, 1, options)
+	m.collectDuration.Record(ctx, durationToMillis(dur), options)
+}
+
+func (m *PeerTaskMetrics) RecordCollectFailure(ctx context.Context, reason string) {
+	m.collectFailure.Add(ctx, 1, metric.WithAttributes(
+		KeyPeerID.String(m.peerId.String()),
+		KeyReason.String(reason),
+	))
+}
+
+func (m *PeerTaskMetrics) RecordCreateClientDuration(ctx context.Context, dur time.Duration) {
+	m.createClientDuration.Record(ctx, durationToMillis(dur), metric.WithAttributes(
+		KeyPeerID.String(m.peerId.String()),
+	))
 }
 
 func NewExportMetrics(meterProvider metric.MeterProvider) (*ExporterMetrics, error) {
@@ -129,4 +188,8 @@ func NewExportMetrics(meterProvider metric.MeterProvider) (*ExporterMetrics, err
 	return &ExporterMetrics{
 		Exports: Exports,
 	}, nil
+}
+
+func durationToMillis(d time.Duration) float64 {
+	return float64(d) / float64(time.Millisecond)
 }
