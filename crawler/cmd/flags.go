@@ -19,27 +19,6 @@ var (
 		Value:   "nats://localhost:4222",
 	}
 
-	FLAG_NATS_SUBJECT = &cli.StringFlag{
-		Name:    "nats-subject",
-		Usage:   "nats subject to publish to",
-		EnvVars: []string{"NATS_SUBJECT"},
-		Value:   "discovery",
-	}
-
-	FLAG_OUTPUT = &cli.StringFlag{
-		Name:    "output",
-		Usage:   "crawler output method. can be one of 'http' or 'nats'",
-		EnvVars: []string{"CRAWLER_OUTPUT"},
-		Value:   "nats",
-	}
-
-	FLAG_HTTP_URL = &cli.StringFlag{
-		Name:    "http-url",
-		Usage:   "http api url. used when output mode is 'http'",
-		EnvVars: []string{"CRAWLER_HTTP_URL"},
-		Value:   "ipfs-telemetry.org/api/v1",
-	}
-
 	FLAG_CONCURRENCY = &cli.IntFlag{
 		Name:    "concurrency",
 		Usage:   "how many peers to request at the same time",

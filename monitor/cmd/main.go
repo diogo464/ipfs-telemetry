@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 
+	tmonitor "github.com/diogo464/ipfs-telemetry/monitor"
 	"github.com/diogo464/telemetry/monitor"
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p/core/peer"
@@ -28,11 +29,6 @@ import (
 
 	_ "net/http/pprof"
 )
-
-type DiscoveryNotification struct {
-	ID        peer.ID  `json:"id"`
-	Addresses []string `json:"addresses"`
-}
 
 func main() {
 	app := &cli.App{
@@ -142,7 +138,7 @@ func mainAction(c *cli.Context) error {
 	}()
 
 	ch := make(chan *nats.Msg)
-	sub, err := nc.ChanSubscribe("discovery", ch)
+	sub, err := nc.ChanSubscribe(tmonitor.Subject_Discover, ch)
 	if err != nil {
 		return errors.Wrapf(err, "failed to subscribe to channel")
 	}
@@ -153,7 +149,7 @@ func mainAction(c *cli.Context) error {
 		case <-c.Context.Done():
 			return nil
 		case msg := <-ch:
-			var discovery DiscoveryNotification
+			var discovery tmonitor.DiscoveryNotification
 			err := json.Unmarshal(msg.Data, &discovery)
 			if err != nil {
 				logger.Error("failed to unmarshal discovery", zap.Error(err))
@@ -171,18 +167,12 @@ func mainAction(c *cli.Context) error {
 	}
 }
 
-func discoveryToAddrInfo(logger *zap.Logger, discovery *DiscoveryNotification) (*peer.AddrInfo, error) {
+func discoveryToAddrInfo(logger *zap.Logger, discovery *tmonitor.DiscoveryNotification) (*peer.AddrInfo, error) {
 	addrs := make([]multiaddr.Multiaddr, 0)
-	for _, addrString := range discovery.Addresses {
-		addr, err := multiaddr.NewMultiaddr(addrString)
-		if err != nil {
-			logger.Warn("failed to parse multiaddr", zap.Any("addr", addrString), zap.Error(err))
-			continue
-		}
-
+	for _, addr := range discovery.Addresses {
 		prefix, comp := multiaddr.SplitLast(addr)
 		if comp == nil {
-			logger.Warn("failed to split multiaddr", zap.Any("addr", addrString))
+			logger.Warn("failed to split multiaddr", zap.Any("addr", addr))
 			continue
 		}
 

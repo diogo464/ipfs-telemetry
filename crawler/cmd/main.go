@@ -1,18 +1,13 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
 	"log"
 	"net/http"
 	"os"
 
-	backend_crawler "github.com/diogo464/ipfs-telemetry/crawler"
 	"github.com/diogo464/telemetry/crawler"
 	"github.com/diogo464/telemetry/walker"
 	logging "github.com/ipfs/go-log"
-	"github.com/nats-io/nats.go"
-	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/urfave/cli/v2"
 	"go.opentelemetry.io/otel/exporters/prometheus"
@@ -22,10 +17,6 @@ import (
 	"go.uber.org/zap"
 )
 
-var _ walker.Observer = (*observer)(nil)
-var _ walker.Observer = (*natsObserver)(nil)
-var _ walker.Observer = (*httpObserver)(nil)
-
 func main() {
 	app := &cli.App{
 		Name:        "crawler",
@@ -34,9 +25,6 @@ func main() {
 		Flags: []cli.Flag{
 			FLAG_PROMETHEUS_ADDRESS,
 			FLAG_NATS_URL,
-			FLAG_NATS_SUBJECT,
-			FLAG_OUTPUT,
-			FLAG_HTTP_URL,
 			FLAG_CONCURRENCY,
 			FLAG_CONNECT_TIMEOUT,
 			FLAG_REQUEST_TIMEOUT,
@@ -46,137 +34,6 @@ func main() {
 
 	if err := app.Run(os.Args); err != nil {
 		panic(err)
-	}
-}
-
-func walkerPeerToDiscovery(c *walker.Peer) backend_crawler.DiscoveryNotification {
-	return backend_crawler.DiscoveryNotification{
-		ID:        c.ID,
-		Addresses: c.Addresses,
-	}
-}
-
-func walkerPeerToDiscoveryMarshaled(c *walker.Peer) ([]byte, error) {
-	d := walkerPeerToDiscovery(c)
-	m, err := json.Marshal(d)
-	return m, err
-}
-
-type observer struct {
-	l *zap.Logger
-	o walker.Observer
-}
-
-// ObserveError implements walker.Observer
-func (o *observer) ObserveError(e *walker.Error) {
-	o.l.Warn("error", zap.String("peer", e.ID.String()), zap.Error(e.Err))
-	o.o.ObserveError(e)
-}
-
-// ObservePeer implements walker.Observer
-func (o *observer) ObservePeer(c *walker.Peer) {
-	o.l.Info("observing peer", zap.String("peer", c.ID.String()))
-	o.o.ObservePeer(c)
-}
-
-type natsObserver struct {
-	l       *zap.Logger
-	nc      *nats.Conn
-	subject string
-}
-
-func newNatsObserver(l *zap.Logger, natsUrl string, subject string) (*natsObserver, error) {
-	l.Info("connecting to nats at " + natsUrl)
-	nc, err := nats.Connect(natsUrl)
-	if err != nil {
-		l.Error("failed to connect to nats at "+natsUrl, zap.Error(err))
-		return nil, err
-	}
-	return &natsObserver{
-		l:       l,
-		nc:      nc,
-		subject: subject,
-	}, nil
-}
-
-// ObserveError implements walker.Observer
-func (*natsObserver) ObserveError(*walker.Error) {
-}
-
-// ObservePeer implements walker.Observer
-func (o *natsObserver) ObservePeer(c *walker.Peer) {
-	if m, err := walkerPeerToDiscoveryMarshaled(c); err == nil {
-		if err := o.nc.Publish(o.subject, m); err != nil {
-			o.l.Error("failed to publish discovery message", zap.String("subject", o.subject), zap.Error(err))
-		}
-	} else {
-		o.l.Error("failed to marshal discovery", zap.Error(err))
-	}
-}
-
-type httpObserver struct {
-	l      *zap.Logger
-	apiUrl string
-}
-
-func newHttpObserver(l *zap.Logger, apiUrl string) *httpObserver {
-	return &httpObserver{
-		l:      l,
-		apiUrl: apiUrl,
-	}
-}
-
-// ObserveError implements walker.Observer
-func (*httpObserver) ObserveError(*walker.Error) {
-}
-
-// ObservePeer implements walker.Observer
-func (o *httpObserver) ObservePeer(c *walker.Peer) {
-	if m, err := walkerPeerToDiscoveryMarshaled(c); err == nil {
-		postUrl := o.apiUrl + "/discovery"
-		if _, err := http.Post(postUrl, "application/json", bytes.NewReader(m)); err != nil {
-			o.l.Error("failed to POST discovery", zap.String("url", postUrl), zap.Error(err))
-		}
-	} else {
-		o.l.Error("failed to marshal discovery", zap.Error(err))
-	}
-
-}
-
-var _ (walker.Observer) = (*fileObserver)(nil)
-
-type fileObserver struct {
-	success *os.File
-	failure *os.File
-}
-
-func newFileObserver(successPath string, failurePath string) (*fileObserver, error) {
-	success, err := os.Create(successPath)
-	if err != nil {
-		return nil, err
-	}
-	failure, err := os.Create(failurePath)
-	if err != nil {
-		return nil, err
-	}
-	return &fileObserver{success, failure}, nil
-}
-
-// ObserveError implements walker.Observer.
-func (f *fileObserver) ObserveError(e *walker.Error) {
-	if m, err := json.Marshal(e); err == nil {
-		f.failure.Write(m)
-		f.failure.Write([]byte("\n"))
-		f.failure.Sync()
-	}
-}
-
-// ObservePeer implements walker.Observer.
-func (f *fileObserver) ObservePeer(p *walker.Peer) {
-	if m, err := json.Marshal(p); err == nil {
-		f.success.Write(m)
-		f.success.Write([]byte("\n"))
-		f.success.Sync()
 	}
 }
 
@@ -214,31 +71,16 @@ func mainAction(c *cli.Context) error {
 		walkerOpts = append(walkerOpts, walker.WithInterval(c.Duration(FLAG_INTERVAL.Name)))
 	}
 
-	outputMethod := c.String(FLAG_OUTPUT.Name)
-	var outputObserver walker.Observer
-	if outputMethod == "http" {
-		baseUrl := c.String(FLAG_HTTP_URL.Name)
-		outputObserver = newHttpObserver(logger.Named("http"), baseUrl)
-	} else if outputMethod == "nats" {
-		url := c.String(FLAG_NATS_URL.Name)
-		subject := c.String(FLAG_NATS_SUBJECT.Name)
-		if natsObserver, err := newNatsObserver(logger.Named("nats"), url, subject); err == nil {
-			outputObserver = natsObserver
-		} else {
-			return err
-		}
-	} else {
-		log.Fatal("unknown output method", zap.String("output", outputMethod))
-	}
-
-	observer := &observer{
-		l: logger,
-		o: outputObserver,
+	url := c.String(FLAG_NATS_URL.Name)
+	natsObserver, err := newNatsObserver(logger.Named("nats"), url)
+	if err != nil {
+		return err
 	}
 
 	logger.Info("creating crawler")
 	crlwr, err := crawler.NewCrawler(
-		crawler.WithTelemetryObserver(observer),
+		crawler.WithWalkerObserver(newLoggerObserver(logger)),
+		crawler.WithObserver(natsObserver),
 		crawler.WithWalkerOption(walkerOpts...),
 		crawler.WithLogger(logger.Named("crawler")),
 		crawler.WithMeterProvider(provider),

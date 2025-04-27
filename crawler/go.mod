@@ -12,11 +12,12 @@ replace github.com/libp2p/go-libp2p-kad-dht => ../kad
 
 replace github.com/diogo464/telemetry => ../telemetry
 
+replace github.com/diogo464/ipfs-telemetry/monitor => ../monitor
+
 require (
+	github.com/diogo464/ipfs-telemetry/monitor v0.0.0-20250427102209-353f66617099
 	github.com/diogo464/telemetry v0.5.3-0.20250415102457-d587e4c8c9f0
 	github.com/ipfs/go-log v1.0.5
-	github.com/libp2p/go-libp2p v0.41.1
-	github.com/multiformats/go-multiaddr v0.15.0
 	github.com/nats-io/nats.go v1.23.0
 	github.com/prometheus/client_golang v1.21.1
 	github.com/urfave/cli/v2 v2.24.3
@@ -59,6 +60,7 @@ require (
 	github.com/libp2p/go-buffer-pool v0.1.0 // indirect
 	github.com/libp2p/go-cidranger v1.1.0 // indirect
 	github.com/libp2p/go-flow-metrics v0.2.0 // indirect
+	github.com/libp2p/go-libp2p v0.41.1 // indirect
 	github.com/libp2p/go-libp2p-asn-util v0.4.1 // indirect
 	github.com/libp2p/go-libp2p-gostream v0.6.0 // indirect
 	github.com/libp2p/go-libp2p-kad-dht v0.31.0 // indirect
@@ -74,10 +76,12 @@ require (
 	github.com/miekg/dns v1.1.63 // indirect
 	github.com/mikioh/tcpinfo v0.0.0-20190314235526-30a79bb1804b // indirect
 	github.com/mikioh/tcpopt v0.0.0-20190314235656-172688c1accc // indirect
+	github.com/minio/highwayhash v1.0.2 // indirect
 	github.com/minio/sha256-simd v1.0.1 // indirect
 	github.com/mr-tron/base58 v1.2.0 // indirect
 	github.com/multiformats/go-base32 v0.1.0 // indirect
 	github.com/multiformats/go-base36 v0.2.0 // indirect
+	github.com/multiformats/go-multiaddr v0.15.0 // indirect
 	github.com/multiformats/go-multiaddr-dns v0.4.1 // indirect
 	github.com/multiformats/go-multiaddr-fmt v0.1.0 // indirect
 	github.com/multiformats/go-multibase v0.2.0 // indirect
@@ -86,7 +90,7 @@ require (
 	github.com/multiformats/go-multistream v0.6.0 // indirect
 	github.com/multiformats/go-varint v0.0.7 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/nats-io/nats-server/v2 v2.9.12 // indirect
+	github.com/nats-io/jwt/v2 v2.3.0 // indirect
 	github.com/nats-io/nkeys v0.3.0 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/onsi/ginkgo/v2 v2.22.2 // indirect
