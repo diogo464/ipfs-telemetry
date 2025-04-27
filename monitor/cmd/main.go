@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -158,24 +159,46 @@ func mainAction(c *cli.Context) error {
 				logger.Error("failed to unmarshal discovery", zap.Error(err))
 				continue
 			}
-			addrs := make([]multiaddr.Multiaddr, 0, len(discovery.Addresses))
-			for _, saddr := range discovery.Addresses {
-				addr, err := multiaddr.NewMultiaddr(saddr)
-				if err != nil {
-					logger.Error("failed to decode multiaddr", zap.String("peer", discovery.ID.String()), zap.String("addr", saddr), zap.Error(err))
-					continue
-				}
-				addrs = append(addrs, addr)
-			}
-			infos, err := peer.AddrInfosFromP2pAddrs(addrs...)
+
+			info, err := discoveryToAddrInfo(logger, &discovery)
 			if err != nil {
-				logger.Error("failed to create AddrInfo from addrs", zap.Any("addrs", addrs), zap.Error(err))
+				logger.Error("failed to create addr info from discovery", zap.Error(err))
 				continue
 			}
 
-			for _, info := range infos {
-				mon.DiscoverWithAddr(c.Context, info)
-			}
+			mon.DiscoverWithAddr(c.Context, *info)
 		}
 	}
+}
+
+func discoveryToAddrInfo(logger *zap.Logger, discovery *DiscoveryNotification) (*peer.AddrInfo, error) {
+	addrs := make([]multiaddr.Multiaddr, 0)
+	for _, addrString := range discovery.Addresses {
+		addr, err := multiaddr.NewMultiaddr(addrString)
+		if err != nil {
+			logger.Warn("failed to parse multiaddr", zap.Any("addr", addrString), zap.Error(err))
+			continue
+		}
+
+		prefix, comp := multiaddr.SplitLast(addr)
+		if comp == nil {
+			logger.Warn("failed to split multiaddr", zap.Any("addr", addrString))
+			continue
+		}
+
+		if comp.Protocol().Name == "p2p" {
+			addrs = append(addrs, prefix)
+		} else {
+			addrs = append(addrs, addr)
+		}
+	}
+
+	if len(addrs) == 0 {
+		return nil, fmt.Errorf("peer had not valid multiaddrs")
+	}
+
+	return &peer.AddrInfo{
+		ID:    discovery.ID,
+		Addrs: addrs,
+	}, nil
 }
