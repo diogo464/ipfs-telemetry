@@ -12,6 +12,7 @@ import (
 	"github.com/diogo464/telemetry/walker"
 	logging "github.com/ipfs/go-log"
 	"github.com/nats-io/nats.go"
+	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/urfave/cli/v2"
 	"go.opentelemetry.io/otel/exporters/prometheus"
@@ -142,6 +143,43 @@ func (o *httpObserver) ObservePeer(c *walker.Peer) {
 
 }
 
+var _ (walker.Observer) = (*fileObserver)(nil)
+
+type fileObserver struct {
+	success *os.File
+	failure *os.File
+}
+
+func newFileObserver(successPath string, failurePath string) (*fileObserver, error) {
+	success, err := os.Create(successPath)
+	if err != nil {
+		return nil, err
+	}
+	failure, err := os.Create(failurePath)
+	if err != nil {
+		return nil, err
+	}
+	return &fileObserver{success, failure}, nil
+}
+
+// ObserveError implements walker.Observer.
+func (f *fileObserver) ObserveError(e *walker.Error) {
+	if m, err := json.Marshal(e); err == nil {
+		f.failure.Write(m)
+		f.failure.Write([]byte("\n"))
+		f.failure.Sync()
+	}
+}
+
+// ObservePeer implements walker.Observer.
+func (f *fileObserver) ObservePeer(p *walker.Peer) {
+	if m, err := json.Marshal(p); err == nil {
+		f.success.Write(m)
+		f.success.Write([]byte("\n"))
+		f.success.Sync()
+	}
+}
+
 func mainAction(c *cli.Context) error {
 	logger, _ := zap.NewProduction()
 
@@ -200,7 +238,7 @@ func mainAction(c *cli.Context) error {
 
 	logger.Info("creating crawler")
 	crlwr, err := crawler.NewCrawler(
-		crawler.WithObserver(observer),
+		crawler.WithTelemetryObserver(observer),
 		crawler.WithWalkerOption(walkerOpts...),
 		crawler.WithLogger(logger.Named("crawler")),
 		crawler.WithMeterProvider(provider),
