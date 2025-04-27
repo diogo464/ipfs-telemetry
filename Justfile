@@ -52,7 +52,10 @@ grafana:
     ./scripts/podman-grafana.sh
 
 monitor: build-monitor
-    MONITOR_COLLECT_INTERVAL=5s bin/monitor
+    ./scripts/monitor.sh
+
+crawler: build-crawler
+    ./scripts/crawler.sh
 
 exporter-vm:
     cd backend && poetry run python -m jobs.export-vm
