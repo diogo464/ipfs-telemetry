@@ -39,7 +39,7 @@ func newStreamKeyMetrics() clientStreamKey {
 }
 
 func newStreamKeyEvent(eventId uint32) clientStreamKey {
-	return clientStreamKey{streamType: clientStreamType_Metrics, eventId: eventId}
+	return clientStreamKey{streamType: clientStreamType_Events, eventId: eventId}
 }
 
 type ClientOption = func(*clientOptions)
