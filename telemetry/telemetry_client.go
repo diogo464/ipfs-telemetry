@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"strconv"
+	"strings"
 
 	"github.com/diogo464/telemetry/internal/pb"
 	"github.com/diogo464/telemetry/internal/stream"
@@ -59,7 +61,14 @@ type ClientState struct {
 }
 
 func (s *ClientState) String() string {
-	return fmt.Sprintf("Session: %s, SequenceNumbers: %v %v", s.session, s.sequenceNumbers)
+	builder := strings.Builder{}
+	builder.WriteString("[")
+	builder.WriteString("session=")
+	builder.WriteString(s.session.String())
+	builder.WriteString(",metrics=")
+	builder.WriteString(strconv.FormatInt(int64(s.sequenceNumbers[newStreamKeyMetrics()]), 10))
+	builder.WriteString("]")
+	return builder.String()
 }
 
 type Client struct {
