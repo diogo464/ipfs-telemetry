@@ -54,7 +54,7 @@ func main(c *cli.Context) error {
 
 	cctx, err := consumer.Consume(func(msg jetstream.Msg) {
 		meta, _ := msg.Metadata()
-		logger.Info("processing2 message", zap.Uint64("seqn", meta.Sequence.Stream))
+		logger.Info("processing message", zap.Uint64("seqn", meta.Sequence.Stream))
 
 		export := new(monitor.Export)
 		decode(msg.Data(), export)
