@@ -11,4 +11,5 @@ podman run -d --name nats --network host \
     docker.io/nats:latest \
     -js -sd /data \
     -c /etc/nats.conf
-
+sleep 2
+scripts/nats-setup.sh

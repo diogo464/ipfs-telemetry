@@ -3,4 +3,4 @@ set -e
 cd $(dirname $0)/..
 
 PROMETHEUS_ADDRESS="0.0.0.0:9091" \
-    bin/crawler
+    bin/backend crawler

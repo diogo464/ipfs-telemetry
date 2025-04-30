@@ -25,16 +25,12 @@ build-ipfs:
 build-telemetry:
     ./scripts/build-telemetry.sh
 
-# build the monitor binary
-build-monitor:
-    ./scripts/build-monitor.sh
-
-# build the crawler binary
-build-crawler:
-    ./scripts/build-crawler.sh
+# build the backend binary
+build-backend:
+    ./scripts/build-backend.sh
 
 # build all binaries
-build: build-ipfs build-telemetry build-monitor build-crawler
+build: build-ipfs build-telemetry build-backend
 
 # fetch the nats cli
 fetch-nats:
@@ -51,21 +47,18 @@ vm:
 grafana:
     ./scripts/podman-grafana.sh
 
-monitor: build-monitor
+monitor: build-backend
     ./scripts/monitor.sh
 
-crawler: build-crawler
+crawler: build-backend
     ./scripts/crawler.sh
 
-exporter-vm:
-    cd backend && poetry run python -m jobs.export-vm
-
-webapi:
-    cd backend && poetry run python -m webapi
+exporter-vm: build-backend
+    ./scripts/exporter-vm.sh
 
 # show logs for a given container
 logs name:
     podman logs -f {{name}}
 
 sync:
-    rsync -avzp --exclude data --exclude .git --exclude dist . ipfs:./
+    rsync -avzp --exclude data --exclude .git --exclude dist --exclude bin . ipfs:./
