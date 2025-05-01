@@ -109,7 +109,7 @@ func newDefaultHost() (host.Host, error) {
 	if err != nil {
 		return nil, err
 	}
-	h, err := libp2p.New(libp2p.NoListenAddrs, libp2p.ResourceManager(rm))
+	h, err := libp2p.New(libp2p.NoListenAddrs, libp2p.EnableRelay(), libp2p.ResourceManager(rm))
 	if err != nil {
 		return nil, err
 	}
