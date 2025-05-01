@@ -44,6 +44,10 @@ nats:
 vm:
     ./scripts/podman-vm.sh
 
+# start the postgres container
+pg:
+    ./scripts/podman-pg.sh
+
 grafana:
     ./scripts/podman-grafana.sh
 
@@ -55,6 +59,9 @@ crawler: build-backend
 
 exporter-vm: build-backend
     ./scripts/exporter-vm.sh
+
+exporter-pg: build-backend
+    ./scripts/exporter-pg.sh
 
 # show logs for a given container
 logs name:

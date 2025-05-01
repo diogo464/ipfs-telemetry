@@ -26,4 +26,11 @@ var (
 		EnvVars: []string{"VM_URL"},
 		Value:   "http://localhost:8428",
 	}
+
+	Flag_PostgresUrl = &cli.StringFlag{
+		Name:    "postgres-url",
+		Usage:   "PostgreSQL url",
+		EnvVars: []string{"POSTGRES_URL"},
+		Value:   "postgres://postgres@localhost:5432/postgres",
+	}
 )

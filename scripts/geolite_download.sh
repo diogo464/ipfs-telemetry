@@ -1,12 +1,14 @@
-#!/usr/bin/sh
+#!/usr/bin/env -S bash -x
 
 FILE="GeoLite2-City.tar.gz"
 DIR="$(mktemp -d)"
-CDIR="$(pwd)"
 trap 'rm -rf -- $DIR' EXIT
 
-cd "$DIR"
+pushd "$DIR"
     wget 'https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City&license_key=zNX1jd547wMiFH9q&suffix=tar.gz' -O $FILE || exit 1
     tar -xf $FILE || exit 1
-cd "$CDIR"
+    wget 'https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-ASN&license_key=zNX1jd547wMiFH9q&suffix=tar.gz' -O $FILE || exit 1
+    tar -xf $FILE || exit 1
+popd
 mv "$DIR"/GeoLite2-City_*/GeoLite2-City.mmdb .
+mv "$DIR"/GeoLite2-ASN_*/GeoLite2-ASN.mmdb .
