@@ -4,6 +4,7 @@
 /dist/
 /data/
 /.envrc
+*.mmdb
 
 # Local Files
 system.d2
