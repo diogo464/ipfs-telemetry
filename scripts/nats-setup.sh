@@ -30,6 +30,16 @@ if ! check_stream_exists "monitor" ; then
         --defaults
 fi
 
+if ! check_stream_exists "crawler" ; then
+    nats stream add "crawler" \
+        --subjects "crawler" --subjects "crawler.*" \
+        --description "crawler capture stream" \
+        --retention limits \
+        --storage file \
+        --max-bytes 100GB \
+        --defaults
+fi
+
 if ! check_consumer_exists monitor monitor-vm-otlp-exporter ; then
     nats consumer create monitor monitor-vm-otlp-exporter \
         --ack explicit \
