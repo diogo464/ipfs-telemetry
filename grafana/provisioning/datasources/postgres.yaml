@@ -1,0 +1,16 @@
+apiVersion: 1
+datasources:
+  - name: PostgreSQL
+    type: postgres
+    access: proxy
+    url: localhost:5432
+    database: postgres
+    user: postgres
+    secureJsonData:
+      password: telemetry
+    isDefault: false
+    jsonData:
+      sslmode: disable
+      postgresVersion: 1700
+      timescaledb: false
+
