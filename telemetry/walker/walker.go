@@ -89,6 +89,7 @@ func (c *implWalker) Walk(ctx context.Context) error {
 	for _, addr := range c.opts.seeds {
 		c.h.Peerstore().AddAddrs(addr.ID, addr.Addrs, peerstore.PermanentAddrTTL)
 		pending.PushBack(pendingPeer{addr.ID, addr.Addrs})
+		queried[addr.ID] = struct{}{}
 	}
 
 LOOP:
