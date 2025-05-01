@@ -10,6 +10,7 @@ import (
 )
 
 const (
+	Stream_Monitor   = "monitor"
 	Subject_Discover = "monitor.discover"
 	Subject_Export   = "monitor.export"
 	Subject_Active   = "monitor.active"
@@ -54,5 +55,5 @@ type Export struct {
 }
 
 type ActiveMessage struct {
-	Peers []peer.ID
+	Peers []peer.ID `json:"peers"`
 }

@@ -7,6 +7,7 @@ import (
 	"github.com/diogo464/ipfs-telemetry/backend/crawler"
 	"github.com/diogo464/ipfs-telemetry/backend/monitor"
 	"github.com/diogo464/ipfs-telemetry/backend/pg_crawler_exporter"
+	"github.com/diogo464/ipfs-telemetry/backend/pg_monitor_exporter"
 	"github.com/diogo464/ipfs-telemetry/backend/vm_otlp_exporter"
 	"github.com/urfave/cli/v2"
 )
@@ -24,6 +25,7 @@ func main() {
 			monitor.Command,
 			vm_otlp_exporter.Command,
 			pg_crawler_exporter.Command,
+			pg_monitor_exporter.Command,
 		},
 	}
 

@@ -74,6 +74,14 @@ func NatsPublishJson(logger *zap.Logger, nc *nats.Conn, subject string, value an
 	FatalOnError(logger, err, "failed to publish message to nats", zap.String("subject", subject))
 }
 
+func NatsJetstreamDecodeJson[T any](logger *zap.Logger, msg jetstream.Msg) *T {
+	value := new(T)
+	err := json.Unmarshal(msg.Data(), value)
+	FatalOnError(logger, err, "failed to decode nats jetstream json message",
+		zap.String("subject", msg.Subject()), zap.Int("length", len(msg.Data())))
+	return value
+}
+
 func NatsConsumer(ctx context.Context, logger *zap.Logger, js jetstream.JetStream, stream, consumer string) jetstream.Consumer {
 	c, err := js.Consumer(ctx, stream, consumer)
 	if err != nil {
