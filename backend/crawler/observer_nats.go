@@ -14,26 +14,6 @@ import (
 
 var _ (crawler.Observer) = (*natsObserver)(nil)
 
-const (
-	subjectCrawler = "crawler"
-	kindPeer       = "peer"
-	kindCrawlBegin = "crawl_begin"
-	kindCrawlEnd   = "crawl_end"
-)
-
-type natsMessage struct {
-	Kind string      `json:"kind"`
-	Data interface{} `json:"data"`
-}
-
-type natsMessageCrawlBegin struct {
-	Timestamp time.Time `json:"timestamp"`
-}
-
-type natsMessageCrawlEnd struct {
-	Timestamp time.Time `json:"timestamp"`
-}
-
 type natsObserver struct {
 	l  *zap.Logger
 	nc *nats.Conn
@@ -53,27 +33,24 @@ func newNatsObserver(l *zap.Logger, natsUrl string) (*natsObserver, error) {
 }
 
 func (o *natsObserver) CrawlBegin() {
-	o.publishMessage(natsMessage{
-		Kind: kindCrawlBegin,
-		Data: &natsMessageCrawlBegin{
-			Timestamp: time.Now(),
-		},
+	o.publishMessage(NatsMessage{
+		Kind:      KindCrawlBegin,
+		Timestamp: time.Now(),
 	})
 }
 
 func (o *natsObserver) CrawlEnd() {
-	o.publishMessage(natsMessage{
-		Kind: kindCrawlEnd,
-		Data: &natsMessageCrawlEnd{
-			Timestamp: time.Now(),
-		},
+	o.publishMessage(NatsMessage{
+		Kind:      KindCrawlEnd,
+		Timestamp: time.Now(),
 	})
 }
 
 func (o *natsObserver) ObservePeer(c *walker.Peer) {
-	o.publishMessage(natsMessage{
-		Kind: kindPeer,
-		Data: c,
+	o.publishMessage(NatsMessage{
+		Kind:      KindPeer,
+		Timestamp: time.Now(),
+		Peer:      c,
 	})
 
 	if c.ContainsProtocol(telemetry.ID_TELEMETRY) {
@@ -90,14 +67,14 @@ func (o *natsObserver) ObservePeer(c *walker.Peer) {
 func (*natsObserver) ObserveError(*walker.Error) {
 }
 
-func (o *natsObserver) publishMessage(msg natsMessage) {
+func (o *natsObserver) publishMessage(msg NatsMessage) {
 	m, err := json.Marshal(&msg)
 	if err != nil {
 		o.l.Error("failed to marshal message", zap.Error(err))
 		return
 	}
 
-	if err := o.nc.Publish(subjectCrawler, m); err != nil {
+	if err := o.nc.Publish(SubjectCrawler, m); err != nil {
 		o.l.Error("failed to publish message", zap.Error(err))
 		return
 	}
