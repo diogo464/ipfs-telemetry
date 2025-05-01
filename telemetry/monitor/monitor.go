@@ -88,6 +88,14 @@ func (m *Monitor) DiscoverWithAddr(ctx context.Context, paddr peer.AddrInfo) {
 	m.sendCommand(newMonitorCommandDiscoverWithAddr(paddr))
 }
 
+func (m *Monitor) GetActivePeers() []peer.ID {
+	ids := make([]peer.ID, 0, len(m.peers))
+	for id := range m.peers {
+		ids = append(ids, id)
+	}
+	return ids
+}
+
 func (m *Monitor) run(ctx context.Context) {
 	for {
 		select {
