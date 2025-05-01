@@ -9,7 +9,6 @@ import (
 	"github.com/diogo464/ipfs-telemetry/backend"
 	"github.com/diogo464/ipfs-telemetry/backend/crawler"
 	"github.com/diogo464/telemetry/walker"
-	"github.com/jackc/pgx/v5"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/nats-io/nats.go/jetstream"
@@ -52,6 +51,12 @@ type PublicAddress struct {
 func main(c *cli.Context) error {
 	logger := backend.ServiceSetup(c, "pg-crawler-exporter")
 
+	conn := backend.PostgresClient(logger, c)
+	nc := backend.NatsClient(logger, c)
+	js := backend.NatsJetstream(logger, nc)
+
+	defer conn.Close(c.Context)
+
 	cityDbPath := "./GeoLite2-City.mmdb"
 	asnDbPath := "./GeoLite2-ASN.mmdb"
 	cityDb, err := geoip2.Open(cityDbPath)
@@ -63,26 +68,6 @@ func main(c *cli.Context) error {
 		logger.Fatal("failed to open geolite ASN database", zap.String("path", asnDbPath), zap.Error(err))
 	}
 
-	// x, err := gdb.City(net.ParseIP("35.79.127.140"))
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// fmt.Println(x)
-	// countryName := x.Country.Names["en"]
-	// cityName := x.City.Names["en"]
-	// latitude := x.Location.Latitude
-	// longitude := x.Location.Longitude
-	// fmt.Println(countryName, cityName, latitude, longitude)
-	//
-	// return nil
-
-	databaseUrl := c.String(backend.Flag_PostgresUrl.Name)
-	conn, err := pgx.Connect(c.Context, databaseUrl)
-	if err != nil {
-		logger.Fatal("failed to connect to database", zap.String("url", databaseUrl))
-	}
-	defer conn.Close(c.Context)
-
 	recreate := c.Bool(FlagRecreate.Name)
 	if recreate {
 		conn.Exec(c.Context, "DROP SCHEMA crawler CASCADE")
@@ -91,16 +76,6 @@ func main(c *cli.Context) error {
 	logger.Debug("running schema", zap.String("schema", schema))
 	if _, err := conn.Exec(c.Context, schema); recreate && err != nil {
 		logger.Fatal("failed to execute schema", zap.Error(err))
-	}
-
-	nc, err := backend.CreateNatsClient(c, logger)
-	if err != nil {
-		return err
-	}
-
-	js, err := backend.CreateNatsJetstream(nc, logger)
-	if err != nil {
-		return err
 	}
 
 	consumer, err := js.CreateConsumer(c.Context, crawler.StreamCrawler, jetstream.ConsumerConfig{

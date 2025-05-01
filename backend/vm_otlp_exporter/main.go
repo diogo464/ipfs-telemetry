@@ -27,27 +27,9 @@ var Command *cli.Command = &cli.Command{
 func main(c *cli.Context) error {
 	logger := backend.ServiceSetup(c, "vm-otlp-exporter")
 
-	client, err := backend.CreateNatsClient(c, logger)
-	if err != nil {
-		return err
-	}
-
-	js, err := backend.CreateNatsJetstream(client, logger)
-	if err != nil {
-		return err
-	}
-
-	stream, err := js.Stream(c.Context, "monitor")
-	if err != nil {
-		logger.Error("failed to create monitor stream", zap.Error(err))
-		return err
-	}
-
-	consumer, err := stream.Consumer(c.Context, "monitor-vm-otlp-exporter")
-	if err != nil {
-		logger.Error("failed to create stream consumer", zap.Error(err))
-		return err
-	}
+	nc := backend.NatsClient(logger, c)
+	js := backend.NatsJetstream(logger, nc)
+	consumer := backend.NatsConsumer(c.Context, logger, js, "monitor", "monitor-vm-otlp-exporter")
 
 	vmExportUrl := fmt.Sprintf("%s/opentelemetry/v1/metrics", c.String(backend.Flag_VmUrl.Name))
 	logger.Info("starting victoria metrics otlp exporter", zap.String("export-url", vmExportUrl))

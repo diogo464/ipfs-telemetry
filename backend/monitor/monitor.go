@@ -12,6 +12,7 @@ import (
 const (
 	Subject_Discover = "monitor.discover"
 	Subject_Export   = "monitor.export"
+	Subject_Active   = "monitor.active"
 )
 
 type DiscoveryMessage struct {
@@ -50,4 +51,8 @@ type Export struct {
 	Metrics    []ExportMetrics  `json:"metrics"`
 	Events     []ExportEvents   `json:"events"`
 	Bandwidth  *ExportBandwidth `json:"bandwidth"`
+}
+
+type ActiveMessage struct {
+	Peers []peer.ID
 }

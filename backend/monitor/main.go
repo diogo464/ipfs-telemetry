@@ -68,15 +68,8 @@ func main(c *cli.Context) error {
 		monitorOptions = append(monitorOptions, monitor.WithBandwidthTimeout(c.Duration(FLAG_BANDWIDTH_TIMEOUT.Name)))
 	}
 
-	nc, err := backend.CreateNatsClient(c, logger)
-	if err != nil {
-		return err
-	}
-
-	js, err := jetstream.New(nc)
-	if err != nil {
-		return err
-	}
+	nc := backend.NatsClient(logger, c)
+	js := backend.NatsJetstream(logger, nc)
 
 	exporter := newExporter(nc, logger.Named("exporter"))
 	monitorOptions = append(monitorOptions, monitor.WithExporter(exporter))
@@ -86,18 +79,27 @@ func main(c *cli.Context) error {
 	limits := rcmgr.InfiniteLimits
 	limiter := rcmgr.NewFixedLimiter(limits)
 	rm, err := rcmgr.NewResourceManager(limiter)
-	if err != nil {
-		return err
-	}
+	backend.FatalOnError(logger, err, "failed to create resource manager")
 
 	h, err := libp2p.New(libp2p.NoListenAddrs, libp2p.ResourceManager(rm))
 	monitorOptions = append(monitorOptions, monitor.WithHost(h))
 
 	mon, err := monitor.Start(c.Context, monitorOptions...)
-	if err != nil {
-		logger.Error("failed to start monitor", zap.Error(err))
-		return err
-	}
+	backend.FatalOnError(logger, err, "failed to start monitor")
+
+	go func() {
+		for {
+			ticker := time.NewTicker(time.Second * 5)
+			select {
+			case <-ticker.C:
+				backend.NatsPublishJson(logger, nc, Subject_Active, &ActiveMessage{
+					Peers: mon.GetActivePeers(),
+				})
+			case <-c.Context.Done():
+				return
+			}
+		}
+	}()
 
 	since := time.Now().Add(-time.Hour)
 	cfg := jetstream.ConsumerConfig{

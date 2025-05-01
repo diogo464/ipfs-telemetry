@@ -1,9 +1,12 @@
 package backend
 
 import (
+	"context"
+	"encoding/json"
 	"log"
 	"net/http"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -46,22 +49,52 @@ func ServiceSetup(c *cli.Context, name string) *zap.Logger {
 	return logger
 }
 
-func CreateNatsClient(c *cli.Context, logger *zap.Logger) (*nats.Conn, error) {
+func NatsClient(logger *zap.Logger, c *cli.Context) *nats.Conn {
 	natsUrl := c.String(Flag_NatsUrl.Name)
 	logger.Info("connecting to nats", zap.String("url", natsUrl))
 	nc, err := nats.Connect(natsUrl)
 	if err != nil {
-		logger.Error("failed to connect to nats at "+natsUrl, zap.Error(err))
-		return nc, err
+		logger.Fatal("failed to connect to nats at "+natsUrl, zap.Error(err))
 	}
-	return nc, nil
+	return nc
 }
 
-func CreateNatsJetstream(nc *nats.Conn, logger *zap.Logger) (jetstream.JetStream, error) {
+func NatsJetstream(logger *zap.Logger, nc *nats.Conn) jetstream.JetStream {
 	js, err := jetstream.New(nc)
 	if err != nil {
-		logger.Error("failed to create jetstream context", zap.Error(err))
-		return nil, err
+		logger.Fatal("failed to create jetstream context", zap.Error(err))
 	}
-	return js, nil
+	return js
+}
+
+func NatsPublishJson(logger *zap.Logger, nc *nats.Conn, subject string, value any) {
+	serialized, err := json.Marshal(value)
+	FatalOnError(logger, err, "failed to serialize json message to publish on nats", zap.String("subject", subject), zap.Any("value", value))
+	err = nc.Publish(subject, serialized)
+	FatalOnError(logger, err, "failed to publish message to nats", zap.String("subject", subject))
+}
+
+func NatsConsumer(ctx context.Context, logger *zap.Logger, js jetstream.JetStream, stream, consumer string) jetstream.Consumer {
+	c, err := js.Consumer(ctx, stream, consumer)
+	if err != nil {
+		logger.Fatal("failed to create stream consumer", zap.Error(err))
+	}
+	return c
+}
+
+func PostgresClient(logger *zap.Logger, c *cli.Context) *pgx.Conn {
+	databaseUrl := c.String(Flag_PostgresUrl.Name)
+	conn, err := pgx.Connect(c.Context, databaseUrl)
+	if err != nil {
+		logger.Fatal("failed to connect to database", zap.String("url", databaseUrl))
+	}
+	return conn
+}
+
+func FatalOnError(logger *zap.Logger, err error, msg string, fields ...zap.Field) {
+	if err == nil {
+		return
+	}
+	fields = append(fields, zap.Error(err))
+	logger.Fatal(msg, fields...)
 }
