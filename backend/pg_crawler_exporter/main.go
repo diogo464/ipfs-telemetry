@@ -29,7 +29,7 @@ var FlagRecreate *cli.BoolFlag = &cli.BoolFlag{
 }
 
 var Command *cli.Command = &cli.Command{
-	Name:        "pg_crawler_exporter",
+	Name:        "pg-crawler-exporter",
 	Description: "export crawler information to postgres",
 	Flags: []cli.Flag{
 		FlagRecreate,

@@ -23,7 +23,7 @@ var FlagRecreate *cli.BoolFlag = &cli.BoolFlag{
 }
 
 var Command *cli.Command = &cli.Command{
-	Name:        "pg_monitor_exporter",
+	Name:        "pg-monitor-exporter",
 	Description: "export monitor information to postgres",
 	Flags: []cli.Flag{
 		FlagRecreate,
