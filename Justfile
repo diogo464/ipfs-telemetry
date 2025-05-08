@@ -32,6 +32,17 @@ build-backend:
 # build all binaries
 build: build-ipfs build-telemetry build-backend
 
+build-backend-container: build-backend
+    ./scripts/build-backend-container.sh
+
+build-ipfs-container:
+    ./scripts/build-ipfs-container.sh
+
+build-grafana-container:
+    ./scripts/build-grafana-container.sh
+
+build-container: build-ipfs-container build-backend-container build-grafana-container
+
 # fetch the nats cli
 fetch-nats:
     ./scripts/fetch-nats-cli.sh
