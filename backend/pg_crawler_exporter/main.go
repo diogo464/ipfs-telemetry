@@ -80,7 +80,6 @@ func main(c *cli.Context) error {
 
 	consumer, err := js.CreateConsumer(c.Context, crawler.StreamCrawler, jetstream.ConsumerConfig{
 		Description: "crawler postgres exporter",
-		AckPolicy:   jetstream.AckNonePolicy,
 	})
 	if err != nil {
 		logger.Fatal("failed to create crawler consumer", zap.Error(err))
@@ -130,6 +129,17 @@ func main(c *cli.Context) error {
 					logger.Fatal("failed to update crawl id on existing peers", zap.Int("id", id), zap.Error(err))
 				}
 
+				if err := tx.Commit(c.Context); err != nil {
+					logger.Fatal("failed to commit transaction", zap.Error(err))
+				}
+			} else {
+				tx, err := conn.Begin(c.Context)
+				if err != nil {
+					logger.Fatal("failed to create transaction", zap.Error(err))
+				}
+				if _, err := tx.Exec(c.Context, "DELETE FROM crawler.peer WHERE crawl IS NULL"); err != nil {
+					logger.Fatal("failed to remove existing crawl peers", zap.Error(err))
+				}
 				if err := tx.Commit(c.Context); err != nil {
 					logger.Fatal("failed to commit transaction", zap.Error(err))
 				}
@@ -190,6 +200,10 @@ func main(c *cli.Context) error {
 			}
 		default:
 			logger.Fatal("unknown crawler message kind", zap.String("kind", cmsg.Kind))
+		}
+
+		if err := msg.Ack(); err != nil {
+			logger.Fatal("failed to ack jetstream message", zap.Error(err))
 		}
 	})
 	if err != nil {
