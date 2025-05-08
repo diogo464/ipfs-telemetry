@@ -7,7 +7,7 @@ if [ -z "$COUNT" ]; then
   echo "Usage: $0 <number_of_containers>"
   exit 1
 fi
-podman build -t kubo -f Containerfile .
+podman build -t kubo -f ipfs.Containerfile .
 for ((n=0; n<COUNT; n++)); do
   PORT=$((29000 + n))
   API_PORT=$((30000 + n))
