@@ -80,3 +80,6 @@ logs name:
 
 sync:
     rsync -avzp --exclude data --exclude .git --exclude dist --exclude bin . ipfs:./
+
+hsync:
+    rsync -avzp --exclude data --exclude .git --exclude dist --exclude bin . hipfs:./
