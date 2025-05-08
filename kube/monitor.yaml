@@ -43,7 +43,7 @@ spec:
               memory: "64Mi"
               cpu: "0"
             limits:
-              memory: "256Mi"
+              memory: "2G"
               cpu: "1"
           ports:
             - name: prometheus
