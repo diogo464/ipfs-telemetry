@@ -1,0 +1,104 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nats
+  labels:
+    app: nats
+    app.kubernetes.io/name: nats
+spec:
+  storageClassName: blackmesa
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 500Gi
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nats
+data:
+  nats.conf: |
+    max_payload: 64M
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nats
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: nats
+  template:
+    metadata:
+      labels:
+        app: nats
+        app.kubernetes.io/name: nats
+    spec:
+      containers:
+        - name: nats
+          image: docker.io/nats:latest
+          args: ["-js", "-sd", "/data", "-c", "/etc/nats.conf"]
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: config
+              mountPath: /etc/nats.conf
+              subPath: nats.conf
+              readOnly: true
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "0"
+            limits:
+              memory: "2G"
+              cpu: "2"
+          ports:
+            - name: http # management
+              containerPort: 8222
+            - name: client
+              containerPort: 4222
+      securityContext:
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: nats
+        - name: config
+          configMap:
+            name: nats
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nats
+  labels:
+    app.kubernetes.io/name: nats
+  annotations:
+    service.infra.d464.sh/domain: "ipfs-nats.d464.sh"
+spec:
+  type: LoadBalancer
+  selector:
+    app.kubernetes.io/name: nats
+  ports:
+    - name: http
+      port: 8222
+      targetPort: http
+    - name: client
+      port: 4222
+      targetPort: client
+

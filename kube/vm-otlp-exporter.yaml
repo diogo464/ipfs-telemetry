@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vm-otlp-exporter
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: vm-otlp-exporter
+  template:
+    metadata:
+      labels:
+        app: vm-otlp-exporter
+        app.kubernetes.io/name: vm-otlp-exporter
+    spec:
+      containers:
+        - name: vm-otlp-exporter
+          image: ghcr.io/diogo464/ipfs-telemetry/backend:latest
+          args: ["vm-otlp-exporter"]
+          env:
+            - name: NATS_URL
+              value: "nats://nats:4222"
+            - name: VM_URL
+              value: "http://vm:8428"
+            - name: POSTGRES_URL
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-pg
+                  key: DATABASE_URL
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "0"
+            limits:
+              memory: "256Mi"
+              cpu: "1"
+      securityContext:
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+

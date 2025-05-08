@@ -1,0 +1,127 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: grafana
+  labels:
+    app: grafana
+    app.kubernetes.io/name: grafana
+spec:
+  storageClassName: blackmesa
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+spec:
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+        app.kubernetes.io/name: grafana
+    spec:
+      containers:
+        - name: grafana
+          image: ghcr.io/diogo464/ipfs-telemetry/grafana:latest
+          env:
+            - name: NATS_URL
+              value: "nats://nats:4222"
+            - name: VM_URL
+              value: "http://vm:8428"
+            - name: POSTGRES_URL
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-pg
+                  key: DATABASE_URL
+            - name: POSTGRES_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-pg
+                  key: DATABASE_HOST
+            - name: POSTGRES_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-pg
+                  key: DATABASE_PORT
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-pg
+                  key: DATABASE_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-pg
+                  key: DATABASE_PASS
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "0"
+            limits:
+              memory: "1G"
+              cpu: "1"
+          ports:
+            - name: http
+              containerPort: 3000
+      securityContext:
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: grafana
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+  labels:
+    app.kubernetes.io/name: grafana
+spec:
+  selector:
+    app.kubernetes.io/name: grafana
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: grafana
+  labels:
+    app.kubernetes.io/name: grafana
+  annotations:
+    ingress.infra.d464.sh/public: "false"
+    ingress.infra.d464.sh/force-ssl: "true"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: ipfs.d464.sh
+      http:
+        paths:
+          - pathType: Prefix
+            path: "/"
+            backend:
+              service:
+                name: grafana
+                port:
+                  name: http
+

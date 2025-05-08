@@ -3,11 +3,11 @@ datasources:
   - name: PostgreSQL
     type: postgres
     access: proxy
-    url: localhost:5432
-    database: postgres
-    user: postgres
+    url: ${POSTGRES_HOST}:${POSTGRES_PORT}
+    database: ${POSTGRES_NAME}
+    user: ${POSTGRES_USER}
     secureJsonData:
-      password: telemetry
+      password: ${POSTGRES_PASSWORD}
     isDefault: false
     jsonData:
       sslmode: disable
