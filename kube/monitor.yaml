@@ -51,4 +51,18 @@ spec:
       securityContext:
         fsGroup: 1000
         fsGroupChangePolicy: OnRootMismatch
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: monitor
+  labels:
+    app.kubernetes.io/name: monitor
+spec:
+  selector:
+    app.kubernetes.io/name: monitor
+  ports:
+    - name: prometheus
+      port: 9090
+      targetPort: prometheus
 
