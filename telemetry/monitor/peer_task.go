@@ -250,6 +250,7 @@ func (p *peerTask) createClient(ctx context.Context) (*telemetry.Client, error) 
 		ctx,
 		telemetry.WithClientLibp2pDial(p.host, p.pid),
 		telemetry.WithClientState(p.client_state),
+		telemetry.WithClientLogger(p.logger),
 	)
 	p.metrics.RecordCreateClientDuration(ctx, time.Since(timestampBegin))
 

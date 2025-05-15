@@ -16,6 +16,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/peer"
 	"go.opentelemetry.io/otel/sdk/instrumentation"
 	v1 "go.opentelemetry.io/proto/otlp/metrics/v1"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/proto"
@@ -52,7 +53,8 @@ type clientOptions struct {
 	// When h is nil, dial using grpc.Dial
 	target string
 
-	state *ClientState
+	state  *ClientState
+	logger *zap.Logger
 }
 
 type ClientState struct {
@@ -77,6 +79,7 @@ type Client struct {
 	p peer.ID
 	s *ClientState
 	c *grpc.ClientConn
+	l *zap.Logger
 }
 
 func WithClientLibp2pDial(h host.Host, p peer.ID) ClientOption {
@@ -98,13 +101,21 @@ func WithClientState(s *ClientState) ClientOption {
 	}
 }
 
+func WithClientLogger(l *zap.Logger) ClientOption {
+	return func(o *clientOptions) {
+		o.logger = l
+	}
+}
+
 func NewClient(ctx context.Context, opts ...ClientOption) (*Client, error) {
 	options := new(clientOptions)
+	options.logger = zap.NewNop()
 	for _, opt := range opts {
 		opt(options)
 	}
 
 	client := new(Client)
+	client.l = options.logger
 	if options.state != nil {
 		client.s = options.state
 	} else {
@@ -286,13 +297,17 @@ func (c *Client) GetStreamSegments(ctx context.Context, key clientStreamKey) ([]
 }
 
 func (c *Client) GetMetrics(ctx context.Context) (Metrics, error) {
-	messages, err := c.GetStream(ctx, newStreamKeyMetrics())
+	messages, err := c.GetMetricsMessages(ctx)
 	if err != nil {
 		return Metrics{}, err
 	}
 
 	metrics := make([]*v1.ResourceMetrics, len(messages))
 	for i, msg := range messages {
+		c.l.Info("fetched metrics message",
+			zap.String("timestamp", msg.Timestamp.Format("2006-01-02 15:04:05")),
+			zap.Int("size", len(msg.Value)))
+
 		m := &v1.ResourceMetrics{}
 		err = proto.Unmarshal(msg.Value, m)
 		if err != nil {
