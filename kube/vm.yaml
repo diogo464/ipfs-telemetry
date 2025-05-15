@@ -99,4 +99,27 @@ spec:
     - name: http
       port: 8428
       targetPort: http
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: vm
+  labels:
+    app.kubernetes.io/name: vm
+  annotations:
+    ingress.infra.d464.sh/public: "false"
+    ingress.infra.d464.sh/force-ssl: "true"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: vm.d464.sh
+      http:
+        paths:
+          - pathType: Prefix
+            path: "/"
+            backend:
+              service:
+                name: vm
+                port:
+                  name: http
 
