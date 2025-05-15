@@ -28,5 +28,7 @@ func main() {
 		Flags:    FLAGS,
 		Commands: COMMANDS,
 	}
-	app.Run(os.Args)
+	if err := app.Run(os.Args); err != nil {
+		panic(err)
+	}
 }
