@@ -306,6 +306,14 @@ func (c *Client) GetMetrics(ctx context.Context) (Metrics, error) {
 	}, nil
 }
 
+func (c *Client) GetMetricsMessages(ctx context.Context) ([]stream.MessageBin, error) {
+	messages, err := c.GetStream(ctx, newStreamKeyMetrics())
+	if err != nil {
+		return nil, err
+	}
+	return messages, nil
+}
+
 func (c *Client) GetEventDescriptors(ctx context.Context) ([]EventDescriptor, error) {
 	client, err := c.newGrpcClient()
 	if err != nil {

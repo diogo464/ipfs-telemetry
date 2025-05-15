@@ -16,6 +16,7 @@ var COMMANDS = []*cli.Command{
 	CommandDownload,
 	CommandSession,
 	CommandMetrics,
+	CommandMetricsToVm,
 	CommandEvent,
 	CommandProperties,
 	CommandDescriptors,
