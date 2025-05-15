@@ -6,7 +6,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -90,13 +90,13 @@ func NatsConsumer(ctx context.Context, logger *zap.Logger, js jetstream.JetStrea
 	return c
 }
 
-func PostgresClient(logger *zap.Logger, c *cli.Context) *pgx.Conn {
+func PostgresClient(logger *zap.Logger, c *cli.Context) *pgxpool.Pool {
 	databaseUrl := c.String(Flag_PostgresUrl.Name)
-	conn, err := pgx.Connect(c.Context, databaseUrl)
+	pool, err := pgxpool.New(c.Context, databaseUrl)
 	if err != nil {
 		logger.Fatal("failed to connect to database", zap.String("url", databaseUrl))
 	}
-	return conn
+	return pool
 }
 
 func FatalOnError(logger *zap.Logger, err error, msg string, fields ...zap.Field) {

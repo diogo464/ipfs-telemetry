@@ -37,7 +37,7 @@ func main(c *cli.Context) error {
 	db := backend.PostgresClient(logger, c)
 	nc := backend.NatsClient(logger, c)
 	js := backend.NatsJetstream(logger, nc)
-	defer db.Close(c.Context)
+	defer db.Close()
 
 	recreate := c.Bool(FlagRecreate.Name)
 	if recreate {

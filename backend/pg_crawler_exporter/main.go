@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/diogo464/ipfs-telemetry/backend"
@@ -55,7 +56,7 @@ func main(c *cli.Context) error {
 	nc := backend.NatsClient(logger, c)
 	js := backend.NatsJetstream(logger, nc)
 
-	defer conn.Close(c.Context)
+	defer conn.Close()
 
 	cityDbPath := "./GeoLite2-City.mmdb"
 	asnDbPath := "./GeoLite2-ASN.mmdb"
@@ -85,6 +86,8 @@ func main(c *cli.Context) error {
 		logger.Fatal("failed to create crawler consumer", zap.Error(err))
 	}
 
+	wg := &sync.WaitGroup{}
+	sem := make(chan struct{}, 512)
 	peerIds := make(map[peer.ID]uint64)
 	crawlBegin := time.Time{}
 	crawlInProgress := false
@@ -99,6 +102,9 @@ func main(c *cli.Context) error {
 
 		switch cmsg.Kind {
 		case crawler.KindCrawlBegin:
+			logger.Info("waiting on WaitGroup before startin crawl")
+			wg.Wait()
+
 			peerIds = make(map[peer.ID]uint64)
 			logger.Info("crawl started")
 
@@ -109,6 +115,9 @@ func main(c *cli.Context) error {
 			crawlBegin = cmsg.Timestamp
 			crawlInProgress = true
 		case crawler.KindCrawlEnd:
+			logger.Info("waiting on WaitGroup before ending crawl")
+			wg.Wait()
+
 			peerIds = make(map[peer.ID]uint64)
 			logger.Info("crawl ended")
 
@@ -147,57 +156,66 @@ func main(c *cli.Context) error {
 
 			crawlInProgress = false
 		case crawler.KindPeer:
-			p := cmsg.Peer
-			addrs := make([]string, len(p.Addresses))
-			for i, maddr := range p.Addresses {
-				addrs[i] = maddr.String()
-			}
-			protocols := make([]string, len(p.Protocols))
-			for i, proto := range p.Protocols {
-				protocols[i] = string(proto)
-			}
+			sem <- struct{}{}
+			wg.Add(1)
+			go func() {
+				defer func() {
+					wg.Done()
+					<-sem
+				}()
 
-			var ip *string
-			var country *string
-			var city *string
-			var asn *uint
-			var asnOrg *string
-			var latitude *float64
-			var longitude *float64
-			if pip, ok := ExtractFirstPublicIp(p.Addresses); ok {
-				if gasn, err := asnDb.ASN(pip); err == nil {
-					asn = &gasn.AutonomousSystemNumber
-					asnOrg = &gasn.AutonomousSystemOrganization
-				} else {
-					logger.Warn("failed to obtain ip asn information", zap.String("ip", pip.String()), zap.Error(err))
+				p := cmsg.Peer
+				addrs := make([]string, len(p.Addresses))
+				for i, maddr := range p.Addresses {
+					addrs[i] = maddr.String()
 				}
-				if gcity, err := cityDb.City(pip); err == nil {
-					if countryName, ok := gcity.Country.Names["en"]; ok {
-						country = &countryName
-					}
-					if cityName, ok := gcity.City.Names["en"]; ok {
-						city = &cityName
-					}
-					latitude = &gcity.Location.Latitude
-					longitude = &gcity.Location.Longitude
-				} else {
-					logger.Warn("failed to obtain ip city information", zap.String("ip", pip.String()), zap.Error(err))
+				protocols := make([]string, len(p.Protocols))
+				for i, proto := range p.Protocols {
+					protocols[i] = string(proto)
 				}
 
-				ip = new(string)
-				*ip = pip.String()
-			}
+				var ip *string
+				var country *string
+				var city *string
+				var asn *uint
+				var asnOrg *string
+				var latitude *float64
+				var longitude *float64
+				if pip, ok := ExtractFirstPublicIp(p.Addresses); ok {
+					if gasn, err := asnDb.ASN(pip); err == nil {
+						asn = &gasn.AutonomousSystemNumber
+						asnOrg = &gasn.AutonomousSystemOrganization
+					} else {
+						logger.Warn("failed to obtain ip asn information", zap.String("ip", pip.String()), zap.Error(err))
+					}
+					if gcity, err := cityDb.City(pip); err == nil {
+						if countryName, ok := gcity.Country.Names["en"]; ok {
+							country = &countryName
+						}
+						if cityName, ok := gcity.City.Names["en"]; ok {
+							city = &cityName
+						}
+						latitude = &gcity.Location.Latitude
+						longitude = &gcity.Location.Longitude
+					} else {
+						logger.Warn("failed to obtain ip city information", zap.String("ip", pip.String()), zap.Error(err))
+					}
 
-			if s, ok := peerIds[p.ID]; ok {
-				logger.Fatal("peer id already exists", zap.String("id", p.ID.String()), zap.Uint64("seqn", s))
-			}
-			peerIds[p.ID] = metadata.Sequence.Stream
-			_, err := conn.Exec(c.Context,
-				"INSERT INTO crawler.peer(timestamp, peer_id, agent, addresses, protocols, dht_entries, ip, asn, asn_org, country, city, latitude, longitude) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)",
-				cmsg.Timestamp, p.ID.String(), p.Agent, addrs, protocols, len(p.Buckets), ip, asn, asnOrg, country, city, latitude, longitude)
-			if err != nil {
-				logger.Fatal("failed to insert peer entry into database", zap.Error(err))
-			}
+					ip = new(string)
+					*ip = pip.String()
+				}
+
+				if s, ok := peerIds[p.ID]; ok {
+					logger.Fatal("peer id already exists", zap.String("id", p.ID.String()), zap.Uint64("seqn", s))
+				}
+				peerIds[p.ID] = metadata.Sequence.Stream
+				_, err := conn.Exec(c.Context,
+					"INSERT INTO crawler.peer(timestamp, peer_id, agent, addresses, protocols, dht_entries, ip, asn, asn_org, country, city, latitude, longitude) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)",
+					cmsg.Timestamp, p.ID.String(), p.Agent, addrs, protocols, len(p.Buckets), ip, asn, asnOrg, country, city, latitude, longitude)
+				if err != nil {
+					logger.Fatal("failed to insert peer entry into database", zap.Error(err))
+				}
+			}()
 		default:
 			logger.Fatal("unknown crawler message kind", zap.String("kind", cmsg.Kind))
 		}
