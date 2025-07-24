@@ -32,7 +32,8 @@ type ExportEvents struct {
 }
 
 type ExportMetrics struct {
-	OTLP []byte `json:"otlp"`
+	Timestamp time.Time `json:"timestamp"`
+	OTLP      []byte    `json:"otlp"`
 }
 
 type ExportProperty struct {

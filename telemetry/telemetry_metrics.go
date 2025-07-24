@@ -2,6 +2,7 @@ package telemetry
 
 import (
 	"encoding/json"
+	"time"
 
 	mpb "go.opentelemetry.io/proto/otlp/metrics/v1"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -14,29 +15,28 @@ type MetricDescriptor struct {
 }
 
 type Metrics struct {
-	OTLP []*mpb.ResourceMetrics `json:"otlp"`
+	Timestamp time.Time            `json:"timestamp"`
+	OTLP      *mpb.ResourceMetrics `json:"otlp"`
 }
 
 func (m *Metrics) MarshalJSON() ([]byte, error) {
 	// Use protojson to embed the field
 
 	// Marshal the field
-	marshaled := make([]json.RawMessage, len(m.OTLP))
-	for i, v := range m.OTLP {
-		b, err := protojson.MarshalOptions{
-			UseProtoNames: true,
-		}.Marshal(v)
-		if err != nil {
-			return nil, err
-		}
-		marshaled[i] = b
+	otlp, err := protojson.MarshalOptions{
+		UseProtoNames: true,
+	}.Marshal(m.OTLP)
+	if err != nil {
+		return nil, err
 	}
 
 	// Marshal the struct
 	s := struct {
-		OTLP []json.RawMessage `json:"otlp"`
+		Timestamp time.Time       `json:"timestamp"`
+		OTLP      json.RawMessage `json:"otlp"`
 	}{
-		OTLP: marshaled,
+		Timestamp: m.Timestamp,
+		OTLP:      otlp,
 	}
 
 	return json.Marshal(s)
@@ -47,19 +47,18 @@ func (m *Metrics) UnmarshalJSON(b []byte) error {
 
 	// Unmarshal the struct
 	s := struct {
-		OTLP []json.RawMessage `json:"otlp"`
+		Timestamp time.Time       `json:"timestamp"`
+		OTLP      json.RawMessage `json:"otlp"`
 	}{}
 	if err := json.Unmarshal(b, &s); err != nil {
 		return err
 	}
 
 	// Unmarshal the field
-	m.OTLP = make([]*mpb.ResourceMetrics, len(s.OTLP))
-	for i, v := range s.OTLP {
-		m.OTLP[i] = &mpb.ResourceMetrics{}
-		if err := protojson.Unmarshal(v, m.OTLP[i]); err != nil {
-			return err
-		}
+	m.Timestamp = s.Timestamp
+	m.OTLP = &mpb.ResourceMetrics{}
+	if err := protojson.Unmarshal(s.OTLP, m.OTLP); err != nil {
+		return err
 	}
 
 	return nil

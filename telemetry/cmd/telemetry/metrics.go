@@ -33,8 +33,7 @@ func actionMetrics(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	metrics := cmetrics.OTLP
-	j, err := json.MarshalIndent(metrics, "", "  ")
+	j, err := json.MarshalIndent(cmetrics, "", "  ")
 	if err != nil {
 		return err
 	}
@@ -44,19 +43,19 @@ func actionMetrics(c *cli.Context) error {
 	}
 
 	if c.Bool(FLAG_METRICS_RAW.Name) {
-		m, err := json.MarshalIndent(metrics, "", "  ")
+		m, err := json.MarshalIndent(cmetrics, "", "  ")
 		if err != nil {
 			return err
 		}
 		fmt.Println(string(m))
 	} else {
-		if len(metrics) == 0 {
+		if len(cmetrics) == 0 {
 			fmt.Println("metrics len is 0 ")
 			return nil
 		}
-		mdata := metrics[len(metrics)-1]
+		mdata := cmetrics[len(cmetrics)-1]
 
-		for _, scope := range mdata.ScopeMetrics {
+		for _, scope := range mdata.OTLP.ScopeMetrics {
 			for _, metric := range scope.Metrics {
 				fmt.Println(scope.Scope.Name + "/" + metric.Name)
 				switch v := metric.GetData().(type) {

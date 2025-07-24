@@ -18,7 +18,7 @@ type Exporter interface {
 	PeerFailure(peer.ID, error)
 
 	Session(peer.ID, telemetry.Session)
-	Metrics(peer.ID, telemetry.Session, telemetry.Metrics)
+	Metrics(peer.ID, telemetry.Session, []telemetry.Metrics)
 	Properties(peer.ID, telemetry.Session, []telemetry.Property)
 	Events(peer.ID, telemetry.Session, telemetry.EventDescriptor, []telemetry.Event)
 	Bandwidth(peer.ID, telemetry.Bandwidth)
@@ -55,7 +55,7 @@ func (*noOpExporter) Events(peer.ID, telemetry.Session, telemetry.EventDescripto
 }
 
 // Metrics implements Exporter
-func (*noOpExporter) Metrics(peer.ID, telemetry.Session, telemetry.Metrics) {
+func (*noOpExporter) Metrics(peer.ID, telemetry.Session, []telemetry.Metrics) {
 }
 
 // Bandwidth implements Exporter
@@ -95,7 +95,7 @@ func (e *observableExporter) Events(p peer.ID, s telemetry.Session, d telemetry.
 }
 
 // Metrics implements Exporter
-func (e *observableExporter) Metrics(p peer.ID, s telemetry.Session, m telemetry.Metrics) {
+func (e *observableExporter) Metrics(p peer.ID, s telemetry.Session, m []telemetry.Metrics) {
 	e.m.Exports.Add(context.Background(), 1, metric.WithAttributes(metrics.AttrExportKindMetrics))
 	e.e.Metrics(p, s, m)
 }

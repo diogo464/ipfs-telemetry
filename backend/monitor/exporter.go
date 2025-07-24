@@ -127,19 +127,20 @@ func (e *natsExporter) Events(p peer.ID, s telemetry.Session, d telemetry.EventD
 }
 
 // Metrics implements monitor.Exporter
-func (e *natsExporter) Metrics(p peer.ID, s telemetry.Session, ms telemetry.Metrics) {
+func (e *natsExporter) Metrics(p peer.ID, s telemetry.Session, ms []telemetry.Metrics) {
 	e.Lock()
 	defer e.Unlock()
 
 	exp := e.getPeerExportWithSess(p, s)
-	for _, m := range ms.OTLP {
-		marshaledOtlp, err := proto.Marshal(m)
+	for _, m := range ms {
+		marshaledOtlp, err := proto.Marshal(m.OTLP)
 		if err != nil {
 			e.logger.Warn("failed to marshal OTLP metrics", zap.Error(err))
 			return
 		}
 		exp.Metrics = append(exp.Metrics, ExportMetrics{
-			OTLP: marshaledOtlp,
+			Timestamp: m.Timestamp,
+			OTLP:      marshaledOtlp,
 		})
 	}
 }

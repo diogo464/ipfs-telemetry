@@ -296,29 +296,30 @@ func (c *Client) GetStreamSegments(ctx context.Context, key clientStreamKey) ([]
 	return segments, nil
 }
 
-func (c *Client) GetMetrics(ctx context.Context) (Metrics, error) {
+func (c *Client) GetMetrics(ctx context.Context) ([]Metrics, error) {
 	messages, err := c.GetMetricsMessages(ctx)
 	if err != nil {
-		return Metrics{}, err
+		return nil, err
 	}
 
-	metrics := make([]*v1.ResourceMetrics, len(messages))
+	metrics := make([]Metrics, len(messages))
 	for i, msg := range messages {
 		c.l.Info("fetched metrics message",
 			zap.String("timestamp", msg.Timestamp.Format("2006-01-02 15:04:05")),
 			zap.Int("size", len(msg.Value)))
 
-		m := &v1.ResourceMetrics{}
-		err = proto.Unmarshal(msg.Value, m)
+		otlp := &v1.ResourceMetrics{}
+		err = proto.Unmarshal(msg.Value, otlp)
 		if err != nil {
-			return Metrics{}, err
+			return nil, err
 		}
-		metrics[i] = m
+		metrics[i] = Metrics{
+			Timestamp: msg.Timestamp,
+			OTLP:      otlp,
+		}
 	}
 
-	return Metrics{
-		OTLP: metrics,
-	}, nil
+	return metrics, nil
 }
 
 func (c *Client) GetMetricsMessages(ctx context.Context) ([]stream.MessageBin, error) {

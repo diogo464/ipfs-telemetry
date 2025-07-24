@@ -42,6 +42,10 @@ func main(c *cli.Context) error {
 		decode(msg.Data(), export)
 
 		for _, metrics := range export.Metrics {
+			logger.Info("exporting metrics to vm",
+				zap.String("peer_id", export.Peer.String()),
+				zap.String("metrics_timestamp", metrics.Timestamp.Format("2006-01-02 15:04:05")))
+
 			rm := new(v1.ResourceMetrics)
 			if err := proto.Unmarshal(metrics.OTLP, rm); err != nil {
 				logger.Fatal("failed to decode resource metrics protobuf", zap.Error(err))
